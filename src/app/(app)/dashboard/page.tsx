@@ -13,6 +13,8 @@ import { dashboardApi, type DashboardStats, nextStepApi } from '@/lib/api'
 import { formatRelativeDate } from '@/lib/format'
 import { ListSkeleton } from '@/components/ui/EmptyState'
 import { AlertsBanner } from '@/components/ui/AlertsBanner'
+import { FirstProjectWizard } from '@/components/projects/FirstProjectWizard'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { toast } from 'sonner'
 
 const STATUS_STYLE: Record<string, string> = {
@@ -46,9 +48,11 @@ function StatCard({ label, value, sub, icon: Icon, iconBg, iconColor }: {
 }
 
 export default function DashboardPage() {
+  const { isGestor } = useAuth()
   const [data, setData] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [nextStep, setNextStep] = useState<{ label: string; href: string; reason: string } | null>(null)
+  const [showWizard, setShowWizard] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -58,6 +62,13 @@ export default function DashboardPage() {
       .catch(e => toast.error(e instanceof Error ? e.message : 'Erro ao carregar dashboard'))
       .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    if (!loading && isGestor && data?.counts.projects === 0) {
+      const dismissed = sessionStorage.getItem('wizard-dismissed')
+      if (!dismissed) setShowWizard(true)
+    }
+  }, [loading, isGestor, data?.counts.projects])
 
   const c = data?.counts
   const monthLabel = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
@@ -78,6 +89,13 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <FirstProjectWizard
+        open={showWizard}
+        onClose={() => {
+          sessionStorage.setItem('wizard-dismissed', '1')
+          setShowWizard(false)
+        }}
+      />
       <AlertsBanner />
 
       {nextStep && (

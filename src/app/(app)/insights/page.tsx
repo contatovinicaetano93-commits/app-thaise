@@ -2,17 +2,22 @@
 
 import { useEffect, useState } from 'react'
 import { Sparkles, Building2, Truck } from 'lucide-react'
-import { insightsApi, type AgentInsightRow } from '@/lib/api'
+import { insightsApi, suppliersApi, type AgentInsightRow } from '@/lib/api'
 import { ListSkeleton } from '@/components/ui/EmptyState'
+import { QcpsComparisonChart } from '@/components/insights/QcpsComparisonChart'
 import { toast } from 'sonner'
+import type { Supplier } from '@/types/database'
 
 export default function InsightsPage() {
   const [insights, setInsights] = useState<AgentInsightRow[]>([])
+  const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    insightsApi.list()
-      .then(setInsights)
+    Promise.all([
+      insightsApi.list().then(setInsights),
+      suppliersApi.list().then(setSuppliers),
+    ])
       .catch(e => toast.error(e instanceof Error ? e.message : 'Erro ao carregar insights'))
       .finally(() => setLoading(false))
   }, [])
@@ -26,6 +31,8 @@ export default function InsightsPage() {
         </h2>
         <p className="text-gray-500 mt-1 text-sm">Análises QCPS geradas pelo agente</p>
       </div>
+
+      {!loading && <QcpsComparisonChart suppliers={suppliers} />}
 
       {loading ? (
         <ListSkeleton rows={4} height="h-24" />

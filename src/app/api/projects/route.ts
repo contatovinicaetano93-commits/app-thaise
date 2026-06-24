@@ -5,7 +5,7 @@ import { createServerClient } from '@/lib/supabase-server'
 import { requireProfile, filterProjectsByRole } from '@/lib/auth/api-context'
 import { assertProjectHasClient } from '@/lib/gates'
 import { logActivity } from '@/lib/memory/events'
-import { cacheGet, cacheSet } from '@/lib/cache'
+import { cacheGet, cacheSet, invalidateListCaches } from '@/lib/cache'
 import { parsePagination, paginationMeta } from '@/lib/pagination'
 
 const qcpsSchema = z.object({
@@ -87,6 +87,7 @@ export async function POST(req: NextRequest) {
       actorId: profile!.id,
     })
 
+    await invalidateListCaches('projects')
     return ok(data, undefined, 201)
   } catch (e) {
     if (e instanceof Error && e.message.includes('SIPOC')) return err(e.message, 422)

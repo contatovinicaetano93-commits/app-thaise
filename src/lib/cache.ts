@@ -50,3 +50,7 @@ export async function cacheDel(pattern: string) {
     // ignore
   }
 }
+
+export async function invalidateListCaches(prefix: string) {
+  await cacheDel(`${prefix}:*`)
+}

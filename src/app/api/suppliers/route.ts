@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
 import { createServerClient } from '@/lib/supabase-server'
-import { cacheGet, cacheSet } from '@/lib/cache'
+import { cacheGet, cacheSet, invalidateListCaches } from '@/lib/cache'
 import { parsePagination, paginationMeta } from '@/lib/pagination'
 
 const qcpsSchema = z.object({
@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (error) return err(error.message, 500)
+    await invalidateListCaches('suppliers')
     return ok(data, undefined, 201)
   } catch (e) {
     return handleError(e)

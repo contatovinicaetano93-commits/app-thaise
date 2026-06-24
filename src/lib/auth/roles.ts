@@ -33,7 +33,9 @@ export function canManage(role: UserRole): boolean {
   return role === 'gestor'
 }
 
-export type PhaseChecklist = Record<ProjectPhase, Record<string, boolean>>
+export type ChecklistItemValue = boolean | { checked: boolean; evidence?: string }
+
+export type PhaseChecklist = Record<ProjectPhase, Record<string, ChecklistItemValue>>
 
 export interface JobLog {
   id: string

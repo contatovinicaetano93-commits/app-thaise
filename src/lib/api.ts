@@ -141,8 +141,8 @@ export const projectsApi = {
   advancePhase: (id: string): ApiResult<Project> =>
     request(`/api/projects/${id}/phase`, { method: 'PATCH', body: JSON.stringify({}) }),
 
-  updateChecklist: (id: string, phase: string, itemId: string, checked: boolean): ApiResult<Project> =>
-    request(`/api/projects/${id}/checklist`, { method: 'PATCH', body: JSON.stringify({ phase, itemId, checked }) }),
+  updateChecklist: (id: string, phase: string, itemId: string, checked: boolean, evidence?: string): ApiResult<Project> =>
+    request(`/api/projects/${id}/checklist`, { method: 'PATCH', body: JSON.stringify({ phase, itemId, checked, evidence }) }),
 
   remove: (id: string): ApiResult<void> =>
     request(`/api/projects/${id}`, { method: 'DELETE' }),

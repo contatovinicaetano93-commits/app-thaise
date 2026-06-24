@@ -61,6 +61,30 @@ export async function GET() {
       })
     }
 
+    const { data: lateOrders } = await db
+      .from('orders')
+      .select('id, status, created_at, product:products(lead_time_days)')
+      .in('status', ['approved', 'processing'])
+
+    for (const o of (lateOrders ?? []) as Array<{
+      id: string
+      status: string
+      created_at: string
+      product?: { lead_time_days: number | null }
+    }>) {
+      const leadDays = o.product?.lead_time_days
+      if (!leadDays) continue
+      const due = new Date(o.created_at).getTime() + leadDays * 86400000
+      if (Date.now() > due) {
+        alerts.push({
+          type: 'late_order',
+          severity: 'warning',
+          message: `Pedido ${o.id.slice(0, 8)}… atrasado (${leadDays}d prazo)`,
+          href: '/orders',
+        })
+      }
+    }
+
     return ok(alerts)
   } catch (e) {
     return handleError(e)

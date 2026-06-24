@@ -1,5 +1,7 @@
 import type { ProjectPhase } from '@/lib/phases'
-import type { PhaseChecklist } from '@/lib/auth/roles'
+import type { ChecklistItemValue, PhaseChecklist } from '@/lib/auth/roles'
+
+export type { ChecklistItemValue }
 
 export interface ChecklistItem {
   id: string
@@ -39,6 +41,12 @@ export const PHASE_CHECKLISTS: Record<ProjectPhase, ChecklistItem[]> = {
   ],
 }
 
+export function isChecklistItemDone(value: ChecklistItemValue | undefined): boolean {
+  if (value === true) return true
+  if (value && typeof value === 'object' && 'checked' in value) return value.checked === true
+  return false
+}
+
 export function emptyChecklist(): PhaseChecklist {
   return { A: {}, B: {}, C: {}, D: {}, E: {}, F: {} }
 }
@@ -46,12 +54,12 @@ export function emptyChecklist(): PhaseChecklist {
 export function isPhaseComplete(phase: ProjectPhase, checklist: PhaseChecklist): boolean {
   const items = PHASE_CHECKLISTS[phase]
   const done = checklist[phase] ?? {}
-  return items.every(item => done[item.id] === true)
+  return items.every(item => isChecklistItemDone(done[item.id]))
 }
 
 export function phaseProgress(phase: ProjectPhase, checklist: PhaseChecklist): { done: number; total: number } {
   const items = PHASE_CHECKLISTS[phase]
   const done = checklist[phase] ?? {}
-  const count = items.filter(item => done[item.id] === true).length
+  const count = items.filter(item => isChecklistItemDone(done[item.id])).length
   return { done: count, total: items.length }
 }

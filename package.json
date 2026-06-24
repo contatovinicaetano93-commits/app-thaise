@@ -11,6 +11,7 @@
     "setup:env": "node scripts/check-env.mjs",
     "setup:schema": "node scripts/apply-schema.mjs",
     "setup:verify": "node scripts/verify-supabase.mjs",
+    "setup:migrations": "node scripts/verify-migrations.mjs",
     "setup:redis": "node scripts/verify-redis.mjs",
     "seed": "node scripts/seed-gestor.mjs",
     "seed:demo": "node scripts/seed-demo-users.mjs",

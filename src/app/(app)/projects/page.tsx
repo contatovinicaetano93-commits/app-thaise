@@ -71,9 +71,9 @@ export default function ProjectsPage() {
     }
   }
 
-  async function handleChecklistToggle(project: Project, itemId: string, checked: boolean) {
+  async function handleChecklistToggle(project: Project, itemId: string, checked: boolean, evidence?: string) {
     try {
-      const updated = await projectsApi.updateChecklist(project.id, project.phase, itemId, checked)
+      const updated = await projectsApi.updateChecklist(project.id, project.phase, itemId, checked, evidence)
       setProjects(prev => prev.map(p => p.id === project.id ? updated : p))
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Erro ao atualizar checklist')

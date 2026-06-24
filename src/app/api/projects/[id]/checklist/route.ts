@@ -9,12 +9,13 @@ const schema = z.object({
   phase: z.enum(['A', 'B', 'C', 'D', 'E', 'F']),
   itemId: z.string(),
   checked: z.boolean(),
+  evidence: z.string().optional().transform(v => v?.trim() || undefined),
 })
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const { phase, itemId, checked } = schema.parse(await req.json())
+    const { phase, itemId, checked, evidence } = schema.parse(await req.json())
     const db = createServerClient()
 
     const { data: project, error: fetchErr } = await db
@@ -27,7 +28,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (project.phase !== phase) return err('Só é possível editar o checklist da fase atual', 400)
 
     const checklist = { ...(project.checklist ?? {}) } as PhaseChecklist
-    checklist[phase] = { ...(checklist[phase] ?? {}), [itemId]: checked }
+    const value = evidence
+      ? { checked, evidence }
+      : checked
+    checklist[phase] = { ...(checklist[phase] ?? {}), [itemId]: value }
 
     const { data, error } = await db
       .from('projects')

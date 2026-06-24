@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
 import { createServerClient } from '@/lib/supabase-server'
-import { cacheGet, cacheSet } from '@/lib/cache'
+import { cacheGet, cacheSet, invalidateListCaches } from '@/lib/cache'
 import { parsePagination, paginationMeta } from '@/lib/pagination'
 
 const schema = z.object({
@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
       if (error.code === '23505') return err('Este email já está cadastrado', 409)
       return err(error.message, 500)
     }
+    await invalidateListCaches('clients')
     return ok(data, undefined, 201)
   } catch (e) {
     return handleError(e)
