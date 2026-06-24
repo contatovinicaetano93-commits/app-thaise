@@ -6,8 +6,9 @@ import { Modal } from '@/components/ui/Modal'
 import { OrderForm } from '@/components/orders/OrderForm'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
+import { PanelCard } from '@/components/ui/PanelCard'
 import { ordersApi } from '@/lib/api'
-import { useDebounce } from '@/lib/hooks'
+import { useDebounce, usePolling } from '@/lib/hooks'
 import { SipocBadge } from '@/components/ui/SipocBadge'
 import { toast } from 'sonner'
 import type { Order } from '@/types/database'
@@ -31,19 +32,20 @@ export default function OrdersPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const debouncedSearch = useDebounce(search)
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
     try {
       const data = await ordersApi.list()
       setOrders(data)
     } catch {
-      toast.error('Erro ao carregar pedidos')
+      if (!silent) toast.error('Erro ao carregar pedidos')
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [])
 
   useEffect(() => { load() }, [load])
+  usePolling(() => load(true), 30000)
 
   async function updateStatus(id: string, status: string) {
     try {
@@ -112,45 +114,46 @@ export default function OrdersPage() {
       ) : (
         <div className="grid gap-3">
           {filtered.map(order => (
-            <div key={order.id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-semibold text-gray-900">{order.client?.name}</p>
-                    <SipocBadge />
-                    <span className="text-gray-300">→</span>
-                    <p className="text-sm text-gray-600">{order.supplier?.name}</p>
-                  </div>
-                  <p className="text-sm text-gray-500">
-                    {order.product?.name} · {order.quantity} {order.product?.unit}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2 mt-1">
-                    {order.project && (
-                      <span className="text-xs bg-violet-50 text-violet-700 px-2 py-0.5 rounded-full font-medium">
-                        {order.project.name} · Fase {order.project.phase}
-                      </span>
-                    )}
-                    <span className="text-xs text-gray-400">
-                      {new Date(order.created_at).toLocaleDateString('pt-BR')}
-                    </span>
-                  </div>
-                </div>
-                <div className="text-right flex flex-col items-end gap-2">
-                  <p className="font-bold text-gray-900">
-                    {(order.total_price ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </p>
-                  <select
-                    value={order.status}
-                    onChange={e => updateStatus(order.id, e.target.value)}
-                    className={`text-xs px-2 py-1 rounded-full font-medium border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-violet-400 ${STATUS_COLOR[order.status]}`}
-                  >
-                    {Object.entries(STATUS_LABEL).map(([v, l]) => (
-                      <option key={v} value={v}>{l}</option>
-                    ))}
-                  </select>
-                </div>
+            <PanelCard
+              key={order.id}
+              title={order.client?.name ?? 'Pedido'}
+              padding="p-5"
+              className="hover:shadow-md transition-shadow"
+              headerExtra={
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[order.status]}`}>
+                  {STATUS_LABEL[order.status]}
+                </span>
+              }
+              menuItems={Object.entries(STATUS_LABEL).map(([v, l]) => ({
+                label: `Marcar como ${l}`,
+                onClick: () => updateStatus(order.id, v),
+                disabled: order.status === v,
+              }))}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <SipocBadge />
+                <span className="text-gray-300">→</span>
+                <p className="text-sm text-gray-600">{order.supplier?.name}</p>
               </div>
-            </div>
+              <p className="text-sm text-gray-500">
+                {order.product?.name} · {order.quantity} {order.product?.unit}
+              </p>
+              <div className="flex flex-wrap items-center justify-between gap-2 mt-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  {order.project && (
+                    <span className="text-xs bg-violet-50 text-violet-700 px-2 py-0.5 rounded-full font-medium">
+                      {order.project.name} · Fase {order.project.phase}
+                    </span>
+                  )}
+                  <span className="text-xs text-gray-400">
+                    {new Date(order.created_at).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+                <p className="font-bold text-gray-900">
+                  {(order.total_price ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </p>
+              </div>
+            </PanelCard>
           ))}
         </div>
       )}

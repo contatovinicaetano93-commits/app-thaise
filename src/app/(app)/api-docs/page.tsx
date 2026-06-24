@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Code2, ChevronDown, ChevronRight } from 'lucide-react'
+import { PanelCard } from '@/components/ui/PanelCard'
 
 const ENDPOINTS = [
   {
@@ -77,18 +78,30 @@ export default function ApiDocsPage() {
         </div>
       </div>
 
-      <div className="mt-2 mb-6 bg-gray-900 rounded-xl p-4 text-xs text-gray-300 font-mono">
-        <span className="text-gray-500"># Formato padrão de resposta</span><br />
-        <span className="text-emerald-400">{'{ ok: true,  data: T }'}</span>{'  // sucesso'}<br />
-        <span className="text-red-400">{'{ ok: false, error: string }'}</span>{'  // erro'}
-      </div>
+      <PanelCard
+        title="Formato padrão de resposta"
+        padding="p-4"
+        rounded="rounded-xl"
+        className="mt-2 mb-6 bg-gray-900 border-gray-800"
+        shadow={false}
+        collapsible
+      >
+        <div className="text-xs text-gray-300 font-mono">
+          <span className="text-gray-500"># Formato padrão de resposta</span><br />
+          <span className="text-emerald-400">{'{ ok: true,  data: T }'}</span>{'  // sucesso'}<br />
+          <span className="text-red-400">{'{ ok: false, error: string }'}</span>{'  // erro'}
+        </div>
+      </PanelCard>
 
       <div className="space-y-4">
         {ENDPOINTS.map(group => (
-          <div key={group.group} className={`rounded-2xl border p-1 ${GROUP_COLOR[group.color]}`}>
-            <div className="px-4 py-3">
-              <h3 className="font-semibold text-gray-900 text-sm">{group.group}</h3>
-            </div>
+          <PanelCard
+            key={group.group}
+            title={group.group}
+            padding="p-1"
+            className={GROUP_COLOR[group.color]}
+            menuItems={[{ label: 'Expandir todos', onClick: () => setOpen(`${group.group}-0`) }]}
+          >
             <div className="bg-white rounded-xl overflow-hidden border border-gray-100 divide-y divide-gray-50">
               {group.routes.map((route, i) => {
                 const key = `${group.group}-${i}`
@@ -136,7 +149,7 @@ export default function ApiDocsPage() {
                 )
               })}
             </div>
-          </div>
+          </PanelCard>
         ))}
       </div>
     </div>

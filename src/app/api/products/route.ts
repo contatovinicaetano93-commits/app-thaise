@@ -4,8 +4,8 @@ import { ok, err, handleError } from '@/lib/api-response'
 import { createServerClient } from '@/lib/supabase-server'
 import { requireProfile } from '@/lib/auth/api-context'
 import { assertActiveSupplier } from '@/lib/gates'
-import { logActivity } from '@/lib/memory/events'
-import { cacheGet, cacheSet, invalidateListCaches } from '@/lib/cache'
+import { auditAndInvalidate } from '@/lib/memory/audit'
+import { cacheGet, cacheSet } from '@/lib/cache'
 import { parsePagination, paginationMeta } from '@/lib/pagination'
 
 const schema = z.object({
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     const supplierId = req.nextUrl.searchParams.get('supplier_id')
       ?? (profile!.role === 'fornecedor' ? profile!.supplier_id : null)
     const { limit, cursor } = parsePagination(req.nextUrl.searchParams)
-    const cacheKey = `products:${supplierId ?? 'all'}:${limit}:${cursor ?? ''}`
+    const cacheKey = `products:${profile!.role}:${supplierId ?? 'all'}:${limit}:${cursor ?? ''}`
     const cached = await cacheGet<{ data: unknown[]; meta: Record<string, unknown> }>(cacheKey)
     if (cached) return ok(cached.data, cached.meta)
 
@@ -78,16 +78,15 @@ export async function POST(req: NextRequest) {
     if (error) return err(error.message, 500)
 
     const product = data as { id: string; name: string }
-    await logActivity({
+    await auditAndInvalidate({
       entityType: 'product',
       entityId: product.id,
       eventType: 'product.created',
       title: 'Produto cadastrado',
       detail: product.name,
       actorId: profile!.id,
+      cachePrefix: 'products',
     })
-
-    await invalidateListCaches('products')
     return ok(data, undefined, 201)
   } catch (e) {
     if (e instanceof Error && e.message.includes('ativo')) return err(e.message, 422)

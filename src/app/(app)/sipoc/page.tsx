@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ArrowRight, GitBranch, Truck, Users, Package, ShoppingCart, Building2 } from 'lucide-react'
 import { sipocApi, type SipocData } from '@/lib/api'
 import { ListSkeleton } from '@/components/ui/EmptyState'
+import { PanelCard } from '@/components/ui/PanelCard'
 import { SIPOC } from '@/lib/sipoc'
 
 const ICONS = { S: Truck, I: Package, P: GitBranch, O: ShoppingCart, C: Users }
@@ -42,11 +43,13 @@ export default function SipocPage() {
           const Icon = ICONS[key]
           const m = metrics[key] ?? {}
           return (
-            <div key={key} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-3">
-                <Icon size={16} className="text-violet-600" />
-                <span className="font-semibold text-gray-900 text-sm">{String(m.label ?? key)}</span>
-              </div>
+            <PanelCard
+              key={key}
+              title={String(m.label ?? key)}
+              icon={Icon}
+              padding="p-5"
+              menuItems={[{ label: 'Ver dashboard', href: '/dashboard' }]}
+            >
               <div className="space-y-1 text-sm text-gray-600">
                 {Object.entries(m).filter(([k]) => k !== 'label').map(([k, v]) => (
                   <div key={k} className="flex justify-between">
@@ -55,20 +58,23 @@ export default function SipocPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </PanelCard>
           )
         })}
       </div>
 
-      <div className="mt-6 bg-white rounded-2xl border border-gray-100 p-5">
-        <h3 className="font-semibold text-gray-900 text-sm mb-2 flex items-center gap-2">
-          <Building2 size={16} /> Fluxo operacional
-        </h3>
+      <PanelCard
+        className="mt-6"
+        title="Fluxo operacional"
+        icon={Building2}
+        padding="p-5"
+        menuItems={[{ label: 'Voltar ao dashboard', href: '/dashboard' }]}
+      >
         <p className="text-sm text-gray-500">
           {SIPOC.suppliers.desc} → {SIPOC.inputs.desc} → {SIPOC.process.desc} → {SIPOC.outputs.desc} → {SIPOC.customers.desc}
         </p>
         <Link href="/dashboard" className="inline-block mt-3 text-sm text-violet-600 hover:underline">Voltar ao dashboard</Link>
-      </div>
+      </PanelCard>
     </div>
   )
 }

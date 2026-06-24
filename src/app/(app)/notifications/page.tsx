@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { Bell, CheckCheck } from 'lucide-react'
 import { ListSkeleton } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
+import { PanelCard } from '@/components/ui/PanelCard'
 import { toast } from 'sonner'
 
 interface Notification {
@@ -59,21 +59,25 @@ export default function NotificationsPage() {
       {loading ? (
         <ListSkeleton rows={4} />
       ) : items.length === 0 ? (
-        <div className="bg-white rounded-2xl border p-12 text-center text-gray-400 text-sm">
-          Nenhuma notificação ainda. Eventos de pedidos e empreendimentos aparecerão aqui.
-        </div>
+        <PanelCard title="Nenhuma notificação" icon={Bell} padding="p-12" collapsible={false}>
+          <p className="text-sm text-gray-400 text-center">
+            Eventos de pedidos e empreendimentos aparecerão aqui.
+          </p>
+        </PanelCard>
       ) : (
         <div className="space-y-2">
           {items.map(n => (
-            <div key={n.id} className={`bg-white rounded-xl border p-4 ${!n.read ? 'border-violet-200 bg-violet-50/30' : ''}`}>
-              {n.href ? (
-                <Link href={n.href} className="font-medium text-gray-900 hover:text-violet-600">{n.title}</Link>
-              ) : (
-                <p className="font-medium text-gray-900">{n.title}</p>
-              )}
-              {n.body && <p className="text-sm text-gray-500 mt-0.5">{n.body}</p>}
+            <PanelCard
+              key={n.id}
+              title={n.title}
+              rounded="rounded-xl"
+              padding="p-4"
+              className={!n.read ? 'border-violet-200 bg-violet-50/30' : ''}
+              menuItems={n.href ? [{ label: 'Abrir', href: n.href }] : undefined}
+            >
+              {n.body && <p className="text-sm text-gray-500">{n.body}</p>}
               <p className="text-xs text-gray-300 mt-1">{new Date(n.created_at).toLocaleString('pt-BR')}</p>
-            </div>
+            </PanelCard>
           ))}
         </div>
       )}

@@ -4,8 +4,8 @@ import { ok, err, handleError } from '@/lib/api-response'
 import { createServerClient } from '@/lib/supabase-server'
 import { requireProfile, filterProjectsByRole } from '@/lib/auth/api-context'
 import { assertProjectHasClient } from '@/lib/gates'
-import { logActivity } from '@/lib/memory/events'
-import { cacheGet, cacheSet, invalidateListCaches } from '@/lib/cache'
+import { auditAndInvalidate } from '@/lib/memory/audit'
+import { cacheGet, cacheSet } from '@/lib/cache'
 import { parsePagination, paginationMeta } from '@/lib/pagination'
 
 const qcpsSchema = z.object({
@@ -78,16 +78,15 @@ export async function POST(req: NextRequest) {
     if (error) return err(error.message, 500)
 
     const project = data as { id: string; name: string }
-    await logActivity({
+    await auditAndInvalidate({
       entityType: 'project',
       entityId: project.id,
       eventType: 'project.created',
       title: 'Empreendimento criado',
       detail: project.name,
       actorId: profile!.id,
+      cachePrefix: 'projects',
     })
-
-    await invalidateListCaches('projects')
     return ok(data, undefined, 201)
   } catch (e) {
     if (e instanceof Error && e.message.includes('SIPOC')) return err(e.message, 422)

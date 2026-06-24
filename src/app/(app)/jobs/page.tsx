@@ -5,6 +5,7 @@ import { RefreshCw, Server } from 'lucide-react'
 import { jobsApi, type JobLogRow } from '@/lib/api'
 import { ListSkeleton } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
+import { PanelCard } from '@/components/ui/PanelCard'
 import { toast } from 'sonner'
 
 const STATUS_STYLE: Record<string, string> = {
@@ -62,30 +63,32 @@ export default function JobsPage() {
       {loading ? (
         <ListSkeleton rows={5} height="h-20" />
       ) : jobs.length === 0 ? (
-        <div className="bg-white rounded-2xl border p-12 text-center text-gray-400 text-sm">
-          Nenhum job registrado. Aprove ou entregue um pedido para gerar eventos.
-        </div>
+        <PanelCard title="Nenhum job registrado" icon={Server} padding="p-12" collapsible={false}>
+          <p className="text-sm text-gray-400 text-center">
+            Aprove ou entregue um pedido para gerar eventos.
+          </p>
+        </PanelCard>
       ) : (
         <div className="space-y-2">
           {jobs.map(job => (
-            <div key={job.id} className="bg-white rounded-xl border border-gray-100 p-4 flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-mono text-xs text-gray-500">{job.job_type}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLE[job.status]}`}>{job.status}</span>
-                </div>
-                <p className="text-xs text-gray-400 truncate">
-                  {JSON.stringify(job.payload)}
-                </p>
-                {job.error && <p className="text-xs text-red-600 mt-1">{job.error}</p>}
-                <p className="text-xs text-gray-300 mt-1">{new Date(job.created_at).toLocaleString('pt-BR')}</p>
-              </div>
-              {job.status === 'failed' && (
-                <Button variant="secondary" className="px-3 py-1.5 text-xs" onClick={() => retry(job.id)} disabled={retrying === job.id}>
-                  Reprocessar
-                </Button>
-              )}
-            </div>
+            <PanelCard
+              key={job.id}
+              title={job.job_type}
+              rounded="rounded-xl"
+              padding="p-4"
+              headerExtra={
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLE[job.status]}`}>{job.status}</span>
+              }
+              menuItems={job.status === 'failed' ? [
+                { label: 'Reprocessar', onClick: () => retry(job.id), disabled: retrying === job.id },
+              ] : [{ label: 'Atualizar lista', onClick: load }]}
+            >
+              <p className="text-xs text-gray-400 truncate font-mono">
+                {JSON.stringify(job.payload)}
+              </p>
+              {job.error && <p className="text-xs text-red-600 mt-1">{job.error}</p>}
+              <p className="text-xs text-gray-300 mt-1">{new Date(job.created_at).toLocaleString('pt-BR')}</p>
+            </PanelCard>
           ))}
         </div>
       )}

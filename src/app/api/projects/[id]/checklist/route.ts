@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
 import { createServerClient } from '@/lib/supabase-server'
+import { requireProfile } from '@/lib/auth/api-context'
 import type { ProjectPhase } from '@/lib/phases'
 import type { PhaseChecklist } from '@/lib/auth/roles'
 
@@ -14,6 +15,10 @@ const schema = z.object({
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { profile, error: authErr } = await requireProfile()
+    if (authErr) return authErr
+    if (profile!.role !== 'gestor') return err('Apenas gestor pode editar checklist', 403)
+
     const { id } = await params
     const { phase, itemId, checked, evidence } = schema.parse(await req.json())
     const db = createServerClient()

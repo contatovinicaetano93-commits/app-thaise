@@ -1,15 +1,16 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, ExternalLink, Phone, Mail, Pencil, Trash2, Sparkles } from 'lucide-react'
+import { Plus, Search, ExternalLink, Phone, Mail } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { SupplierForm } from '@/components/suppliers/SupplierForm'
 import { QcpsBar } from '@/components/ui/QcpsBar'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
 import { qcpsAverage } from '@/lib/qcps'
 import { Button } from '@/components/ui/Button'
+import { PanelCard } from '@/components/ui/PanelCard'
 import { suppliersApi, agentsApi } from '@/lib/api'
-import { useDebounce } from '@/lib/hooks'
+import { useDebounce, usePolling } from '@/lib/hooks'
 import { toast } from 'sonner'
 import type { Supplier } from '@/types/database'
 
@@ -30,19 +31,20 @@ export default function SuppliersPage() {
   const [deleting, setDeleting] = useState<Supplier | undefined>()
   const [scoring, setScoring] = useState<string | null>(null)
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
     try {
       const data = await suppliersApi.list()
       setSuppliers(data)
     } catch {
-      toast.error('Erro ao carregar fornecedores')
+      if (!silent) toast.error('Erro ao carregar fornecedores')
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [])
 
   useEffect(() => { load() }, [load])
+  usePolling(() => load(true), 30000)
 
   async function handleDelete() {
     if (!deleting) return
@@ -111,50 +113,42 @@ export default function SuppliersPage() {
       ) : (
         <div className="grid gap-4">
           {filtered.map(supplier => (
-            <div key={supplier.id} className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-1">
-                    <h3 className="font-semibold text-gray-900">{supplier.name}</h3>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[supplier.status]}`}>
-                      {STATUS_LABEL[supplier.status]}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-500 mb-3">{supplier.category}</p>
-                  <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                    <span className="flex items-center gap-1"><Phone size={13} />{supplier.contact_phone}</span>
-                    <span className="flex items-center gap-1"><Mail size={13} />{supplier.contact_email}</span>
-                    {supplier.website && (
-                      <a href={supplier.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-indigo-600 hover:underline">
-                        <ExternalLink size={13} />Site
-                      </a>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 ml-4">
-                  <span className="text-sm font-bold text-violet-600 bg-violet-50 px-2 py-1 rounded-lg">
+            <PanelCard
+              key={supplier.id}
+              title={supplier.name}
+              rounded="rounded-xl"
+              padding="p-5"
+              className="hover:shadow-md transition-shadow"
+              headerExtra={
+                <>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[supplier.status]}`}>
+                    {STATUS_LABEL[supplier.status]}
+                  </span>
+                  <span className="text-sm font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-lg">
                     {qcpsAverage(supplier)}
                   </span>
-                  <button
-                    onClick={() => handleScore(supplier.id)}
-                    disabled={scoring === supplier.id}
-                    title="Recalcular QCPS com agente AI"
-                    className="p-2 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors"
-                  >
-                    <Sparkles size={15} />
-                  </button>
-                  <button onClick={() => { setEditing(supplier); setModalOpen(true) }} className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
-                    <Pencil size={15} />
-                  </button>
-                  <button onClick={() => setDeleting(supplier)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                    <Trash2 size={15} />
-                  </button>
-                </div>
+                </>
+              }
+              menuItems={[
+                { label: 'Recalcular QCPS', onClick: () => handleScore(supplier.id), disabled: scoring === supplier.id },
+                { label: 'Editar', onClick: () => { setEditing(supplier); setModalOpen(true) } },
+                { label: 'Excluir', onClick: () => setDeleting(supplier), danger: true },
+              ]}
+            >
+              <p className="text-sm text-gray-500 mb-3">{supplier.category}</p>
+              <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                <span className="flex items-center gap-1"><Phone size={13} />{supplier.contact_phone}</span>
+                <span className="flex items-center gap-1"><Mail size={13} />{supplier.contact_email}</span>
+                {supplier.website && (
+                  <a href={supplier.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-indigo-600 hover:underline">
+                    <ExternalLink size={13} />Site
+                  </a>
+                )}
               </div>
               <div className="mt-3 pt-3 border-t border-gray-50">
                 <QcpsBar scores={supplier} compact />
               </div>
-            </div>
+            </PanelCard>
           ))}
         </div>
       )}

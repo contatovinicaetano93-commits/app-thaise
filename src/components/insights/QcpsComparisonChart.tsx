@@ -2,6 +2,7 @@
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { qcpsAverage } from '@/lib/qcps'
+import { PanelCard } from '@/components/ui/PanelCard'
 import type { Supplier } from '@/types/database'
 
 interface Props {
@@ -21,8 +22,11 @@ export function QcpsComparisonChart({ suppliers }: Props) {
   if (data.length === 0) return null
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm mb-6">
-      <h3 className="font-semibold text-gray-900 text-sm mb-4">Comparativo QCPS — fornecedores ativos</h3>
+    <PanelCard
+      className="mb-6"
+      title="Comparativo QCPS — fornecedores ativos"
+      menuItems={[{ label: 'Ver fornecedores', href: '/suppliers' }]}
+    >
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16 }}>
           <XAxis type="number" domain={[0, 10]} tick={{ fontSize: 11 }} />
@@ -35,6 +39,6 @@ export function QcpsComparisonChart({ suppliers }: Props) {
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-    </div>
+    </PanelCard>
   )
 }

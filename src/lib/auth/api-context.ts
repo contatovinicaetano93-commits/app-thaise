@@ -56,3 +56,39 @@ export function filterProjectsByRole<T extends { client_id?: string | null }>(
   }
   return []
 }
+
+export function filterClientsByRole<T extends { id: string }>(
+  rows: T[],
+  role: UserRole,
+  profile: Profile,
+): T[] {
+  if (role === 'gestor') return rows
+  if (role === 'cliente' && profile.client_id) {
+    return rows.filter(r => r.id === profile.client_id)
+  }
+  return []
+}
+
+export function filterSuppliersByRole<T extends { id: string }>(
+  rows: T[],
+  role: UserRole,
+  profile: Profile,
+): T[] {
+  if (role === 'gestor') return rows
+  if (role === 'fornecedor' && profile.supplier_id) {
+    return rows.filter(r => r.id === profile.supplier_id)
+  }
+  return []
+}
+
+export function filterProductsByRole<T extends { supplier_id?: string }>(
+  rows: T[],
+  role: UserRole,
+  profile: Profile,
+): T[] {
+  if (role === 'gestor') return rows
+  if (role === 'fornecedor' && profile.supplier_id) {
+    return rows.filter(r => r.supplier_id === profile.supplier_id)
+  }
+  return []
+}

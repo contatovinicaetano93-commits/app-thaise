@@ -1,4 +1,5 @@
 import { ok, handleError } from '@/lib/api-response'
+import { requireProfile } from '@/lib/auth/api-context'
 import { createServerClient } from '@/lib/supabase-server'
 import { qcpsAverage } from '@/lib/qcps'
 
@@ -6,6 +7,9 @@ const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', '
 
 export async function GET() {
   try {
+    const { error: authErr } = await requireProfile()
+    if (authErr) return authErr
+
     const db = createServerClient()
 
     const [suppliersRes, clientsRes, ordersRes, projectsRes] = await Promise.all([

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
 import { createServerClient } from '@/lib/supabase-server'
 import { requireProfile } from '@/lib/auth/api-context'
+import { auditAndInvalidate } from '@/lib/memory/audit'
 
 const updateSchema = z.object({
   name: z.string().min(2).optional(),
@@ -25,8 +26,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const payload = updateSchema.parse(body)
     const db = createServerClient()
 
-    const { data: existing } = await db.from('products').select('supplier_id').eq('id', id).single() as {
-      data: { supplier_id: string } | null
+    const { data: existing } = await db.from('products').select('supplier_id, name').eq('id', id).single() as {
+      data: { supplier_id: string; name: string } | null
     }
     if (!existing) return err('Produto não encontrado', 404)
     if (profile!.role === 'fornecedor' && profile!.supplier_id !== existing.supplier_id) {
@@ -43,6 +44,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     if (error) return err(error.message, 500)
     if (!data) return err('Produto não encontrado', 404)
+
+    const product = data as { id: string; name: string }
+    await auditAndInvalidate({
+      entityType: 'product',
+      entityId: product.id,
+      eventType: 'product.updated',
+      title: 'Produto atualizado',
+      detail: product.name,
+      actorId: profile!.id,
+      cachePrefix: 'products',
+    })
+
     return ok(data)
   } catch (e) {
     return handleError(e)
@@ -57,8 +70,24 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
     const { id } = await params
     const db = createServerClient()
+
+    const { data: existing } = await db.from('products').select('name').eq('id', id).single() as {
+      data: { name: string } | null
+    }
+
     const { error } = await db.from('products').delete().eq('id', id)
     if (error) return err(error.message, 500)
+
+    await auditAndInvalidate({
+      entityType: 'product',
+      entityId: id,
+      eventType: 'product.deleted',
+      title: 'Produto removido',
+      detail: existing?.name,
+      actorId: profile!.id,
+      cachePrefix: 'products',
+    })
+
     return ok(null)
   } catch (e) {
     return handleError(e)

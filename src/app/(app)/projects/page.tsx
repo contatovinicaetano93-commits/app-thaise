@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, Building2, Pencil, Trash2, MapPin, Sparkles, FileText } from 'lucide-react'
+import { Plus, Search, Building2, MapPin } from 'lucide-react'
 import { SimulationPanel } from '@/components/projects/SimulationPanel'
 import { Modal } from '@/components/ui/Modal'
 import { ProjectForm } from '@/components/projects/ProjectForm'
@@ -11,6 +11,7 @@ import { QcpsBar } from '@/components/ui/QcpsBar'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
 import { ActivityTimeline } from '@/components/ui/ActivityTimeline'
 import { Button } from '@/components/ui/Button'
+import { PanelCard } from '@/components/ui/PanelCard'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { projectsApi, agentsApi } from '@/lib/api'
 import { isPhaseComplete, phaseProgress } from '@/lib/checklists'
@@ -196,45 +197,25 @@ export default function ProjectsPage() {
             const progress = phaseProgress(project.phase, checklist)
 
             return (
-              <div key={project.id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-gray-900">{project.name}</h3>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[project.status]}`}>
-                        {STATUS_LABEL[project.status]}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-3 text-xs text-gray-500">
-                      {project.client && <span className="flex items-center gap-1"><Building2 size={12} />{project.client.name}</span>}
-                      {project.location && <span className="flex items-center gap-1"><MapPin size={12} />{project.location}</span>}
-                    </div>
-                  </div>
-                  {isGestor && (
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => handleSummary(project.id)}
-                        title="Gerar resumo para o cliente"
-                        className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"
-                      >
-                        <FileText size={15} />
-                      </button>
-                      <button
-                        onClick={() => handleScore(project.id)}
-                        disabled={scoring === project.id}
-                        title="Recalcular QCPS com agente AI"
-                        className="p-2 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg"
-                      >
-                        <Sparkles size={15} />
-                      </button>
-                      <button onClick={() => { setEditing(project); setModalOpen(true) }} className="p-2 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg">
-                        <Pencil size={15} />
-                      </button>
-                      <button onClick={() => setDeleting(project)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg">
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
-                  )}
+              <PanelCard
+                key={project.id}
+                title={project.name}
+                padding="p-5"
+                headerExtra={
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[project.status]}`}>
+                    {STATUS_LABEL[project.status]}
+                  </span>
+                }
+                menuItems={isGestor ? [
+                  { label: 'Gerar resumo', onClick: () => handleSummary(project.id) },
+                  { label: 'Recalcular QCPS', onClick: () => handleScore(project.id), disabled: scoring === project.id },
+                  { label: 'Editar', onClick: () => { setEditing(project); setModalOpen(true) } },
+                  { label: 'Excluir', onClick: () => setDeleting(project), danger: true },
+                ] : undefined}
+              >
+                <div className="flex flex-wrap gap-3 text-xs text-gray-500 mb-3">
+                  {project.client && <span className="flex items-center gap-1"><Building2 size={12} />{project.client.name}</span>}
+                  {project.location && <span className="flex items-center gap-1"><MapPin size={12} />{project.location}</span>}
                 </div>
 
                 <p className="text-xs text-violet-600 bg-violet-50 rounded-lg px-3 py-2 mb-3">
@@ -266,7 +247,7 @@ export default function ProjectsPage() {
                 </div>
 
                 <ActivityTimeline entityType="project" entityId={project.id} />
-              </div>
+              </PanelCard>
             )
           })}
         </div>

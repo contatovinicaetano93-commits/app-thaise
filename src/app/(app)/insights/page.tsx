@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Sparkles, Building2, Truck } from 'lucide-react'
 import { insightsApi, suppliersApi, type AgentInsightRow } from '@/lib/api'
 import { ListSkeleton } from '@/components/ui/EmptyState'
+import { PanelCard } from '@/components/ui/PanelCard'
 import { QcpsComparisonChart } from '@/components/insights/QcpsComparisonChart'
 import { toast } from 'sonner'
 import type { Supplier } from '@/types/database'
@@ -37,29 +38,28 @@ export default function InsightsPage() {
       {loading ? (
         <ListSkeleton rows={4} height="h-24" />
       ) : insights.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-          <Sparkles size={24} className="text-violet-400 mx-auto mb-3" />
-          <h3 className="font-semibold text-gray-900 mb-1">Nenhum insight ainda</h3>
-          <p className="text-sm text-gray-500">
-            Entregue um pedido ou use o botão ✨ em fornecedores/empreendimentos para gerar análises.
+        <PanelCard title="Nenhum insight ainda" icon={Sparkles} padding="p-12" collapsible={false} menuItems={[{ label: 'Ver fornecedores', href: '/suppliers' }]}>
+          <p className="text-sm text-gray-500 text-center">
+            Entregue um pedido ou use o menu em fornecedores/empreendimentos para gerar análises.
           </p>
-        </div>
+        </PanelCard>
       ) : (
         <div className="grid gap-3">
           {insights.map(row => (
-            <div key={row.id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-2">
-                {row.entity_type === 'supplier'
-                  ? <Truck size={14} className="text-indigo-500" />
-                  : <Building2 size={14} className="text-violet-500" />
-                }
-                <span className="text-xs font-medium text-gray-500 uppercase">
-                  {row.entity_type === 'supplier' ? 'Fornecedor' : 'Empreendimento'}
-                </span>
+            <PanelCard
+              key={row.id}
+              title={row.entity_type === 'supplier' ? 'Fornecedor' : 'Empreendimento'}
+              icon={row.entity_type === 'supplier' ? Truck : Building2}
+              padding="p-5"
+              headerExtra={
                 <span className="text-xs text-gray-400 ml-auto">
                   {new Date(row.created_at).toLocaleString('pt-BR')}
                 </span>
-              </div>
+              }
+              menuItems={[
+                { label: row.entity_type === 'supplier' ? 'Ver fornecedores' : 'Ver empreendimentos', href: row.entity_type === 'supplier' ? '/suppliers' : '/projects' },
+              ]}
+            >
               <p className="text-sm text-gray-800 leading-relaxed">{row.insight}</p>
               {row.scores && (
                 <div className="flex gap-3 mt-3 text-xs text-gray-500">
@@ -69,7 +69,7 @@ export default function InsightsPage() {
                   <span>S: {row.scores.score_s}</span>
                 </div>
               )}
-            </div>
+            </PanelCard>
           ))}
         </div>
       )}

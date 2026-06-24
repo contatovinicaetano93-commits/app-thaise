@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, Phone, Mail, Building2, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Search, Phone, Mail, Building2 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { ClientForm } from '@/components/clients/ClientForm'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
+import { PanelCard } from '@/components/ui/PanelCard'
 import { clientsApi } from '@/lib/api'
-import { useDebounce } from '@/lib/hooks'
+import { useDebounce, usePolling } from '@/lib/hooks'
 import { toast } from 'sonner'
 import type { Client } from '@/types/database'
 
@@ -20,19 +21,20 @@ export default function ClientsPage() {
   const [deleting, setDeleting] = useState<Client | undefined>()
   const debouncedSearch = useDebounce(search)
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
     try {
       const data = await clientsApi.list()
       setClients(data)
     } catch {
-      toast.error('Erro ao carregar clientes')
+      if (!silent) toast.error('Erro ao carregar clientes')
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [])
 
   useEffect(() => { load() }, [load])
+  usePolling(() => load(true), 30000)
 
   async function handleDelete() {
     if (!deleting) return
@@ -89,37 +91,31 @@ export default function ClientsPage() {
       ) : (
         <div className="grid gap-3">
           {filtered.map(client => (
-            <div key={client.id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow group">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 mb-1">{client.name}</h3>
-                  {client.company && (
-                    <p className="flex items-center gap-1 text-sm text-gray-500 mb-2">
-                      <Building2 size={13} />{client.company}
-                    </p>
-                  )}
-                  <div className="flex flex-wrap gap-4 text-sm text-gray-500">
-                    <span className="flex items-center gap-1"><Phone size={13} />{client.phone}</span>
-                    <span className="flex items-center gap-1"><Mail size={13} />{client.email}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 ml-4">
-                  {client.segment && (
-                    <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full font-medium">
-                      {client.segment}
-                    </span>
-                  )}
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => { setEditing(client); setModalOpen(true) }} className="p-2 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors">
-                      <Pencil size={14} />
-                    </button>
-                    <button onClick={() => setDeleting(client)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
+            <PanelCard
+              key={client.id}
+              title={client.name}
+              padding="p-5"
+              className="hover:shadow-md transition-shadow"
+              headerExtra={client.segment && (
+                <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full font-medium">
+                  {client.segment}
+                </span>
+              )}
+              menuItems={[
+                { label: 'Editar', onClick: () => { setEditing(client); setModalOpen(true) } },
+                { label: 'Excluir', onClick: () => setDeleting(client), danger: true },
+              ]}
+            >
+              {client.company && (
+                <p className="flex items-center gap-1 text-sm text-gray-500 mb-2">
+                  <Building2 size={13} />{client.company}
+                </p>
+              )}
+              <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                <span className="flex items-center gap-1"><Phone size={13} />{client.phone}</span>
+                <span className="flex items-center gap-1"><Mail size={13} />{client.email}</span>
               </div>
-            </div>
+            </PanelCard>
           ))}
         </div>
       )}

@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, Package, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Search, Package } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { ProductForm } from '@/components/products/ProductForm'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
+import { PanelCard } from '@/components/ui/PanelCard'
 import { productsApi } from '@/lib/api'
+import { usePolling } from '@/lib/hooks'
 import { toast } from 'sonner'
 import type { Product } from '@/types/database'
 
@@ -18,24 +20,25 @@ export default function ProductsPage() {
   const [editing, setEditing] = useState<Product | undefined>()
   const [deleting, setDeleting] = useState<Product | undefined>()
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
     try {
       const data = await productsApi.list()
       setProducts(data)
     } catch {
-      toast.error('Erro ao carregar produtos')
+      if (!silent) toast.error('Erro ao carregar produtos')
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [])
 
   useEffect(() => { load() }, [load])
+  usePolling(() => load(true), 30000)
 
   async function handleDelete() {
     if (!deleting) return
     try {
-      await fetch(`/api/products/${deleting.id}`, { method: 'DELETE' })
+      await fetch(`/api/products/${deleting.id}`, { method: 'DELETE', credentials: 'include' })
       toast.success('Produto removido')
       setDeleting(undefined)
       load()
@@ -86,37 +89,32 @@ export default function ProductsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(product => (
-            <div key={product.id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow group">
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1 pr-2">
-                  <h3 className="font-semibold text-gray-900 text-sm leading-snug">{product.name}</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">{product.category}</p>
-                </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${product.active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
+            <PanelCard
+              key={product.id}
+              title={product.name}
+              padding="p-5"
+              className="hover:shadow-md transition-shadow"
+              headerExtra={
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${product.active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
                   {product.active ? 'Ativo' : 'Inativo'}
                 </span>
+              }
+              menuItems={[
+                { label: 'Editar', onClick: () => { setEditing(product); setModalOpen(true) } },
+                { label: 'Excluir', onClick: () => setDeleting(product), danger: true },
+              ]}
+            >
+              <p className="text-xs text-gray-400 mb-3">{product.category}</p>
+              <div className="pt-3 border-t border-gray-50">
+                <span className="text-lg font-bold text-gray-900">
+                  {product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </span>
+                <span className="text-xs text-gray-400">/{product.unit}</span>
+                {product.lead_time_days && (
+                  <p className="text-xs text-gray-400 mt-0.5">{product.lead_time_days} dias prazo</p>
+                )}
               </div>
-
-              <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
-                <div>
-                  <span className="text-lg font-bold text-gray-900">
-                    {product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </span>
-                  <span className="text-xs text-gray-400">/{product.unit}</span>
-                  {product.lead_time_days && (
-                    <p className="text-xs text-gray-400 mt-0.5">{product.lead_time_days} dias prazo</p>
-                  )}
-                </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => { setEditing(product); setModalOpen(true) }} className="p-2 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors">
-                    <Pencil size={14} />
-                  </button>
-                  <button onClick={() => setDeleting(product)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </div>
-            </div>
+            </PanelCard>
           ))}
         </div>
       )}

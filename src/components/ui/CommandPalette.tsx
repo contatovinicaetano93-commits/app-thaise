@@ -2,13 +2,14 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, Truck, Users, Building2, ShoppingCart } from 'lucide-react'
+import { Search, Truck, Users, Building2, ShoppingCart, Package } from 'lucide-react'
 
 interface SearchResults {
   suppliers: Array<{ id: string; name: string }>
   clients: Array<{ id: string; name: string }>
   projects: Array<{ id: string; name: string; phase: string }>
   orders: Array<{ id: string; status: string }>
+  products: Array<{ id: string; name: string; category: string }>
 }
 
 export function CommandPalette() {
@@ -37,7 +38,7 @@ export function CommandPalette() {
     }
     setLoading(true)
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`)
+      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { credentials: 'include' })
       const json = await res.json()
       if (json.ok) setResults(json.data)
     } finally {
@@ -59,7 +60,8 @@ export function CommandPalette() {
   if (!open) return null
 
   const hasResults = results && (
-    results.suppliers.length + results.clients.length + results.projects.length + results.orders.length > 0
+    results.suppliers.length + results.clients.length + results.projects.length +
+    results.orders.length + results.products.length > 0
   )
 
   return (
@@ -74,7 +76,7 @@ export function CommandPalette() {
             autoFocus
             value={q}
             onChange={e => setQ(e.target.value)}
-            placeholder="Buscar fornecedores, clientes, empreendimentos..."
+            placeholder="Buscar fornecedores, clientes, produtos, empreendimentos..."
             className="flex-1 py-3.5 text-sm outline-none"
           />
           <kbd className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded border">esc</kbd>
@@ -94,6 +96,11 @@ export function CommandPalette() {
               <Users size={14} className="text-emerald-500" /> {c.name}
             </button>
           ))}
+          {results?.products.map(p => (
+            <button key={p.id} type="button" onClick={() => go('/products')} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 text-sm text-left">
+              <Package size={14} className="text-amber-500" /> {p.name} <span className="text-gray-400 text-xs">{p.category}</span>
+            </button>
+          ))}
           {results?.projects.map(p => (
             <button key={p.id} type="button" onClick={() => go('/projects')} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 text-sm text-left">
               <Building2 size={14} className="text-violet-500" /> {p.name} <span className="text-gray-400 text-xs">Fase {p.phase}</span>
@@ -101,7 +108,7 @@ export function CommandPalette() {
           ))}
           {results?.orders.map(o => (
             <button key={o.id} type="button" onClick={() => go('/orders')} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 text-sm text-left">
-              <ShoppingCart size={14} className="text-amber-500" /> Pedido {o.id.slice(0, 8)}…
+              <ShoppingCart size={14} className="text-rose-500" /> Pedido {o.id.slice(0, 8)}…
             </button>
           ))}
         </div>

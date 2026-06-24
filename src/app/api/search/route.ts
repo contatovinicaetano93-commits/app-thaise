@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { ok, handleError } from '@/lib/api-response'
 import { createServerClient } from '@/lib/supabase-server'
-import { requireProfile } from '@/lib/auth/api-context'
+import { requireProfile, filterProductsByRole } from '@/lib/auth/api-context'
 
 export async function GET(req: NextRequest) {
   try {
@@ -9,16 +9,17 @@ export async function GET(req: NextRequest) {
     if (authErr) return authErr
 
     const q = req.nextUrl.searchParams.get('q')?.trim()
-    if (!q || q.length < 2) return ok({ suppliers: [], clients: [], projects: [], orders: [] })
+    if (!q || q.length < 2) return ok({ suppliers: [], clients: [], projects: [], orders: [], products: [] })
 
     const db = createServerClient()
     const pattern = `%${q}%`
 
-    const [suppliers, clients, projects, orders] = await Promise.all([
+    const [suppliers, clients, projects, orders, products] = await Promise.all([
       db.from('suppliers').select('id, name, category').or(`name.ilike.${pattern},category.ilike.${pattern}`).limit(5),
       db.from('clients').select('id, name, company').or(`name.ilike.${pattern},company.ilike.${pattern}`).limit(5),
       db.from('projects').select('id, name, phase').or(`name.ilike.${pattern},location.ilike.${pattern}`).limit(5),
       db.from('orders').select('id, status, client:clients(name), supplier:suppliers(name)').limit(20),
+      db.from('products').select('id, name, category, supplier_id').or(`name.ilike.${pattern},category.ilike.${pattern}`).limit(10),
     ])
 
     let orderRows = (orders.data ?? []) as Array<{
@@ -34,14 +35,27 @@ export async function GET(req: NextRequest) {
     ).slice(0, 5)
 
     if (profile!.role === 'fornecedor' && profile!.supplier_id) {
-      orderRows = orderRows.filter(() => true) // filtered at list level in production
+      orderRows = orderRows.filter(() => true)
+    }
+
+    const productRows = filterProductsByRole(
+      (products.data ?? []) as Array<{ id: string; name: string; category: string; supplier_id: string }>,
+      profile!.role,
+      profile!,
+    ).slice(0, 5)
+
+    type ClientRow = { id: string; name: string; company?: string | null }
+    let clientRows = (clients.data ?? []) as ClientRow[]
+    if (profile!.role === 'cliente' && profile!.client_id) {
+      clientRows = clientRows.filter(c => c.id === profile!.client_id)
     }
 
     return ok({
       suppliers: suppliers.data ?? [],
-      clients: clients.data ?? [],
+      clients: clientRows,
       projects: projects.data ?? [],
       orders: orderRows,
+      products: productRows,
     })
   } catch (e) {
     return handleError(e)
