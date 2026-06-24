@@ -12,8 +12,49 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
   })
   const json = await res.json()
-  if (!json.ok) throw new Error(json.error ?? 'Erro desconhecido')
+  if (!json.ok) {
+    const msg = json.error ?? 'Erro desconhecido'
+    if (res.status === 401) throw new Error('Sessão expirada — faça login novamente')
+    if (res.status === 422) throw new Error(`Dados inválidos: ${msg}`)
+    if (res.status >= 500) throw new Error(`Erro no servidor: ${msg}`)
+    throw new Error(msg)
+  }
   return json.data as T
+}
+
+export interface DashboardStats {
+  counts: {
+    suppliers: number
+    activeSuppliers: number
+    pendingSuppliers: number
+    clients: number
+    projects: number
+    orders: number
+    openOrders: number
+    monthRevenue: number
+    monthOrders: number
+  }
+  monthly: { mes: string; pedidos: number; receita: number }[]
+  recentOrders: { id: string; client: string; supplier: string; value: number; status: string; date: string }[]
+  topSuppliers: { id: string; nome: string; score: number; pedidos: number }[]
+  error?: string
+}
+
+export interface AgentInsightRow {
+  id: string
+  entity_type: 'supplier' | 'project'
+  entity_id: string
+  insight: string
+  scores?: Record<string, number> | null
+  created_at: string
+}
+
+export const dashboardApi = {
+  get: (): ApiResult<DashboardStats> => request('/api/dashboard'),
+}
+
+export const insightsApi = {
+  list: (): ApiResult<AgentInsightRow[]> => request('/api/insights'),
 }
 
 // --- Suppliers ---

@@ -7,10 +7,12 @@ import { ProjectForm } from '@/components/projects/ProjectForm'
 import { PhaseStepper } from '@/components/ui/PhaseStepper'
 import { PhaseChecklist } from '@/components/ui/PhaseChecklist'
 import { QcpsBar } from '@/components/ui/QcpsBar'
+import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { projectsApi, agentsApi } from '@/lib/api'
 import { isPhaseComplete, phaseProgress } from '@/lib/checklists'
+import { PHASES } from '@/lib/phases'
 import { useDebounce } from '@/lib/hooks'
 import { toast } from 'sonner'
 import type { Project } from '@/types/database'
@@ -30,6 +32,8 @@ export default function ProjectsPage() {
   const { isGestor } = useAuth()
   const [projects, setProjects] = useState<Project[]>([])
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [phaseFilter, setPhaseFilter] = useState('')
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Project | undefined>()
@@ -98,11 +102,15 @@ export default function ProjectsPage() {
     }
   }
 
-  const filtered = projects.filter(p =>
-    p.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-    (p.location ?? '').toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-    (p.client?.name ?? '').toLowerCase().includes(debouncedSearch.toLowerCase())
-  )
+  const filtered = projects.filter(p => {
+    const matchesSearch =
+      p.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      (p.location ?? '').toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      (p.client?.name ?? '').toLowerCase().includes(debouncedSearch.toLowerCase())
+    const matchesStatus = !statusFilter || p.status === statusFilter
+    const matchesPhase = !phaseFilter || p.phase === phaseFilter
+    return matchesSearch && matchesStatus && matchesPhase
+  })
 
   return (
     <div>
@@ -118,29 +126,54 @@ export default function ProjectsPage() {
         )}
       </div>
 
-      <div className="relative mb-4">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Buscar por nome, local ou cliente..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white"
-        />
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Buscar por nome, local ou cliente..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white"
+          />
+        </div>
+        <select
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+          className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+        >
+          <option value="">Todos os status</option>
+          {Object.entries(STATUS_LABEL).map(([v, l]) => (
+            <option key={v} value={v}>{l}</option>
+          ))}
+        </select>
+        <select
+          value={phaseFilter}
+          onChange={e => setPhaseFilter(e.target.value)}
+          className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+        >
+          <option value="">Todas as fases</option>
+          {PHASES.map(p => (
+            <option key={p.id} value={p.id}>Fase {p.id} — {p.label}</option>
+          ))}
+        </select>
       </div>
 
       {loading ? (
-        <div className="grid gap-4">
-          {[...Array(2)].map((_, i) => (
-            <div key={i} className="bg-white rounded-2xl border border-gray-100 p-6 animate-pulse h-40" />
-          ))}
-        </div>
+        <ListSkeleton rows={2} height="h-40" />
       ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-          <Building2 size={20} className="text-violet-600 mx-auto mb-3" />
-          <h3 className="font-semibold text-gray-900 mb-1">Nenhum empreendimento ainda</h3>
-          <p className="text-sm text-gray-500">Crie o primeiro e acompanhe as fases A até F.</p>
-        </div>
+        <EmptyState
+          icon={Building2}
+          iconClass="text-violet-600"
+          title={search || statusFilter || phaseFilter ? 'Nenhum resultado' : 'Nenhum empreendimento ainda'}
+          description={
+            search || statusFilter || phaseFilter
+              ? 'Ajuste os filtros ou tente outro termo.'
+              : 'Crie o primeiro e acompanhe as fases A até F.'
+          }
+          actionLabel={isGestor && !search && !statusFilter && !phaseFilter ? 'Novo Empreendimento' : undefined}
+          onAction={isGestor && !search && !statusFilter && !phaseFilter ? () => { setEditing(undefined); setModalOpen(true) } : undefined}
+        />
       ) : (
         <div className="grid gap-4">
           {filtered.map(project => {

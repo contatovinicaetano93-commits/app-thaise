@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Plus, Search, ShoppingCart } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { OrderForm } from '@/components/orders/OrderForm'
+import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { ordersApi } from '@/lib/api'
 import { useDebounce } from '@/lib/hooks'
@@ -92,23 +93,16 @@ export default function OrdersPage() {
       </div>
 
       {loading ? (
-        <div className="grid gap-3">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-100 p-5 animate-pulse h-20" />
-          ))}
-        </div>
+        <ListSkeleton rows={4} />
       ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-          <div className="w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-3">
-            <ShoppingCart size={20} className="text-rose-600" />
-          </div>
-          <h3 className="font-semibold text-gray-900 mb-1">
-            {search ? 'Nenhum resultado' : 'Nenhum pedido ainda'}
-          </h3>
-          <p className="text-sm text-gray-500">
-            {search ? 'Tente outro termo.' : 'Crie um pedido vinculando cliente, produto e fornecedor.'}
-          </p>
-        </div>
+        <EmptyState
+          icon={ShoppingCart}
+          iconClass="text-rose-600"
+          title={search ? 'Nenhum resultado' : 'Nenhum pedido ainda'}
+          description={search ? 'Tente outro termo.' : 'Crie um pedido vinculando cliente, produto e fornecedor.'}
+          actionLabel={search ? undefined : 'Novo Pedido'}
+          onAction={search ? undefined : () => setModalOpen(true)}
+        />
       ) : (
         <div className="grid gap-3">
           {filtered.map(order => (

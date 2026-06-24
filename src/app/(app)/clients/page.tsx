@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Plus, Search, Phone, Mail, Building2, Pencil, Trash2 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { ClientForm } from '@/components/clients/ClientForm'
+import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { clientsApi } from '@/lib/api'
 import { useDebounce } from '@/lib/hooks'
@@ -75,23 +76,16 @@ export default function ClientsPage() {
       </div>
 
       {loading ? (
-        <div className="grid gap-4">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-100 p-5 animate-pulse h-20" />
-          ))}
-        </div>
+        <ListSkeleton rows={4} />
       ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-          <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-3">
-            <Plus size={20} className="text-emerald-600" />
-          </div>
-          <h3 className="font-semibold text-gray-900 mb-1">
-            {search ? 'Nenhum resultado' : 'Nenhum cliente ainda'}
-          </h3>
-          <p className="text-sm text-gray-500">
-            {search ? 'Tente outro termo.' : 'Adicione seu primeiro cliente.'}
-          </p>
-        </div>
+        <EmptyState
+          icon={Plus}
+          iconClass="text-emerald-600"
+          title={search ? 'Nenhum resultado' : 'Nenhum cliente ainda'}
+          description={search ? 'Tente outro termo.' : 'Adicione seu primeiro cliente.'}
+          actionLabel={search ? undefined : 'Novo Cliente'}
+          onAction={search ? undefined : () => { setEditing(undefined); setModalOpen(true) }}
+        />
       ) : (
         <div className="grid gap-3">
           {filtered.map(client => (

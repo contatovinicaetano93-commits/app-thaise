@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, ExternalLink, Phone, Mail, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Search, ExternalLink, Phone, Mail, Pencil, Trash2, Sparkles } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { SupplierForm } from '@/components/suppliers/SupplierForm'
 import { QcpsBar } from '@/components/ui/QcpsBar'
+import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
 import { qcpsAverage } from '@/lib/qcps'
 import { Button } from '@/components/ui/Button'
-import { suppliersApi } from '@/lib/api'
+import { suppliersApi, agentsApi } from '@/lib/api'
 import { useDebounce } from '@/lib/hooks'
 import { toast } from 'sonner'
 import type { Supplier } from '@/types/database'
@@ -27,6 +28,7 @@ export default function SuppliersPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Supplier | undefined>()
   const [deleting, setDeleting] = useState<Supplier | undefined>()
+  const [scoring, setScoring] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -51,6 +53,19 @@ export default function SuppliersPage() {
       load()
     } catch {
       toast.error('Erro ao excluir fornecedor')
+    }
+  }
+
+  async function handleScore(supplierId: string) {
+    setScoring(supplierId)
+    try {
+      const result = await agentsApi.scoreSupplier(supplierId)
+      toast.success(`QCPS recalculado: ${result.average}/10`)
+      load()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro no agente')
+    } finally {
+      setScoring(null)
     }
   }
 
@@ -83,26 +98,16 @@ export default function SuppliersPage() {
       </div>
 
       {loading ? (
-        <div className="grid gap-4">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-100 p-5 animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-1/3 mb-2" />
-              <div className="h-3 bg-gray-100 rounded w-1/4" />
-            </div>
-          ))}
-        </div>
+        <ListSkeleton rows={3} height="h-28" />
       ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-          <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-3">
-            <Plus size={20} className="text-indigo-600" />
-          </div>
-          <h3 className="font-semibold text-gray-900 mb-1">
-            {search ? 'Nenhum resultado' : 'Nenhum fornecedor ainda'}
-          </h3>
-          <p className="text-sm text-gray-500">
-            {search ? 'Tente outro termo.' : 'Adicione seu primeiro fornecedor curado.'}
-          </p>
-        </div>
+        <EmptyState
+          icon={Plus}
+          iconClass="text-indigo-600"
+          title={search ? 'Nenhum resultado' : 'Nenhum fornecedor ainda'}
+          description={search ? 'Tente outro termo.' : 'Adicione seu primeiro fornecedor curado.'}
+          actionLabel={search ? undefined : 'Novo Fornecedor'}
+          onAction={search ? undefined : () => { setEditing(undefined); setModalOpen(true) }}
+        />
       ) : (
         <div className="grid gap-4">
           {filtered.map(supplier => (
@@ -130,6 +135,14 @@ export default function SuppliersPage() {
                   <span className="text-sm font-bold text-violet-600 bg-violet-50 px-2 py-1 rounded-lg">
                     {qcpsAverage(supplier)}
                   </span>
+                  <button
+                    onClick={() => handleScore(supplier.id)}
+                    disabled={scoring === supplier.id}
+                    title="Recalcular QCPS com agente AI"
+                    className="p-2 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors"
+                  >
+                    <Sparkles size={15} />
+                  </button>
                   <button onClick={() => { setEditing(supplier); setModalOpen(true) }} className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
                     <Pencil size={15} />
                   </button>

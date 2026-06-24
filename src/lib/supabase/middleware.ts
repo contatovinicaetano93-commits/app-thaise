@@ -1,13 +1,13 @@
 import { createServerClient } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
+import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase/env'
 
-export async function updateSession(request: NextRequest) {
+export function createMiddlewareClient(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  if (!url || !key) return supabaseResponse
+  const url = getSupabaseUrl()
+  const key = getSupabaseAnonKey()
+  if (!url || !key) return { supabase: null, response: supabaseResponse }
 
   const supabase = createServerClient(url, key, {
     cookies: {
@@ -22,6 +22,5 @@ export async function updateSession(request: NextRequest) {
     },
   })
 
-  await supabase.auth.getUser()
-  return supabaseResponse
+  return { supabase, response: supabaseResponse }
 }

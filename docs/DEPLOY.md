@@ -19,8 +19,8 @@ Roles válidas: `gestor` | `fornecedor` | `cliente`
 
 5. Copie as chaves em **Project Settings → API**:
    - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
-   - `anon public` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `service_role` → `SUPABASE_SERVICE_ROLE_KEY` (nunca expor no client)
+   - `Publishable key` → `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   - `service_role` / `secret` → `SUPABASE_SERVICE_ROLE_KEY`
 
 ## 2. Vercel (app Next.js)
 
@@ -31,7 +31,7 @@ Roles válidas: `gestor` | `fornecedor` | `cliente`
 | Variável | Obrigatória | Descrição |
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Sim | URL do projeto Supabase |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Sim | Chave anon |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Sim | Chave pública (publishable) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Sim | Jobs em background e agente AI |
 | `REDIS_URL` | Não | Fila BullMQ (sem ela, jobs rodam inline) |
 | `OPENAI_API_KEY` | Não | Insights em linguagem natural no agente |

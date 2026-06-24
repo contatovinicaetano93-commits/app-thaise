@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Plus, Search, Package, Pencil, Trash2 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { ProductForm } from '@/components/products/ProductForm'
+import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { productsApi } from '@/lib/api'
 import { toast } from 'sonner'
@@ -72,19 +73,16 @@ export default function ProductsPage() {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-100 p-5 animate-pulse h-36" />
-          ))}
-        </div>
+        <ListSkeleton rows={6} height="h-36" />
       ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-          <div className="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-3">
-            <Package size={20} className="text-amber-600" />
-          </div>
-          <h3 className="font-semibold text-gray-900 mb-1">{search ? 'Nenhum resultado' : 'Catálogo vazio'}</h3>
-          <p className="text-sm text-gray-500">{search ? 'Tente outro termo.' : 'Adicione produtos vinculados aos seus fornecedores.'}</p>
-        </div>
+        <EmptyState
+          icon={Package}
+          iconClass="text-amber-600"
+          title={search ? 'Nenhum resultado' : 'Catálogo vazio'}
+          description={search ? 'Tente outro termo.' : 'Adicione produtos vinculados aos seus fornecedores.'}
+          actionLabel={search ? undefined : 'Novo Produto'}
+          onAction={search ? undefined : () => { setEditing(undefined); setModalOpen(true) }}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(product => (
