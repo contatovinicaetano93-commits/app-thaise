@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase-server'
 import { scoreSupplier } from '@/lib/agents/scoring-agent'
 import { logActivity } from '@/lib/memory/events'
 import { jobKey, isJobProcessed, markJobProcessed } from '@/lib/queue/idempotency'
+import { dispatchWebhooks } from '@/lib/webhooks/dispatch'
 
 export async function processOrderJob(
   jobType: OrderJobType,
@@ -49,6 +50,7 @@ export async function processOrderJob(
       message: 'Ordem de serviço enfileirada para o fornecedor',
     }
     await markJobProcessed(key, jobType, payload.orderId, result)
+    await dispatchWebhooks('order.approved', result)
     return result
   }
 
@@ -75,6 +77,7 @@ export async function processOrderJob(
       scoring,
     }
     await markJobProcessed(key, jobType, payload.orderId, result)
+    await dispatchWebhooks('order.delivered', result)
     return result
   }
 

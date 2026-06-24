@@ -13,10 +13,12 @@
     "setup:verify": "node scripts/verify-supabase.mjs",
     "seed": "node scripts/seed-gestor.mjs",
     "seed:demo": "node scripts/seed-demo-users.mjs",
+    "load-test": "k6 run scripts/load-test.k6.js",
     "worker": "tsx src/workers/order.worker.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
+    "@sentry/nextjs": "^10.60.0",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
     "bullmq": "^5.79.1",

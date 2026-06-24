@@ -7,6 +7,7 @@ import { isPhaseComplete } from '@/lib/checklists'
 import { nextPhase, type ProjectPhase } from '@/lib/phases'
 import type { PhaseChecklist } from '@/lib/auth/roles'
 import { logActivity } from '@/lib/memory/events'
+import { dispatchWebhooks } from '@/lib/webhooks/dispatch'
 
 const schema = z.object({
   phase: z.enum(['A', 'B', 'C', 'D', 'E', 'F']).optional(),
@@ -67,6 +68,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       detail: `De Fase ${currentPhase}`,
       actorId: profile!.id,
     })
+
+    await dispatchWebhooks('project.phase_advanced', { projectId: id, from: currentPhase, to: newPhase })
 
     return ok(data)
   } catch (e) {

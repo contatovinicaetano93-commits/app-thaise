@@ -225,3 +225,10 @@ export const pendingSuppliersApi = {
   review: (id: string, action: 'approve' | 'reject'): ApiResult<Supplier> =>
     request('/api/suppliers/pending', { method: 'PATCH', body: JSON.stringify({ id, action }) }),
 }
+
+export const notificationsApi = {
+  list: (): ApiResult<Array<{ id: string; title: string; body?: string; href?: string; read: boolean; created_at: string }>> =>
+    request('/api/notifications'),
+  markAllRead: (): ApiResult<{ success: boolean }> =>
+    request('/api/notifications', { method: 'PATCH', body: JSON.stringify({ readAll: true }) }),
+}

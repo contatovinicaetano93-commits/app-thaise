@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, Building2, Pencil, Trash2, MapPin, Sparkles } from 'lucide-react'
+import { Plus, Search, Building2, Pencil, Trash2, MapPin, Sparkles, FileText } from 'lucide-react'
+import { SimulationPanel } from '@/components/projects/SimulationPanel'
 import { Modal } from '@/components/ui/Modal'
 import { ProjectForm } from '@/components/projects/ProjectForm'
 import { PhaseStepper } from '@/components/ui/PhaseStepper'
@@ -14,6 +15,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { projectsApi, agentsApi } from '@/lib/api'
 import { isPhaseComplete, phaseProgress } from '@/lib/checklists'
 import { PHASES } from '@/lib/phases'
+import { PHASE_PROMPTS } from '@/lib/phase-prompts'
 import { useDebounce } from '@/lib/hooks'
 import { toast } from 'sonner'
 import type { Project } from '@/types/database'
@@ -88,6 +90,17 @@ export default function ProjectsPage() {
       toast.error(e instanceof Error ? e.message : 'Erro no agente')
     } finally {
       setScoring(null)
+    }
+  }
+
+  async function handleSummary(projectId: string) {
+    try {
+      const res = await fetch(`/api/projects/${projectId}/summary`, { method: 'POST' })
+      const json = await res.json()
+      if (!json.ok) throw new Error(json.error)
+      toast.success('Resumo gerado — veja em Insights AI')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao gerar resumo')
     }
   }
 
@@ -200,6 +213,13 @@ export default function ProjectsPage() {
                   {isGestor && (
                     <div className="flex gap-1">
                       <button
+                        onClick={() => handleSummary(project.id)}
+                        title="Gerar resumo para o cliente"
+                        className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"
+                      >
+                        <FileText size={15} />
+                      </button>
+                      <button
                         onClick={() => handleScore(project.id)}
                         disabled={scoring === project.id}
                         title="Recalcular QCPS com agente AI"
@@ -217,6 +237,10 @@ export default function ProjectsPage() {
                   )}
                 </div>
 
+                <p className="text-xs text-violet-600 bg-violet-50 rounded-lg px-3 py-2 mb-3">
+                  {PHASE_PROMPTS[project.phase].guia}
+                </p>
+
                 <PhaseStepper
                   current={project.phase}
                   onAdvance={isGestor ? () => handleAdvance(project.id) : undefined}
@@ -232,8 +256,10 @@ export default function ProjectsPage() {
                 />
 
                 {!canAdvance && progress.total > 0 && (
-                  <p className="text-xs text-amber-600 mt-2">Complete {progress.total - progress.done} item(ns) para avançar de fase.</p>
+                  <p className="text-xs text-amber-600 mt-2">{PHASE_PROMPTS[project.phase].pergunta}</p>
                 )}
+
+                <SimulationPanel projectId={project.id} phase={project.phase} />
 
                 <div className="mt-4 pt-4 border-t border-gray-50">
                   <QcpsBar scores={project} />

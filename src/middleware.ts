@@ -2,14 +2,27 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createMiddlewareClient } from '@/lib/supabase/middleware'
 import { canAccessRoute, type UserRole } from '@/lib/auth/roles'
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase/env'
+import { rateLimit } from '@/lib/rate-limit'
 
 const PUBLIC_PATHS = ['/login', '/onboarding']
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
+  let rateRemaining: number | undefined
+
+  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth/') && !pathname.startsWith('/api/health')) {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0] ?? 'local'
+    const { ok: allowed, remaining } = rateLimit(ip, 120)
+    if (!allowed) {
+      return NextResponse.json({ ok: false, error: 'Muitas requisições — tente novamente em 1 minuto' }, { status: 429 })
+    }
+    rateRemaining = remaining
+  }
 
   if (!getSupabaseUrl() || !getSupabaseAnonKey()) {
-    return NextResponse.next({ request: req })
+    const res = NextResponse.next({ request: req })
+    if (rateRemaining !== undefined) res.headers.set('X-RateLimit-Remaining', String(rateRemaining))
+    return res
   }
 
   const { supabase, response } = createMiddlewareClient(req)
@@ -44,6 +57,7 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  if (rateRemaining !== undefined) response.headers.set('X-RateLimit-Remaining', String(rateRemaining))
   return response
 }
 
