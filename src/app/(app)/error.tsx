@@ -1,10 +1,14 @@
 'use client'
 
+import * as Sentry from '@sentry/nextjs'
 import { useEffect } from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 
 export default function AppError({ error, reset }: { error: Error; reset: () => void }) {
-  useEffect(() => { console.error('[Route Error]', error) }, [error])
+  useEffect(() => {
+    Sentry.captureException(error)
+    console.error('[Route Error]', error)
+  }, [error])
 
   return (
     <div className="flex items-center justify-center min-h-[60vh]">

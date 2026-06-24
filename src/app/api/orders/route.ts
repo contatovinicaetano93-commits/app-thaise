@@ -92,7 +92,12 @@ export async function POST(req: NextRequest) {
 
     return ok(data, undefined, 201)
   } catch (e) {
-    if (e instanceof Error && !e.message.includes('inválid')) {
+    if (
+      e instanceof Error &&
+      (e.message.includes('ativo') ||
+        e.message.includes('não encontrado') ||
+        e.message.includes('não pertence'))
+    ) {
       return err(e.message, 422)
     }
     return handleError(e)

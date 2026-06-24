@@ -1,10 +1,14 @@
 'use client'
 
+import * as Sentry from '@sentry/nextjs'
 import { useEffect } from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 
 export default function GlobalError({ error, reset }: { error: Error; reset: () => void }) {
-  useEffect(() => { console.error('[App Error]', error) }, [error])
+  useEffect(() => {
+    Sentry.captureException(error)
+    console.error('[App Error]', error)
+  }, [error])
 
   return (
     <div className="min-h-screen bg-[#f8f7f5] flex items-center justify-center p-6">

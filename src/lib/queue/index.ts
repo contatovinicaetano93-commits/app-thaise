@@ -1,6 +1,6 @@
 import type { OrderJobPayload, OrderJobType } from '@/lib/queue/types'
 import { ORDER_QUEUE_NAME } from '@/lib/queue/types'
-import { jobKey, isJobProcessed, markJobProcessed } from '@/lib/queue/idempotency'
+import { jobKey, isJobProcessed } from '@/lib/queue/idempotency'
 
 async function logJob(
   jobType: string,
@@ -45,7 +45,6 @@ async function processInline(jobType: OrderJobType, payload: OrderJobPayload) {
   try {
     const { processOrderJob } = await import('@/lib/queue/processors')
     const result = await processOrderJob(jobType, payload)
-    await markJobProcessed(key, jobType, payload.orderId, result)
     await logJob(jobType, payload, 'completed', result)
     return result
   } catch (e) {
@@ -70,8 +69,6 @@ export async function retryFailedJob(jobLogId: string) {
   try {
     const { processOrderJob } = await import('@/lib/queue/processors')
     const result = await processOrderJob(jobType, payload)
-    const key = jobKey(jobType, payload.orderId)
-    await markJobProcessed(key, jobType, payload.orderId, result)
     await logJob(jobType, payload, 'completed', result, undefined, jobLogId)
     return result
   } catch (e) {
