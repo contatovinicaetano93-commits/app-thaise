@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  LayoutDashboard, Building2, Truck, Users, Package, ShoppingCart, ChevronRight, Code2, LogOut, Sparkles,
+  LayoutDashboard, Building2, Truck, Users, Package, ShoppingCart, ChevronRight, Code2, LogOut, Sparkles, GitBranch, Server, UserCheck,
 } from 'lucide-react'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { ROLE_LABELS, type UserRole } from '@/lib/auth/roles'
@@ -16,6 +16,9 @@ const ALL_NAV = [
   { href: '/products', label: 'Catálogo', icon: Package, roles: ['gestor', 'fornecedor'] as UserRole[] },
   { href: '/orders', label: 'Pedidos', icon: ShoppingCart, roles: ['gestor', 'fornecedor', 'cliente'] as UserRole[] },
   { href: '/insights', label: 'Insights AI', icon: Sparkles, roles: ['gestor'] as UserRole[] },
+  { href: '/sipoc', label: 'SIPOC', icon: GitBranch, roles: ['gestor'] as UserRole[] },
+  { href: '/jobs', label: 'Jobs / Fila', icon: Server, roles: ['gestor'] as UserRole[] },
+  { href: '/pending-suppliers', label: 'Homologação', icon: UserCheck, roles: ['gestor'] as UserRole[] },
 ]
 
 const navBottom = [

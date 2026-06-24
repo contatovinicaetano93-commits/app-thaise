@@ -2,9 +2,11 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
 import { createServerClient } from '@/lib/supabase-server'
+import { requireGestor } from '@/lib/auth/api-context'
 import { isPhaseComplete } from '@/lib/checklists'
 import { nextPhase, type ProjectPhase } from '@/lib/phases'
 import type { PhaseChecklist } from '@/lib/auth/roles'
+import { logActivity } from '@/lib/memory/events'
 
 const schema = z.object({
   phase: z.enum(['A', 'B', 'C', 'D', 'E', 'F']).optional(),
@@ -12,6 +14,9 @@ const schema = z.object({
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { profile, error: authErr } = await requireGestor()
+    if (authErr) return authErr
+
     const { id } = await params
     const body = await req.json()
     const { phase: targetPhase } = schema.parse(body)
@@ -53,6 +58,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       .single()
 
     if (error) return err(error.message, 500)
+
+    await logActivity({
+      entityType: 'project',
+      entityId: id,
+      eventType: 'project.phase_advanced',
+      title: `Avançou para Fase ${newPhase}`,
+      detail: `De Fase ${currentPhase}`,
+      actorId: profile!.id,
+    })
+
     return ok(data)
   } catch (e) {
     return handleError(e)

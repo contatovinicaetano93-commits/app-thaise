@@ -8,6 +8,7 @@ import { PhaseStepper } from '@/components/ui/PhaseStepper'
 import { PhaseChecklist } from '@/components/ui/PhaseChecklist'
 import { QcpsBar } from '@/components/ui/QcpsBar'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
+import { ActivityTimeline } from '@/components/ui/ActivityTimeline'
 import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { projectsApi, agentsApi } from '@/lib/api'
@@ -237,6 +238,8 @@ export default function ProjectsPage() {
                 <div className="mt-4 pt-4 border-t border-gray-50">
                   <QcpsBar scores={project} />
                 </div>
+
+                <ActivityTimeline entityType="project" entityId={project.id} />
               </div>
             )
           })}

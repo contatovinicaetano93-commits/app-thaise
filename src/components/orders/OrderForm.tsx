@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Select, Textarea, Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
-import { clientsApi, suppliersApi, productsApi, ordersApi, projectsApi } from '@/lib/api'
+import { clientsApi, suppliersApi, productsApi, ordersApi, projectsApi, assistantApi } from '@/lib/api'
 import { toast } from 'sonner'
 import type { Client, Supplier, Product, Project } from '@/types/database'
 
@@ -33,6 +33,7 @@ export function OrderForm({ defaultProjectId, onSuccess, onCancel }: Props) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [projects, setProjects] = useState<Project[]>([])
+  const [suggestion, setSuggestion] = useState('')
 
   const { register, handleSubmit, setValue, control, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -68,8 +69,15 @@ export function OrderForm({ defaultProjectId, onSuccess, onCancel }: Props) {
 
   function onProductChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const product = products.find(p => p.id === e.target.value)
-    if (product) setValue('unit_price', product.price)
+    if (product) {
+      setValue('unit_price', product.price)
+      assistantApi.suggest(product.id, product.category)
+        .then(r => setSuggestion(r.message))
+        .catch(() => setSuggestion(''))
+    }
   }
+
+  const activeSuppliers = suppliers.filter(s => s.status === 'active')
 
   async function onSubmit(data: FormData) {
     try {
@@ -113,11 +121,14 @@ export function OrderForm({ defaultProjectId, onSuccess, onCancel }: Props) {
         </div>
         <Select
           label="Fornecedor *"
-          options={suppliers.map(s => ({ value: s.id, label: s.name }))}
-          placeholder="Selecione o fornecedor..."
+          options={activeSuppliers.map(s => ({ value: s.id, label: s.name }))}
+          placeholder="Selecione o fornecedor ativo..."
           error={errors.supplier_id?.message}
           {...register('supplier_id')}
         />
+        {suggestion && (
+          <p className="col-span-2 text-xs text-violet-600 bg-violet-50 rounded-lg px-3 py-2">{suggestion}</p>
+        )}
         <Select
           label="Produto *"
           options={products.map(p => ({ value: p.id, label: `${p.name} (${p.unit})` }))}

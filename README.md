@@ -89,6 +89,7 @@ docs/                # deploy
 
 - [x] MVP — CRUD + QCPS + empreendimentos
 - [x] Auth + roles + checklists + filas + agente
+- [x] Sprint A–E — SIPOC, resiliência, memória, portais por role
 - [ ] Motor de simulação (TIR, VPL, Payback)
 - [ ] Agente de compra via API de fornecedores
-- [ ] Portais separados por ator (fornecedor / cliente)
+- [ ] Observabilidade (Sentry) em produção

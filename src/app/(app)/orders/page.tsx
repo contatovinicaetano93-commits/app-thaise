@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, ShoppingCart } from 'lucide-react'
+import { Plus, Search, ShoppingCart, Download } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { OrderForm } from '@/components/orders/OrderForm'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { ordersApi } from '@/lib/api'
 import { useDebounce } from '@/lib/hooks'
+import { SipocBadge } from '@/components/ui/SipocBadge'
 import { toast } from 'sonner'
 import type { Order } from '@/types/database'
 
@@ -76,9 +77,14 @@ export default function OrdersPage() {
             </span>
           </p>
         </div>
-        <Button onClick={() => setModalOpen(true)}>
-          <Plus size={16} />Novo Pedido
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={() => ordersApi.exportCsv().catch(() => toast.error('Erro ao exportar'))}>
+            <Download size={16} />CSV
+          </Button>
+          <Button onClick={() => setModalOpen(true)}>
+            <Plus size={16} />Novo Pedido
+          </Button>
+        </div>
       </div>
 
       <div className="relative mb-4">
@@ -111,6 +117,7 @@ export default function OrdersPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <p className="font-semibold text-gray-900">{order.client?.name}</p>
+                    <SipocBadge />
                     <span className="text-gray-300">→</span>
                     <p className="text-sm text-gray-600">{order.supplier?.name}</p>
                   </div>

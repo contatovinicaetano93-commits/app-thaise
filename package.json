@@ -12,6 +12,7 @@
     "setup:schema": "node scripts/apply-schema.mjs",
     "setup:verify": "node scripts/verify-supabase.mjs",
     "seed": "node scripts/seed-gestor.mjs",
+    "seed:demo": "node scripts/seed-demo-users.mjs",
     "worker": "tsx src/workers/order.worker.ts"
   },
   "dependencies": {

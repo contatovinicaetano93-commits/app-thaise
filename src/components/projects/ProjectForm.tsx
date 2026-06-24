@@ -13,7 +13,7 @@ import type { Project, Client } from '@/types/database'
 
 const schema = z.object({
   name: z.string().min(2, 'Nome obrigatório'),
-  client_id: z.string().optional(),
+  client_id: z.string().min(1, 'Cliente obrigatório (SIPOC: Input)'),
   location: z.string().optional(),
   description: z.string().optional(),
   status: z.enum(['active', 'paused', 'completed', 'cancelled']),

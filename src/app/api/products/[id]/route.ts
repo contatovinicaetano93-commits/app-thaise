@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
 import { createServerClient } from '@/lib/supabase-server'
+import { requireProfile } from '@/lib/auth/api-context'
 
 const updateSchema = z.object({
   name: z.string().min(2).optional(),
@@ -16,10 +17,22 @@ const updateSchema = z.object({
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { profile, error: authErr } = await requireProfile()
+    if (authErr) return authErr
+
     const { id } = await params
     const body = await req.json()
     const payload = updateSchema.parse(body)
     const db = createServerClient()
+
+    const { data: existing } = await db.from('products').select('supplier_id').eq('id', id).single() as {
+      data: { supplier_id: string } | null
+    }
+    if (!existing) return err('Produto não encontrado', 404)
+    if (profile!.role === 'fornecedor' && profile!.supplier_id !== existing.supplier_id) {
+      return err('Fornecedor só pode editar produtos próprios', 403)
+    }
+    if (profile!.role === 'cliente') return err('Acesso negado', 403)
 
     const { data, error } = await db
       .from('products')
@@ -38,6 +51,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { profile, error: authErr } = await requireProfile()
+    if (authErr) return authErr
+    if (profile!.role !== 'gestor') return err('Apenas gestor pode excluir produtos', 403)
+
     const { id } = await params
     const db = createServerClient()
     const { error } = await db.from('products').delete().eq('id', id)

@@ -109,6 +109,22 @@ export const ordersApi = {
 
   updateStatus: (id: string, status: string): ApiResult<Order> =>
     request(`/api/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+
+  exportCsv: (): Promise<void> =>
+    fetch('/api/orders/export').then(res => {
+      if (!res.ok) throw new Error('Erro ao exportar')
+      return res.blob().then(blob => {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `pedidos-${new Date().toISOString().slice(0, 10)}.csv`
+        a.click()
+        URL.revokeObjectURL(url)
+      })
+    }),
+
+  history: (id: string): ApiResult<Array<{ id: string; from_status: string | null; to_status: string; created_at: string }>> =>
+    request(`/api/orders/${id}/history`),
 }
 
 // --- Projects ---
@@ -139,4 +155,73 @@ export const agentsApi = {
 
   scoreProject: (id: string): ApiResult<{ scores: QcpsScores; insight: string; average: number }> =>
     request(`/api/agents/score-project/${id}`, { method: 'POST' }),
+}
+
+export interface JobLogRow {
+  id: string
+  job_type: string
+  payload: Record<string, unknown>
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  result?: Record<string, unknown> | null
+  error?: string | null
+  created_at: string
+  completed_at?: string | null
+}
+
+export interface SipocData {
+  map: typeof import('@/lib/sipoc').SIPOC
+  metrics: Record<string, Record<string, number | string>>
+  topSuppliers: { id: string; score: number }[]
+}
+
+export interface AlertRow {
+  type: string
+  severity: 'warning' | 'info'
+  message: string
+  href?: string
+}
+
+export interface ActivityEventRow {
+  id: string
+  entity_type: string
+  entity_id: string
+  event_type: string
+  title: string
+  detail?: string | null
+  created_at: string
+}
+
+export const jobsApi = {
+  list: (): ApiResult<JobLogRow[]> => request('/api/jobs'),
+  retry: (id: string): ApiResult<Record<string, unknown>> =>
+    request(`/api/jobs/${id}/retry`, { method: 'POST' }),
+}
+
+export const sipocApi = {
+  get: (): ApiResult<SipocData> => request('/api/sipoc'),
+}
+
+export const alertsApi = {
+  list: (): ApiResult<AlertRow[]> => request('/api/alerts'),
+}
+
+export const nextStepApi = {
+  get: (): ApiResult<{ next: { label: string; href: string; reason: string } | null; steps: { label: string; href: string; reason: string }[] }> =>
+    request('/api/next-step'),
+}
+
+export const activityApi = {
+  list: (entityType: string, entityId: string): ApiResult<ActivityEventRow[]> =>
+    request(`/api/activity?entity_type=${entityType}&entity_id=${entityId}`),
+}
+
+export const assistantApi = {
+  suggest: (productId?: string, category?: string): ApiResult<{ suppliers: { id: string; name: string; score: number }[]; suggestion?: { id: string; name: string; score: number }; message: string }> =>
+    request('/api/assistant', { method: 'POST', body: JSON.stringify({ product_id: productId, category }) }),
+}
+
+export const pendingSuppliersApi = {
+  list: (): ApiResult<Supplier[]> => request('/api/suppliers/pending'),
+  review: (id: string, action: 'approve' | 'reject'): ApiResult<Supplier> =>
+    request('/api/suppliers/pending', { method: 'PATCH', body: JSON.stringify({ id, action }) }),
 }

@@ -1,5 +1,6 @@
 import type { OrderJobPayload, OrderJobType } from '@/lib/queue/types'
 import { ORDER_QUEUE_NAME } from '@/lib/queue/types'
+import { jobKey, isJobProcessed, markJobProcessed } from '@/lib/queue/idempotency'
 
 async function logJob(
   jobType: string,
@@ -7,10 +8,20 @@ async function logJob(
   status: 'pending' | 'processing' | 'completed' | 'failed',
   result?: Record<string, unknown>,
   error?: string,
+  jobLogId?: string,
 ) {
   try {
     const { createServiceClient } = await import('@/lib/supabase-server')
     const db = createServiceClient()
+    if (jobLogId && (status === 'completed' || status === 'failed')) {
+      await db.from('job_logs').update({
+        status,
+        result: result ?? null,
+        error: error ?? null,
+        completed_at: new Date().toISOString(),
+      } as never).eq('id', jobLogId)
+      return
+    }
     await db.from('job_logs').insert({
       job_type: jobType,
       payload: payload as unknown as Record<string, unknown>,
@@ -25,15 +36,47 @@ async function logJob(
 }
 
 async function processInline(jobType: OrderJobType, payload: OrderJobPayload) {
+  const key = jobKey(jobType, payload.orderId)
+  if (await isJobProcessed(key)) {
+    return { action: 'skipped', reason: 'already_processed', orderId: payload.orderId }
+  }
+
   await logJob(jobType, payload, 'processing')
   try {
     const { processOrderJob } = await import('@/lib/queue/processors')
     const result = await processOrderJob(jobType, payload)
+    await markJobProcessed(key, jobType, payload.orderId, result)
     await logJob(jobType, payload, 'completed', result)
     return result
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Erro desconhecido'
     await logJob(jobType, payload, 'failed', undefined, msg)
+    throw e
+  }
+}
+
+export async function retryFailedJob(jobLogId: string) {
+  const { createServiceClient } = await import('@/lib/supabase-server')
+  const db = createServiceClient()
+  const { data } = await db.from('job_logs').select('*').eq('id', jobLogId).single() as {
+    data: { id: string; job_type: string; payload: OrderJobPayload; status: string } | null
+  }
+  if (!data || data.status !== 'failed') throw new Error('Job não encontrado ou não está falho')
+
+  const jobType = data.job_type as OrderJobType
+  const payload = data.payload
+  await logJob(jobType, payload, 'processing', undefined, undefined, jobLogId)
+
+  try {
+    const { processOrderJob } = await import('@/lib/queue/processors')
+    const result = await processOrderJob(jobType, payload)
+    const key = jobKey(jobType, payload.orderId)
+    await markJobProcessed(key, jobType, payload.orderId, result)
+    await logJob(jobType, payload, 'completed', result, undefined, jobLogId)
+    return result
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Erro desconhecido'
+    await logJob(jobType, payload, 'failed', undefined, msg, jobLogId)
     throw e
   }
 }
@@ -54,6 +97,7 @@ export async function enqueueOrderJob(jobType: OrderJobType, payload: OrderJobPa
   })
 
   await queue.add(jobType, payload, {
+    jobId: jobKey(jobType, payload.orderId),
     attempts: 3,
     backoff: { type: 'exponential', delay: 2000 },
     removeOnComplete: 100,

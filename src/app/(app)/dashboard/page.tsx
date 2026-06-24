@@ -9,9 +9,10 @@ import {
   AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts'
-import { dashboardApi, type DashboardStats } from '@/lib/api'
+import { dashboardApi, type DashboardStats, nextStepApi } from '@/lib/api'
 import { formatRelativeDate } from '@/lib/format'
 import { ListSkeleton } from '@/components/ui/EmptyState'
+import { AlertsBanner } from '@/components/ui/AlertsBanner'
 import { toast } from 'sonner'
 
 const STATUS_STYLE: Record<string, string> = {
@@ -47,10 +48,13 @@ function StatCard({ label, value, sub, icon: Icon, iconBg, iconColor }: {
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [nextStep, setNextStep] = useState<{ label: string; href: string; reason: string } | null>(null)
 
   useEffect(() => {
-    dashboardApi.get()
-      .then(setData)
+    Promise.all([
+      dashboardApi.get().then(setData),
+      nextStepApi.get().then(r => setNextStep(r.next)),
+    ])
       .catch(e => toast.error(e instanceof Error ? e.message : 'Erro ao carregar dashboard'))
       .finally(() => setLoading(false))
   }, [])
@@ -74,6 +78,16 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <AlertsBanner />
+
+      {nextStep && (
+        <Link href={nextStep.href} className="block bg-violet-50 border border-violet-100 rounded-2xl p-4 hover:bg-violet-100 transition-colors">
+          <p className="text-xs font-medium text-violet-600 uppercase mb-1">Próximo passo</p>
+          <p className="font-semibold text-gray-900">{nextStep.label}</p>
+          <p className="text-sm text-gray-500">{nextStep.reason}</p>
+        </Link>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Visão Geral</h2>
