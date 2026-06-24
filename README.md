@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Plataforma Thaise
 
-## Getting Started
+Hub operacional para digitalizar fornecedores curados, clientes, catálogo e pedidos — com jornada de empreendimentos (Fases A–F) e avaliação QCPS.
 
-First, run the development server:
+## Stack
+
+- Next.js 16 · React 19 · TypeScript · Tailwind CSS 4
+- Supabase (Postgres)
+- Zod · React Hook Form · Recharts
+
+## Premissas arquiteturais
+
+| Premissa | Status MVP |
+|---|---|
+| **Escalável** | API REST separada do frontend (`/api/*` + `lib/api.ts`) — pronto para workers e NestJS |
+| **Guiado** | Onboarding + fases A–F + stepper visual |
+| **AI-first** | Estrutura preparada — agente de compra e scoring automático na Fase 2 |
+| **Resiliente** | Respostas padronizadas, error boundaries, middleware auth-ready |
+| **SIPOC** | Mapeamento em `src/lib/sipoc.ts` |
+
+## SIPOC
+
+| Papel | Entidade | Função |
+|---|---|---|
+| **S** — Fornecedores | `suppliers` | Entradas qualificadas (curadoria) |
+| **I** — Entradas | `products`, `projects` | Catálogo e dados do empreendimento |
+| **P** — Processo | Fases A–F, `orders`, QCPS | Fluxo operacional e avaliação |
+| **O** — Saídas | Pedidos entregues, scores | Valor entregue + retroalimentação |
+| **C** — Clientes | `clients` | Destinatário final |
+
+## Setup
+
+```bash
+npm install
+cp .env.example .env.local   # preencher chaves Supabase
+```
+
+Rodar `supabase/schema.sql` no SQL Editor do Supabase (ou `migration_qcps_projects.sql` se o banco já existia).
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Estrutura
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+src/
+├── app/(app)/     # páginas autenticadas
+├── app/api/       # API REST (Route Handlers)
+├── components/    # UI e formulários
+├── lib/           # api client, qcps, phases, sipoc
+└── types/         # tipos do banco
+supabase/          # schema SQL
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Roadmap
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Auth (Supabase) + roles (Gestor / Fornecedor / Cliente)
+2. BullMQ — filas assíncronas ao aprovar pedidos
+3. Motor de simulação (TIR, VPL, Payback)
+4. Agente de compra via API de fornecedores

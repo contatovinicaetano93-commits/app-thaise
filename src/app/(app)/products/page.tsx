@@ -1,0 +1,143 @@
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
+import { Plus, Search, Package, Pencil, Trash2 } from 'lucide-react'
+import { Modal } from '@/components/ui/Modal'
+import { ProductForm } from '@/components/products/ProductForm'
+import { Button } from '@/components/ui/Button'
+import { productsApi } from '@/lib/api'
+import { toast } from 'sonner'
+import type { Product } from '@/types/database'
+
+export default function ProductsPage() {
+  const [products, setProducts] = useState<Product[]>([])
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editing, setEditing] = useState<Product | undefined>()
+  const [deleting, setDeleting] = useState<Product | undefined>()
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await productsApi.list()
+      setProducts(data)
+    } catch {
+      toast.error('Erro ao carregar produtos')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  async function handleDelete() {
+    if (!deleting) return
+    try {
+      await fetch(`/api/products/${deleting.id}`, { method: 'DELETE' })
+      toast.success('Produto removido')
+      setDeleting(undefined)
+      load()
+    } catch {
+      toast.error('Erro ao excluir')
+    }
+  }
+
+  const filtered = products.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase()) ||
+    p.category.toLowerCase().includes(search.toLowerCase())
+  )
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Catálogo</h2>
+          <p className="text-gray-500 mt-1">{products.length} produto{products.length !== 1 ? 's' : ''}</p>
+        </div>
+        <Button onClick={() => { setEditing(undefined); setModalOpen(true) }}>
+          <Plus size={16} />Novo Produto
+        </Button>
+      </div>
+
+      <div className="relative mb-4">
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Buscar por nome ou categoria..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white"
+        />
+      </div>
+
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="bg-white rounded-xl border border-gray-100 p-5 animate-pulse h-36" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+          <div className="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-3">
+            <Package size={20} className="text-amber-600" />
+          </div>
+          <h3 className="font-semibold text-gray-900 mb-1">{search ? 'Nenhum resultado' : 'Catálogo vazio'}</h3>
+          <p className="text-sm text-gray-500">{search ? 'Tente outro termo.' : 'Adicione produtos vinculados aos seus fornecedores.'}</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map(product => (
+            <div key={product.id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow group">
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex-1 pr-2">
+                  <h3 className="font-semibold text-gray-900 text-sm leading-snug">{product.name}</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">{product.category}</p>
+                </div>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${product.active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
+                  {product.active ? 'Ativo' : 'Inativo'}
+                </span>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
+                <div>
+                  <span className="text-lg font-bold text-gray-900">
+                    {product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </span>
+                  <span className="text-xs text-gray-400">/{product.unit}</span>
+                  {product.lead_time_days && (
+                    <p className="text-xs text-gray-400 mt-0.5">{product.lead_time_days} dias prazo</p>
+                  )}
+                </div>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => { setEditing(product); setModalOpen(true) }} className="p-2 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors">
+                    <Pencil size={14} />
+                  </button>
+                  <button onClick={() => setDeleting(product)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar Produto' : 'Novo Produto'} size="lg">
+        <ProductForm
+          product={editing}
+          onSuccess={() => { setModalOpen(false); load() }}
+          onCancel={() => setModalOpen(false)}
+        />
+      </Modal>
+
+      <Modal open={!!deleting} onClose={() => setDeleting(undefined)} title="Confirmar exclusão" size="sm">
+        <p className="text-sm text-gray-600 mb-5">Remover <strong>{deleting?.name}</strong> do catálogo?</p>
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => setDeleting(undefined)}>Cancelar</Button>
+          <Button variant="danger" onClick={handleDelete}>Excluir</Button>
+        </div>
+      </Modal>
+    </div>
+  )
+}

@@ -1,0 +1,28 @@
+/** QCPS — Qualidade, Custo, Prazo, Sustentabilidade (0–10) */
+
+export interface QcpsScores {
+  score_q: number
+  score_c: number
+  score_p: number
+  score_s: number
+}
+
+export const QCPS_LABELS = {
+  score_q: { short: 'Q', label: 'Qualidade' },
+  score_c: { short: 'C', label: 'Custo' },
+  score_p: { short: 'P', label: 'Prazo' },
+  score_s: { short: 'S', label: 'Sustentabilidade' },
+} as const
+
+export const QCPS_KEYS = ['score_q', 'score_c', 'score_p', 'score_s'] as const
+
+export function qcpsAverage(s: QcpsScores): number {
+  return Math.round(((s.score_q + s.score_c + s.score_p + s.score_s) / 4) * 10) / 10
+}
+
+export function qcpsColor(value: number): string {
+  if (value >= 8) return 'bg-emerald-500'
+  if (value >= 6) return 'bg-violet-500'
+  if (value >= 4) return 'bg-amber-500'
+  return 'bg-red-400'
+}
