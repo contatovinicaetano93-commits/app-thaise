@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Building2, Truck, Users, Package, ShoppingCart, ChevronRight, Code2, LogOut,
 } from 'lucide-react'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { ROLE_ROUTES, ROLE_LABELS, type UserRole } from '@/lib/auth/roles'
+import { ROLE_LABELS, type UserRole } from '@/lib/auth/roles'
 
 const ALL_NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['gestor', 'fornecedor', 'cliente'] as UserRole[] },

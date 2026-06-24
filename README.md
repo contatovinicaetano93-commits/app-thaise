@@ -1,61 +1,94 @@
 # Plataforma Thaise
 
-Hub operacional para digitalizar fornecedores curados, clientes, catálogo e pedidos — com jornada de empreendimentos (Fases A–F) e avaliação QCPS.
+Hub operacional para digitalizar fornecedores curados, clientes, catálogo e pedidos — com jornada de empreendimentos (Fases A–F), avaliação QCPS e agente de scoring.
+
+**Repositório:** [github.com/contatovinicaetano93-commits/app-thaise](https://github.com/contatovinicaetano93-commits/app-thaise)
 
 ## Stack
 
 - Next.js 16 · React 19 · TypeScript · Tailwind CSS 4
-- Supabase (Postgres)
+- Supabase (Postgres + Auth)
+- BullMQ + Redis (opcional)
 - Zod · React Hook Form · Recharts
 
-## Premissas arquiteturais
+## Funcionalidades
 
-| Premissa | Status MVP |
+- **Empreendimentos** — jornada guiada A → F com checklist obrigatório
+- **QCPS** — scoring em 4 dimensões (Qualidade, Custo, Prazo, Sustentabilidade)
+- **Fornecedores / Clientes / Catálogo / Pedidos** — CRUD completo
+- **Auth + roles** — Gestor, Fornecedor, Cliente (nav filtrada por perfil)
+- **Filas** — ao aprovar/entregar pedido (BullMQ ou inline)
+- **Agente AI** — recalcula QCPS + insights (OpenAI opcional)
+
+## Premissas
+
+| Premissa | Implementação |
 |---|---|
-| **Escalável** | API REST separada do frontend (`/api/*` + `lib/api.ts`) — pronto para workers e NestJS |
-| **Guiado** | Onboarding + fases A–F + stepper visual |
-| **AI-first** | Estrutura preparada — agente de compra e scoring automático na Fase 2 |
-| **Resiliente** | Respostas padronizadas, error boundaries, middleware auth-ready |
-| **SIPOC** | Mapeamento em `src/lib/sipoc.ts` |
+| **Escalável** | API REST + worker separado + Postgres |
+| **Guiado** | Onboarding, checklists por fase, gates de avanço |
+| **AI-first** | Agente de scoring QCPS com insights |
+| **Resiliente** | BullMQ com retry + fallback inline + job_logs |
+| **SIPOC** | `src/lib/sipoc.ts` |
 
-## SIPOC
-
-| Papel | Entidade | Função |
-|---|---|---|
-| **S** — Fornecedores | `suppliers` | Entradas qualificadas (curadoria) |
-| **I** — Entradas | `products`, `projects` | Catálogo e dados do empreendimento |
-| **P** — Processo | Fases A–F, `orders`, QCPS | Fluxo operacional e avaliação |
-| **O** — Saídas | Pedidos entregues, scores | Valor entregue + retroalimentação |
-| **C** — Clientes | `clients` | Destinatário final |
-
-## Setup
+## Setup rápido
 
 ```bash
 npm install
 cp .env.example .env.local   # preencher chaves Supabase
 ```
 
-Rodar `supabase/schema.sql` no SQL Editor do Supabase (ou `migration_qcps_projects.sql` se o banco já existia).
+Rodar SQL no Supabase (ver [docs/DEPLOY.md](docs/DEPLOY.md)):
+
+- Banco novo → `supabase/schema.sql`
+- Banco existente → `migration_qcps_projects.sql` + `migration_phase2.sql`
 
 ```bash
-npm run dev
+npm run dev      # http://localhost:3000
+npm run worker   # opcional, com REDIS_URL
+```
+
+## Deploy
+
+Guia completo: **[docs/DEPLOY.md](docs/DEPLOY.md)**
+
+Resumo Vercel — variáveis obrigatórias:
+
+```
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
 ```
 
 ## Estrutura
 
 ```
 src/
-├── app/(app)/     # páginas autenticadas
-├── app/api/       # API REST (Route Handlers)
-├── components/    # UI e formulários
-├── lib/           # api client, qcps, phases, sipoc
-└── types/         # tipos do banco
-supabase/          # schema SQL
+├── app/(app)/       # páginas autenticadas
+├── app/api/         # REST API
+├── components/      # UI, forms, auth
+├── lib/
+│   ├── agents/      # scoring AI
+│   ├── auth/        # roles
+│   ├── queue/       # BullMQ
+│   └── supabase/    # client SSR
+└── workers/         # order.worker.ts
+supabase/            # schema + migrations
+docs/                # deploy
 ```
+
+## Scripts
+
+| Comando | Descrição |
+|---|---|
+| `npm run dev` | Desenvolvimento |
+| `npm run build` | Build de produção |
+| `npm run worker` | Worker BullMQ (Redis) |
+| `npm run lint` | ESLint |
 
 ## Roadmap
 
-1. Auth (Supabase) + roles (Gestor / Fornecedor / Cliente)
-2. BullMQ — filas assíncronas ao aprovar pedidos
-3. Motor de simulação (TIR, VPL, Payback)
-4. Agente de compra via API de fornecedores
+- [x] MVP — CRUD + QCPS + empreendimentos
+- [x] Auth + roles + checklists + filas + agente
+- [ ] Motor de simulação (TIR, VPL, Payback)
+- [ ] Agente de compra via API de fornecedores
+- [ ] Portais separados por ator (fornecedor / cliente)
