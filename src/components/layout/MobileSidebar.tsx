@@ -2,29 +2,37 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { Menu, X, LayoutDashboard, Building2, Truck, Users, Package, ShoppingCart, Code2, Layers } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
+import { Menu, X, LayoutDashboard, Building2, Truck, Users, Package, ShoppingCart, Code2, Layers, LogOut } from 'lucide-react'
+import { useAuth } from '@/components/auth/AuthProvider'
+import type { UserRole } from '@/lib/auth/roles'
 
-const nav = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/projects', label: 'Empreendimentos', icon: Building2 },
-  { href: '/suppliers', label: 'Fornecedores', icon: Truck },
-  { href: '/clients', label: 'Clientes', icon: Users },
-  { href: '/products', label: 'Catálogo', icon: Package },
-  { href: '/orders', label: 'Pedidos', icon: ShoppingCart },
-  { href: '/api-docs', label: 'API Docs', icon: Code2 },
+const ALL_NAV = [
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['gestor', 'fornecedor', 'cliente'] as UserRole[] },
+  { href: '/projects', label: 'Empreendimentos', icon: Building2, roles: ['gestor', 'cliente'] as UserRole[] },
+  { href: '/suppliers', label: 'Fornecedores', icon: Truck, roles: ['gestor'] as UserRole[] },
+  { href: '/clients', label: 'Clientes', icon: Users, roles: ['gestor'] as UserRole[] },
+  { href: '/products', label: 'Catálogo', icon: Package, roles: ['gestor', 'fornecedor'] as UserRole[] },
+  { href: '/orders', label: 'Pedidos', icon: ShoppingCart, roles: ['gestor', 'fornecedor', 'cliente'] as UserRole[] },
+  { href: '/api-docs', label: 'API Docs', icon: Code2, roles: ['gestor'] as UserRole[] },
 ]
 
 export function MobileSidebar() {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
+  const { role } = useAuth()
+  const nav = ALL_NAV.filter(item => item.roles.includes(role))
+
+  async function logout() {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/login')
+    router.refresh()
+  }
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-xl border border-gray-200 shadow-sm"
-      >
+      <button onClick={() => setOpen(true)} className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-xl border border-gray-200 shadow-sm">
         <Menu size={20} className="text-gray-600" />
       </button>
 
@@ -39,27 +47,21 @@ export function MobileSidebar() {
                 </div>
                 <span className="font-bold text-gray-900 text-sm">Plataforma Thaise</span>
               </div>
-              <button onClick={() => setOpen(false)} className="p-1 text-gray-400 hover:text-gray-600">
-                <X size={18} />
-              </button>
+              <button onClick={() => setOpen(false)} className="p-1 text-gray-400"><X size={18} /></button>
             </div>
             <nav className="px-3 py-4 space-y-1">
               {nav.map(({ href, label, icon: Icon }) => {
                 const active = pathname.startsWith(href)
                 return (
-                  <Link
-                    key={href}
-                    href={href}
-                    onClick={() => setOpen(false)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                      active ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    <Icon size={17} className={active ? 'text-violet-600' : 'text-gray-400'} />
-                    {label}
+                  <Link key={href} href={href} onClick={() => setOpen(false)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium ${active ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-50'}`}>
+                    <Icon size={17} />{label}
                   </Link>
                 )
               })}
+              <button onClick={logout} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 w-full mt-4">
+                <LogOut size={17} />Sair
+              </button>
             </nav>
           </div>
         </>

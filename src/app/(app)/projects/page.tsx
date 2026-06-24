@@ -1,16 +1,20 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, Building2, Pencil, Trash2, MapPin } from 'lucide-react'
+import { Plus, Search, Building2, Pencil, Trash2, MapPin, Sparkles } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { ProjectForm } from '@/components/projects/ProjectForm'
 import { PhaseStepper } from '@/components/ui/PhaseStepper'
+import { PhaseChecklist } from '@/components/ui/PhaseChecklist'
 import { QcpsBar } from '@/components/ui/QcpsBar'
 import { Button } from '@/components/ui/Button'
-import { projectsApi } from '@/lib/api'
+import { useAuth } from '@/components/auth/AuthProvider'
+import { projectsApi, agentsApi } from '@/lib/api'
+import { isPhaseComplete, phaseProgress } from '@/lib/checklists'
 import { useDebounce } from '@/lib/hooks'
 import { toast } from 'sonner'
 import type { Project } from '@/types/database'
+import type { PhaseChecklist as PhaseChecklistType } from '@/lib/auth/roles'
 
 const STATUS_LABEL: Record<string, string> = {
   active: 'Ativo', paused: 'Pausado', completed: 'Concluído', cancelled: 'Cancelado',
@@ -23,6 +27,7 @@ const STATUS_COLOR: Record<string, string> = {
 }
 
 export default function ProjectsPage() {
+  const { isGestor } = useAuth()
   const [projects, setProjects] = useState<Project[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -30,6 +35,7 @@ export default function ProjectsPage() {
   const [editing, setEditing] = useState<Project | undefined>()
   const [deleting, setDeleting] = useState<Project | undefined>()
   const [advancing, setAdvancing] = useState<string | null>(null)
+  const [scoring, setScoring] = useState<string | null>(null)
   const debouncedSearch = useDebounce(search)
 
   const load = useCallback(async () => {
@@ -58,6 +64,28 @@ export default function ProjectsPage() {
     }
   }
 
+  async function handleChecklistToggle(project: Project, itemId: string, checked: boolean) {
+    try {
+      const updated = await projectsApi.updateChecklist(project.id, project.phase, itemId, checked)
+      setProjects(prev => prev.map(p => p.id === project.id ? updated : p))
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao atualizar checklist')
+    }
+  }
+
+  async function handleScore(projectId: string) {
+    setScoring(projectId)
+    try {
+      const result = await agentsApi.scoreProject(projectId)
+      toast.success(`QCPS recalculado: ${result.average}/10`)
+      load()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro no agente')
+    } finally {
+      setScoring(null)
+    }
+  }
+
   async function handleDelete() {
     if (!deleting) return
     try {
@@ -81,11 +109,13 @@ export default function ProjectsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Empreendimentos</h2>
-          <p className="text-gray-500 mt-1 text-sm">Jornada A → F com avaliação QCPS</p>
+          <p className="text-gray-500 mt-1 text-sm">Jornada guiada A → F · checklist obrigatório</p>
         </div>
-        <Button onClick={() => { setEditing(undefined); setModalOpen(true) }}>
-          <Plus size={16} />Novo
-        </Button>
+        {isGestor && (
+          <Button onClick={() => { setEditing(undefined); setModalOpen(true) }}>
+            <Plus size={16} />Novo
+          </Button>
+        )}
       </div>
 
       <div className="relative mb-4">
@@ -107,67 +137,81 @@ export default function ProjectsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-          <div className="w-12 h-12 bg-violet-50 rounded-full flex items-center justify-center mx-auto mb-3">
-            <Building2 size={20} className="text-violet-600" />
-          </div>
-          <h3 className="font-semibold text-gray-900 mb-1">
-            {search ? 'Nenhum resultado' : 'Nenhum empreendimento ainda'}
-          </h3>
-          <p className="text-sm text-gray-500">
-            {search ? 'Tente outro termo.' : 'Crie o primeiro e acompanhe as fases A até F.'}
-          </p>
+          <Building2 size={20} className="text-violet-600 mx-auto mb-3" />
+          <h3 className="font-semibold text-gray-900 mb-1">Nenhum empreendimento ainda</h3>
+          <p className="text-sm text-gray-500">Crie o primeiro e acompanhe as fases A até F.</p>
         </div>
       ) : (
         <div className="grid gap-4">
-          {filtered.map(project => (
-            <div key={project.id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-gray-900">{project.name}</h3>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[project.status]}`}>
-                      {STATUS_LABEL[project.status]}
-                    </span>
+          {filtered.map(project => {
+            const checklist = (project.checklist ?? {}) as PhaseChecklistType
+            const canAdvance = isPhaseComplete(project.phase, checklist)
+            const progress = phaseProgress(project.phase, checklist)
+
+            return (
+              <div key={project.id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold text-gray-900">{project.name}</h3>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[project.status]}`}>
+                        {STATUS_LABEL[project.status]}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+                      {project.client && <span className="flex items-center gap-1"><Building2 size={12} />{project.client.name}</span>}
+                      {project.location && <span className="flex items-center gap-1"><MapPin size={12} />{project.location}</span>}
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-3 text-xs text-gray-500">
-                    {project.client && (
-                      <span className="flex items-center gap-1"><Building2 size={12} />{project.client.name}</span>
-                    )}
-                    {project.location && (
-                      <span className="flex items-center gap-1"><MapPin size={12} />{project.location}</span>
-                    )}
-                  </div>
+                  {isGestor && (
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => handleScore(project.id)}
+                        disabled={scoring === project.id}
+                        title="Recalcular QCPS com agente AI"
+                        className="p-2 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg"
+                      >
+                        <Sparkles size={15} />
+                      </button>
+                      <button onClick={() => { setEditing(project); setModalOpen(true) }} className="p-2 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg">
+                        <Pencil size={15} />
+                      </button>
+                      <button onClick={() => setDeleting(project)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg">
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <div className="flex gap-1">
-                  <button onClick={() => { setEditing(project); setModalOpen(true) }} className="p-2 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg">
-                    <Pencil size={15} />
-                  </button>
-                  <button onClick={() => setDeleting(project)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg">
-                    <Trash2 size={15} />
-                  </button>
+
+                <PhaseStepper
+                  current={project.phase}
+                  onAdvance={isGestor ? () => handleAdvance(project.id) : undefined}
+                  advancing={advancing === project.id}
+                  canAdvance={canAdvance}
+                />
+
+                <PhaseChecklist
+                  phase={project.phase}
+                  checklist={checklist}
+                  onToggle={(itemId, checked) => handleChecklistToggle(project, itemId, checked)}
+                  readOnly={!isGestor}
+                />
+
+                {!canAdvance && progress.total > 0 && (
+                  <p className="text-xs text-amber-600 mt-2">Complete {progress.total - progress.done} item(ns) para avançar de fase.</p>
+                )}
+
+                <div className="mt-4 pt-4 border-t border-gray-50">
+                  <QcpsBar scores={project} />
                 </div>
               </div>
-
-              <PhaseStepper
-                current={project.phase}
-                onAdvance={() => handleAdvance(project.id)}
-                advancing={advancing === project.id}
-              />
-
-              <div className="mt-4 pt-4 border-t border-gray-50">
-                <QcpsBar scores={project} />
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar Empreendimento' : 'Novo Empreendimento'} size="lg">
-        <ProjectForm
-          project={editing}
-          onSuccess={() => { setModalOpen(false); load() }}
-          onCancel={() => setModalOpen(false)}
-        />
+        <ProjectForm project={editing} onSuccess={() => { setModalOpen(false); load() }} onCancel={() => setModalOpen(false)} />
       </Modal>
 
       <Modal open={!!deleting} onClose={() => setDeleting(undefined)} title="Confirmar exclusão" size="sm">

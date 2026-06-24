@@ -1,5 +1,6 @@
 import type { QcpsScores } from '@/lib/qcps'
 import type { ProjectPhase } from '@/lib/phases'
+import type { PhaseChecklist, Profile, AgentInsight, JobLog } from '@/lib/auth/roles'
 
 export type SupplierStatus = 'active' | 'inactive' | 'pending'
 export type OrderStatus = 'pending' | 'approved' | 'processing' | 'delivered' | 'cancelled'
@@ -40,6 +41,7 @@ export interface Project extends QcpsScores {
   description?: string | null
   phase: ProjectPhase
   status: ProjectStatus
+  checklist?: PhaseChecklist
   notes?: string | null
   created_at: string
   updated_at: string
@@ -87,6 +89,9 @@ export interface Database {
       projects: { Row: Project; Insert: Omit<Project, 'id' | 'created_at' | 'updated_at' | 'client'>; Update: Partial<Omit<Project, 'client'>> }
       products: { Row: Product; Insert: Omit<Product, 'id' | 'created_at'>; Update: Partial<Product> }
       orders: { Row: Order; Insert: Omit<Order, 'id' | 'created_at' | 'updated_at' | 'total_price' | 'client' | 'supplier' | 'product' | 'project'>; Update: Partial<Order> }
+      profiles: { Row: Profile; Insert: Omit<Profile, 'created_at'>; Update: Partial<Profile> }
+      job_logs: { Row: JobLog; Insert: Omit<JobLog, 'id' | 'created_at'>; Update: Partial<JobLog> }
+      agent_insights: { Row: AgentInsight; Insert: Omit<AgentInsight, 'id' | 'created_at'>; Update: Partial<AgentInsight> }
     }
   }
 }

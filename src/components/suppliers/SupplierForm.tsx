@@ -50,12 +50,12 @@ export function SupplierForm({ supplier, onSuccess, onCancel }: Props) {
 
   async function onSubmit(data: FormData) {
     try {
-      const payload = supplier ? { ...data, ...qcps } : data
+      const payload = { ...data, ...qcps }
       if (supplier) {
         await suppliersApi.update(supplier.id, payload)
         toast.success('Fornecedor atualizado!')
       } else {
-        await suppliersApi.create(data)
+        await suppliersApi.create(payload)
         toast.success('Fornecedor cadastrado!')
       }
       onSuccess()
@@ -97,12 +97,10 @@ export function SupplierForm({ supplier, onSuccess, onCancel }: Props) {
         <div className="col-span-2">
           <Textarea label="Observações" placeholder="Condições especiais, produtos preferidos..." {...register('notes')} />
         </div>
-        {supplier && (
-          <div className="col-span-2">
-            <p className="text-sm font-medium text-gray-700 mb-2">Avaliação QCPS</p>
-            <QcpsEditor values={qcps} onChange={setQcps} />
-          </div>
-        )}
+        <div className="col-span-2">
+          <p className="text-sm font-medium text-gray-700 mb-2">Avaliação QCPS</p>
+          <QcpsEditor values={qcps} onChange={setQcps} />
+        </div>
       </div>
       <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
         <Button type="button" variant="secondary" onClick={onCancel}>Cancelar</Button>

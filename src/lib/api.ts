@@ -84,6 +84,18 @@ export const projectsApi = {
   advancePhase: (id: string): ApiResult<Project> =>
     request(`/api/projects/${id}/phase`, { method: 'PATCH', body: JSON.stringify({}) }),
 
+  updateChecklist: (id: string, phase: string, itemId: string, checked: boolean): ApiResult<Project> =>
+    request(`/api/projects/${id}/checklist`, { method: 'PATCH', body: JSON.stringify({ phase, itemId, checked }) }),
+
   remove: (id: string): ApiResult<void> =>
     request(`/api/projects/${id}`, { method: 'DELETE' }),
+}
+
+// --- Agent (AI Scoring) ---
+export const agentsApi = {
+  scoreSupplier: (id: string): ApiResult<{ scores: QcpsScores; insight: string; average: number }> =>
+    request(`/api/agents/score-supplier/${id}`, { method: 'POST' }),
+
+  scoreProject: (id: string): ApiResult<{ scores: QcpsScores; insight: string; average: number }> =>
+    request(`/api/agents/score-project/${id}`, { method: 'POST' }),
 }

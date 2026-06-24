@@ -3,6 +3,13 @@ import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
 import { createServerClient } from '@/lib/supabase-server'
 
+const qcpsSchema = z.object({
+  score_q: z.coerce.number().min(0).max(10).default(5),
+  score_c: z.coerce.number().min(0).max(10).default(5),
+  score_p: z.coerce.number().min(0).max(10).default(5),
+  score_s: z.coerce.number().min(0).max(10).default(5),
+})
+
 const schema = z.object({
   name: z.string().min(2),
   category: z.string().min(2),
@@ -12,7 +19,7 @@ const schema = z.object({
   website: z.string().url().optional().or(z.literal('')).transform(v => v || null),
   status: z.enum(['active', 'inactive', 'pending']).default('pending'),
   notes: z.string().optional().transform(v => v || null),
-})
+}).merge(qcpsSchema)
 
 export async function GET(req: NextRequest) {
   try {

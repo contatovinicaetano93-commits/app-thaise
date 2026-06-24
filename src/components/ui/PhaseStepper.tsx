@@ -6,9 +6,10 @@ interface Props {
   current: ProjectPhase
   onAdvance?: () => void
   advancing?: boolean
+  canAdvance?: boolean
 }
 
-export function PhaseStepper({ current, onAdvance, advancing }: Props) {
+export function PhaseStepper({ current, onAdvance, advancing, canAdvance = true }: Props) {
   const idx = phaseIndex(current)
   const phaseInfo = PHASES[idx]
   const isLast = current === 'F'
@@ -47,10 +48,11 @@ export function PhaseStepper({ current, onAdvance, advancing }: Props) {
           <button
             type="button"
             onClick={onAdvance}
-            disabled={advancing}
-            className="text-xs font-medium text-violet-600 hover:text-violet-800 whitespace-nowrap disabled:opacity-50"
+            disabled={advancing || !canAdvance}
+            title={!canAdvance ? 'Complete o checklist da fase atual' : undefined}
+            className="text-xs font-medium text-violet-600 hover:text-violet-800 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {advancing ? 'Avançando...' : 'Avançar →'}
+            {advancing ? 'Avançando...' : canAdvance ? 'Avançar →' : 'Checklist pendente'}
           </button>
         )}
         {isLast && (

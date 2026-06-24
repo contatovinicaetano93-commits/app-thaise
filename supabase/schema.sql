@@ -110,3 +110,62 @@ create policy "allow all" on clients for all using (true);
 create policy "allow all" on projects for all using (true);
 create policy "allow all" on products for all using (true);
 create policy "allow all" on orders for all using (true);
+
+-- ── Fase 2: Auth, Checklists, Filas, Agente ──
+
+create table profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text not null,
+  full_name text,
+  role text not null check (role in ('gestor','fornecedor','cliente')) default 'gestor',
+  supplier_id uuid references suppliers(id) on delete set null,
+  client_id uuid references clients(id) on delete set null,
+  created_at timestamptz default now()
+);
+
+alter table projects add column checklist jsonb not null default '{}';
+
+create table job_logs (
+  id uuid primary key default uuid_generate_v4(),
+  job_type text not null,
+  payload jsonb not null default '{}',
+  status text not null check (status in ('pending','processing','completed','failed')) default 'pending',
+  result jsonb,
+  error text,
+  created_at timestamptz default now(),
+  completed_at timestamptz
+);
+
+create table agent_insights (
+  id uuid primary key default uuid_generate_v4(),
+  entity_type text not null check (entity_type in ('supplier','project')),
+  entity_id uuid not null,
+  insight text not null,
+  scores jsonb,
+  created_at timestamptz default now()
+);
+
+create or replace function handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (id, email, full_name, role)
+  values (
+    new.id, new.email,
+    coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    coalesce(new.raw_user_meta_data->>'role', 'gestor')
+  );
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create trigger on_auth_user_created after insert on auth.users
+  for each row execute function handle_new_user();
+
+alter table profiles enable row level security;
+alter table job_logs enable row level security;
+alter table agent_insights enable row level security;
+
+create policy "profiles read own" on profiles for select using (auth.uid() = id);
+create policy "allow all job_logs" on job_logs for all using (true);
+create policy "allow all agent_insights" on agent_insights for all using (true);
+
