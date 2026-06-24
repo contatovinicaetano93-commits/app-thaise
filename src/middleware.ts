@@ -10,7 +10,12 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
   let rateRemaining: number | undefined
 
-  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth/') && !pathname.startsWith('/api/health')) {
+  if (
+    pathname.startsWith('/api/') &&
+    !pathname.startsWith('/api/auth/') &&
+    !pathname.startsWith('/api/health') &&
+    !pathname.startsWith('/api/v1/health')
+  ) {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0] ?? 'local'
     const { ok: allowed, remaining } = rateLimit(ip, 120)
     if (!allowed) {

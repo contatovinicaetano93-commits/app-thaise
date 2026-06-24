@@ -5,6 +5,8 @@ import { createServerClient } from '@/lib/supabase-server'
 import { requireProfile, filterProjectsByRole } from '@/lib/auth/api-context'
 import { assertProjectHasClient } from '@/lib/gates'
 import { logActivity } from '@/lib/memory/events'
+import { cacheGet, cacheSet } from '@/lib/cache'
+import { parsePagination, paginationMeta } from '@/lib/pagination'
 
 const qcpsSchema = z.object({
   score_q: z.coerce.number().min(0).max(10).default(5),
@@ -29,19 +31,27 @@ export async function GET(req: NextRequest) {
 
     const db = createServerClient()
     const search = req.nextUrl.searchParams.get('search')
+    const { limit, cursor } = parsePagination(req.nextUrl.searchParams)
+    const cacheKey = `projects:${profile!.role}:${search ?? ''}:${limit}:${cursor ?? ''}`
+    const cached = await cacheGet<{ data: unknown[]; meta: Record<string, unknown> }>(cacheKey)
+    if (cached) return ok(cached.data, cached.meta)
 
     let query = db
       .from('projects')
       .select('*, client:clients(*)')
       .order('updated_at', { ascending: false })
+      .limit(limit)
 
     if (search) query = query.or(`name.ilike.%${search}%,location.ilike.%${search}%`)
+    if (cursor) query = query.lt('updated_at', cursor)
 
     const { data, error } = await query
     if (error) return err(error.message, 500)
 
     const filtered = filterProjectsByRole(data ?? [], profile!.role, profile!)
-    return ok(filtered, { total: filtered.length })
+    const meta = paginationMeta(filtered, limit, 'updated_at')
+    await cacheSet(cacheKey, { data: filtered, meta })
+    return ok(filtered, meta)
   } catch (e) {
     return handleError(e)
   }

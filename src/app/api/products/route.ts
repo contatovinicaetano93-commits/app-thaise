@@ -5,6 +5,8 @@ import { createServerClient } from '@/lib/supabase-server'
 import { requireProfile } from '@/lib/auth/api-context'
 import { assertActiveSupplier } from '@/lib/gates'
 import { logActivity } from '@/lib/memory/events'
+import { cacheGet, cacheSet } from '@/lib/cache'
+import { parsePagination, paginationMeta } from '@/lib/pagination'
 
 const schema = z.object({
   supplier_id: z.string().uuid(),
@@ -26,13 +28,25 @@ export async function GET(req: NextRequest) {
     const db = createServerClient()
     const supplierId = req.nextUrl.searchParams.get('supplier_id')
       ?? (profile!.role === 'fornecedor' ? profile!.supplier_id : null)
+    const { limit, cursor } = parsePagination(req.nextUrl.searchParams)
+    const cacheKey = `products:${supplierId ?? 'all'}:${limit}:${cursor ?? ''}`
+    const cached = await cacheGet<{ data: unknown[]; meta: Record<string, unknown> }>(cacheKey)
+    if (cached) return ok(cached.data, cached.meta)
 
-    let query = db.from('products').select('*, supplier:suppliers(id,name)').order('name')
+    let query = db
+      .from('products')
+      .select('*, supplier:suppliers(id,name)')
+      .order('created_at', { ascending: false })
+      .limit(limit)
     if (supplierId) query = query.eq('supplier_id', supplierId)
+    if (cursor) query = query.lt('created_at', cursor)
 
     const { data, error } = await query
     if (error) return err(error.message, 500)
-    return ok(data, { total: data.length })
+
+    const meta = paginationMeta(data ?? [], limit, 'created_at')
+    await cacheSet(cacheKey, { data, meta })
+    return ok(data, meta)
   } catch (e) {
     return handleError(e)
   }

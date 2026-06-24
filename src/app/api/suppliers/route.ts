@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
 import { createServerClient } from '@/lib/supabase-server'
+import { cacheGet, cacheSet } from '@/lib/cache'
+import { parsePagination, paginationMeta } from '@/lib/pagination'
 
 const qcpsSchema = z.object({
   score_q: z.coerce.number().min(0).max(10).default(5),
@@ -23,16 +25,24 @@ const schema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    const db = createServerClient()
     const search = req.nextUrl.searchParams.get('search')
+    const { limit, cursor } = parsePagination(req.nextUrl.searchParams)
+    const cacheKey = `suppliers:${search ?? ''}:${limit}:${cursor ?? ''}`
+    const cached = await cacheGet<{ data: unknown[]; meta: Record<string, unknown> }>(cacheKey)
+    if (cached) return ok(cached.data, cached.meta)
 
-    let query = db.from('suppliers').select('*').order('name')
+    const db = createServerClient()
+
+    let query = db.from('suppliers').select('*').order('created_at', { ascending: false }).limit(limit)
     if (search) query = query.or(`name.ilike.%${search}%,category.ilike.%${search}%`)
+    if (cursor) query = query.lt('created_at', cursor)
 
     const { data, error } = await query
     if (error) return err(error.message, 500)
 
-    return ok(data, { total: data.length })
+    const meta = paginationMeta(data ?? [], limit, 'created_at')
+    await cacheSet(cacheKey, { data, meta })
+    return ok(data, meta)
   } catch (e) {
     return handleError(e)
   }

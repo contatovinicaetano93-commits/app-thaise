@@ -3,7 +3,7 @@ import { ok } from '@/lib/api-response'
 const spec = {
   openapi: '3.0.0',
   info: { title: 'Plataforma Thaise API', version: '1.0.0', description: 'Hub operacional QCPS + SIPOC' },
-  servers: [{ url: '/api' }],
+  servers: [{ url: '/api/v1', description: 'Versão estável' }, { url: '/api', description: 'Alias legado' }],
   paths: {
     '/health': { get: { summary: 'Health check', tags: ['System'] } },
     '/dashboard': { get: { summary: 'Dashboard stats', tags: ['Dashboard'] } },

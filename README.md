@@ -40,7 +40,7 @@ cp .env.example .env.local   # preencher chaves Supabase
 Rodar SQL no Supabase (ver [docs/DEPLOY.md](docs/DEPLOY.md)):
 
 - Banco novo → `supabase/schema.sql`
-- Banco existente → `migration_qcps_projects.sql` + `migration_phase2.sql`
+- Banco existente → migrations em `supabase/migration_*.sql` (incl. `migration_indexes_scale.sql`)
 
 ```bash
 npm run dev      # http://localhost:3000
@@ -82,7 +82,8 @@ docs/                # deploy
 |---|---|
 | `npm run dev` | Desenvolvimento |
 | `npm run build` | Build de produção |
-| `npm run worker` | Worker BullMQ (Redis) |
+| `npm run worker` | Workers BullMQ (orders + scoring + notify) |
+| `npm run worker:orders` | Apenas worker de pedidos |
 | `npm run lint` | ESLint |
 
 ## Roadmap
@@ -90,6 +91,7 @@ docs/                # deploy
 - [x] MVP — CRUD + QCPS + empreendimentos
 - [x] Auth + roles + checklists + filas + agente
 - [x] Sprint A–E — SIPOC, resiliência, memória, portais por role
-- [ ] Motor de simulação (TIR, VPL, Payback)
-- [ ] Agente de compra via API de fornecedores
-- [ ] Observabilidade (Sentry) em produção
+- [x] Passos 51–86 — simulação, webhooks, OpenAPI, k6
+- [x] Passos 87–100 — API v1, cache Redis, paginação, workers, SDK, case
+- [ ] NestJS hub (quando escala exigir)
+- [ ] Agente de compra via API de fornecedores externos

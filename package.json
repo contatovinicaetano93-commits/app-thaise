@@ -15,7 +15,8 @@
     "seed": "node scripts/seed-gestor.mjs",
     "seed:demo": "node scripts/seed-demo-users.mjs",
     "load-test": "k6 run scripts/load-test.k6.js",
-    "worker": "tsx src/workers/order.worker.ts"
+    "worker": "tsx src/workers/run-all.ts",
+    "worker:orders": "tsx src/workers/order.worker.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
