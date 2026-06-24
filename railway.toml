@@ -1,0 +1,13 @@
+# Worker BullMQ — deploy separado no Railway
+# https://railway.app/new → Deploy from GitHub → selecione este repo
+# Settings → Start Command: npm run worker
+# Variables: REDIS_URL, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL
+
+[build]
+builder = "nixpacks"
+buildCommand = "npm ci"
+
+[deploy]
+startCommand = "npm run worker"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10

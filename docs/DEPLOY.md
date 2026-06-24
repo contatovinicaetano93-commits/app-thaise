@@ -2,12 +2,16 @@
 
 Guia para colocar o app em produção (Vercel + Supabase).
 
+**Guia completo Vercel + Redis:** [docs/VERCEL-REDIS.md](VERCEL-REDIS.md)
+
 ## 1. Supabase
 
 1. Crie um projeto em [supabase.com](https://supabase.com)
 2. **SQL Editor** → execute na ordem:
    - Banco novo: `supabase/schema.sql`
-   - Banco existente: `supabase/migration_qcps_projects.sql` + `supabase/migration_phase2.sql`
+   - `supabase/migration_resilience_memory.sql`
+   - `supabase/migration_scale_webhooks.sql`
+   - Banco existente (legado): `migration_qcps_projects.sql` + `migration_phase2.sql`
 3. **Authentication** → habilite Email
 4. Crie usuários em **Authentication → Users** com metadata:
 
@@ -33,10 +37,13 @@ Roles válidas: `gestor` | `fornecedor` | `cliente`
 | `NEXT_PUBLIC_SUPABASE_URL` | Sim | URL do projeto Supabase |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Sim | Chave pública (publishable) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Sim | Jobs em background e agente AI |
-| `REDIS_URL` | Não | Fila BullMQ (sem ela, jobs rodam inline) |
+| `REDIS_URL` | Não* | Fila BullMQ — use Upstash `rediss://...` |
 | `OPENAI_API_KEY` | Não | Insights em linguagem natural no agente |
 
-4. Deploy → acesse `https://seu-app.vercel.app`
+\* Sem Redis, jobs rodam inline — funciona para MVP. Ver [VERCEL-REDIS.md](VERCEL-REDIS.md).
+
+4. Região recomendada: **São Paulo (gru1)** — já em `vercel.json`
+5. Deploy → acesse `https://seu-app.vercel.app`
 
 ### Redirect URL (Auth)
 
@@ -45,22 +52,15 @@ No Supabase → **Authentication → URL Configuration**:
 - **Site URL**: `https://seu-app.vercel.app`
 - **Redirect URLs**: `https://seu-app.vercel.app/**`
 
-## 3. Worker BullMQ (opcional)
+## 3. Worker BullMQ (produção com filas)
 
-Sem Redis, pedidos aprovados/entregues são processados **inline** na API — funciona para MVP.
+Ver passo a passo: **[VERCEL-REDIS.md → Passo 4](VERCEL-REDIS.md#passo-4--worker-no-railway)**
 
-Para produção com filas:
+Resumo:
 
-1. Provisione Redis ([Upstash](https://upstash.com), Railway, etc.)
-2. Configure `REDIS_URL` na Vercel
-3. Rode o worker em serviço separado (Railway, Fly.io, VPS):
-
-```bash
-REDIS_URL=redis://... \
-SUPABASE_SERVICE_ROLE_KEY=... \
-NEXT_PUBLIC_SUPABASE_URL=... \
-npm run worker
-```
+1. Upstash Redis → `REDIS_URL` na Vercel
+2. Railway → `npm run worker` (usa `railway.toml` na raiz)
+3. Validar: `curl https://seu-app.vercel.app/api/health` → `"redis":"ok"`
 
 ## 4. Secrets no GitHub
 
@@ -68,7 +68,9 @@ npm run worker
 
 | Secret | Uso |
 |---|---|
-| `VERCEL_TOKEN` | Deploy via GitHub Actions (opcional) |
+| `VERCEL_TOKEN` | Deploy automático via `.github/workflows/deploy.yml` |
+| `VERCEL_ORG_ID` | Opcional — `vercel link` local |
+| `VERCEL_PROJECT_ID` | Opcional — `vercel link` local |
 | `NEXT_PUBLIC_SUPABASE_URL` | CI / preview |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | CI / preview |
 
@@ -91,6 +93,7 @@ cp .env.example .env.local
 
 npm install
 npm run dev        # http://localhost:3000
+npm run setup:redis  # testar Upstash (opcional)
 npm run worker     # terminal separado, se REDIS_URL configurada
 npm run build      # validar produção
 ```

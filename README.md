@@ -49,7 +49,7 @@ npm run worker   # opcional, com REDIS_URL
 
 ## Deploy
 
-Guia completo: **[docs/DEPLOY.md](docs/DEPLOY.md)**
+Guia completo: **[docs/DEPLOY.md](docs/DEPLOY.md)** · **Vercel + Redis:** **[docs/VERCEL-REDIS.md](docs/VERCEL-REDIS.md)**
 
 Resumo Vercel — variáveis obrigatórias:
 
