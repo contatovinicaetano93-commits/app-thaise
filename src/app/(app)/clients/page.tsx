@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, Phone, Mail, Building2 } from 'lucide-react'
+import { Plus, Search, Phone, Mail, Building2, Download } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { ClientForm } from '@/components/clients/ClientForm'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
@@ -62,9 +62,14 @@ export default function ClientsPage() {
           <h2 className="text-2xl font-bold text-gray-900">Clientes</h2>
           <p className="text-gray-500 mt-1 text-sm">{clients.length} cadastrado{clients.length !== 1 ? 's' : ''}</p>
         </div>
-        <Button onClick={() => { setEditing(undefined); setModalOpen(true) }}>
-          <Plus size={16} />Novo Cliente
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={() => clientsApi.exportCsv().catch(() => toast.error('Erro ao exportar'))}>
+            <Download size={16} />CSV
+          </Button>
+          <Button onClick={() => { setEditing(undefined); setModalOpen(true) }}>
+            <Plus size={16} />Novo Cliente
+          </Button>
+        </div>
       </div>
 
       <div className="relative mb-4">

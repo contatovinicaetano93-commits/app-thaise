@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, Package } from 'lucide-react'
+import { Plus, Search, Package, Download } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { ProductForm } from '@/components/products/ProductForm'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
@@ -60,9 +60,14 @@ export default function ProductsPage() {
           <h2 className="text-2xl font-bold text-gray-900">Catálogo</h2>
           <p className="text-gray-500 mt-1">{products.length} produto{products.length !== 1 ? 's' : ''}</p>
         </div>
-        <Button onClick={() => { setEditing(undefined); setModalOpen(true) }}>
-          <Plus size={16} />Novo Produto
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={() => productsApi.exportCsv().catch(() => toast.error('Erro ao exportar'))}>
+            <Download size={16} />CSV
+          </Button>
+          <Button onClick={() => { setEditing(undefined); setModalOpen(true) }}>
+            <Plus size={16} />Novo Produto
+          </Button>
+        </div>
       </div>
 
       <div className="relative mb-4">

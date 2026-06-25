@@ -16,6 +16,7 @@
     "seed": "node scripts/seed-gestor.mjs",
     "seed:demo": "node scripts/seed-demo-users.mjs",
     "seed:data": "node scripts/seed-demo-data.mjs",
+    "setup:migration": "node scripts/apply-migration.mjs",
     "load-test": "k6 run scripts/load-test.k6.js",
     "worker": "tsx src/workers/run-all.ts",
     "worker:orders": "tsx src/workers/order.worker.ts"

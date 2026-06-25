@@ -6,6 +6,18 @@ import type { QcpsScores } from '@/lib/qcps'
 
 type ApiResult<T> = Promise<T>
 
+async function downloadCsv(path: string, filename: string): Promise<void> {
+  const res = await fetch(path, { credentials: 'include' })
+  if (!res.ok) throw new Error('Erro ao exportar')
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     headers: { 'Content-Type': 'application/json' },
@@ -86,6 +98,9 @@ export const clientsApi = {
 
   remove: (id: string): ApiResult<void> =>
     request(`/api/clients/${id}`, { method: 'DELETE' }),
+
+  exportCsv: (): Promise<void> =>
+    downloadCsv('/api/clients/export', `clientes-${new Date().toISOString().slice(0, 10)}.csv`),
 }
 
 // --- Products ---
@@ -98,6 +113,9 @@ export const productsApi = {
 
   update: (id: string, data: Partial<Product>): ApiResult<Product> =>
     request(`/api/products/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  exportCsv: (): Promise<void> =>
+    downloadCsv('/api/products/export', `produtos-${new Date().toISOString().slice(0, 10)}.csv`),
 }
 
 // --- Orders ---
@@ -112,17 +130,7 @@ export const ordersApi = {
     request(`/api/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
 
   exportCsv: (): Promise<void> =>
-    fetch('/api/orders/export').then(res => {
-      if (!res.ok) throw new Error('Erro ao exportar')
-      return res.blob().then(blob => {
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `pedidos-${new Date().toISOString().slice(0, 10)}.csv`
-        a.click()
-        URL.revokeObjectURL(url)
-      })
-    }),
+    downloadCsv('/api/orders/export', `pedidos-${new Date().toISOString().slice(0, 10)}.csv`),
 
   history: (id: string): ApiResult<Array<{ id: string; from_status: string | null; to_status: string; created_at: string }>> =>
     request(`/api/orders/${id}/history`),
@@ -219,6 +227,11 @@ export const activityApi = {
 export const assistantApi = {
   suggest: (productId?: string, category?: string): ApiResult<{ suppliers: { id: string; name: string; score: number }[]; suggestion?: { id: string; name: string; score: number }; message: string }> =>
     request('/api/assistant', { method: 'POST', body: JSON.stringify({ product_id: productId, category }) }),
+}
+
+export const reportsApi = {
+  monthly: (): ApiResult<{ summary: string; metrics: Record<string, number> }> =>
+    request('/api/reports/monthly'),
 }
 
 export const pendingSuppliersApi = {

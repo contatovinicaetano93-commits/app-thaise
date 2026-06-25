@@ -9,7 +9,7 @@ import {
   AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts'
-import { dashboardApi, type DashboardStats, nextStepApi } from '@/lib/api'
+import { dashboardApi, type DashboardStats, nextStepApi, reportsApi } from '@/lib/api'
 import { formatRelativeDate } from '@/lib/format'
 import { ListSkeleton } from '@/components/ui/EmptyState'
 import { AlertsBanner } from '@/components/ui/AlertsBanner'
@@ -58,16 +58,19 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [nextStep, setNextStep] = useState<{ label: string; href: string; reason: string } | null>(null)
   const [showWizard, setShowWizard] = useState(false)
+  const [monthlyReport, setMonthlyReport] = useState<string | null>(null)
 
   const refresh = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
     try {
-      const [dash, step] = await Promise.all([
+      const [dash, step, report] = await Promise.all([
         dashboardApi.get().then(setData),
         nextStepApi.get().then(r => setNextStep(r.next)),
+        reportsApi.monthly().then(r => setMonthlyReport(r.summary)).catch(() => setMonthlyReport(null)),
       ])
       void dash
       void step
+      void report
     } catch (e) {
       if (!silent) toast.error(e instanceof Error ? e.message : 'Erro ao carregar dashboard')
     } finally {
@@ -123,6 +126,12 @@ export default function DashboardPage() {
           <p className="font-semibold text-gray-900">{nextStep.label}</p>
           <p className="text-sm text-gray-500 mt-1">{nextStep.reason}</p>
           <Link href={nextStep.href} className="inline-block mt-2 text-sm text-violet-600 hover:underline">Continuar →</Link>
+        </PanelCard>
+      )}
+
+      {monthlyReport && (
+        <PanelCard title="Resumo do mês" icon={TrendingUp} padding="p-4" menuItems={[{ label: 'Ver insights', href: '/insights' }]}>
+          <p className="text-sm text-gray-600 leading-relaxed">{monthlyReport}</p>
         </PanelCard>
       )}
 

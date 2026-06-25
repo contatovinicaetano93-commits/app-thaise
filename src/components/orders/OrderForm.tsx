@@ -34,6 +34,7 @@ export function OrderForm({ defaultProjectId, onSuccess, onCancel }: Props) {
   const [products, setProducts] = useState<Product[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [suggestion, setSuggestion] = useState('')
+  const [rankedSuppliers, setRankedSuppliers] = useState<Array<{ id: string; name: string; score: number }>>([])
 
   const { register, handleSubmit, setValue, control, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -72,9 +73,17 @@ export function OrderForm({ defaultProjectId, onSuccess, onCancel }: Props) {
     if (product) {
       setValue('unit_price', product.price)
       assistantApi.suggest(product.id, product.category)
-        .then(r => setSuggestion(r.message))
-        .catch(() => setSuggestion(''))
+        .then(r => {
+          setSuggestion(r.message)
+          setRankedSuppliers(r.suppliers ?? [])
+        })
+        .catch(() => { setSuggestion(''); setRankedSuppliers([]) })
     }
+  }
+
+  function applySuggestedSupplier(id: string) {
+    setValue('supplier_id', id)
+    toast.success('Fornecedor recomendado aplicado')
   }
 
   const activeSuppliers = suppliers.filter(s => s.status === 'active')
@@ -127,7 +136,18 @@ export function OrderForm({ defaultProjectId, onSuccess, onCancel }: Props) {
           {...register('supplier_id')}
         />
         {suggestion && (
-          <p className="col-span-2 text-xs text-violet-600 bg-violet-50 rounded-lg px-3 py-2">{suggestion}</p>
+          <div className="col-span-2 space-y-2">
+            <p className="text-xs text-violet-600 bg-violet-50 rounded-lg px-3 py-2">{suggestion}</p>
+            {rankedSuppliers.length > 0 && rankedSuppliers[0].id !== supplierId && (
+              <button
+                type="button"
+                onClick={() => applySuggestedSupplier(rankedSuppliers[0].id)}
+                className="text-xs font-medium text-violet-700 hover:text-violet-900 underline"
+              >
+                Usar {rankedSuppliers[0].name} (QCPS {rankedSuppliers[0].score}/10)
+              </button>
+            )}
+          </div>
         )}
         <Select
           label="Produto *"
