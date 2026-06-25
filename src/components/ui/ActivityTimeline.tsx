@@ -1,22 +1,39 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Clock } from 'lucide-react'
 import { activityApi, type ActivityEventRow } from '@/lib/api'
 import { formatRelativeDate } from '@/lib/format'
+import { useRealtimeRefresh, type RealtimeTable } from '@/lib/realtime'
+
+const ENTITY_TABLE: Record<string, RealtimeTable | undefined> = {
+  client: 'clients',
+  product: 'products',
+  order: 'orders',
+  supplier: 'suppliers',
+  project: 'projects',
+}
 
 export function ActivityTimeline({ entityType, entityId }: { entityType: string; entityId: string }) {
   const [events, setEvents] = useState<ActivityEventRow[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const fetchEvents = useCallback(() => {
     activityApi.list(entityType, entityId)
       .then(setEvents)
       .catch(() => setEvents([]))
       .finally(() => setLoading(false))
   }, [entityType, entityId])
 
-  if (loading) return <div className="h-16 bg-gray-50 rounded-lg animate-pulse" />
+  useEffect(() => { fetchEvents() }, [fetchEvents])
+
+  const table = ENTITY_TABLE[entityType]
+  useRealtimeRefresh(
+    table ? [table, 'activity_events'] : [],
+    fetchEvents,
+  )
+
+  if (loading) return <div className="h-16 bg-gray-50 rounded-lg animate-pulse mt-3" />
   if (events.length === 0) return null
 
   return (

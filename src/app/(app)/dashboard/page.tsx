@@ -16,7 +16,7 @@ import { AlertsBanner } from '@/components/ui/AlertsBanner'
 import { PanelCard } from '@/components/ui/PanelCard'
 import { FirstProjectWizard } from '@/components/projects/FirstProjectWizard'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { usePolling } from '@/lib/hooks'
+import { useLiveRefresh } from '@/lib/hooks'
 import { toast } from 'sonner'
 
 const STATUS_STYLE: Record<string, string> = {
@@ -76,7 +76,7 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => { refresh() }, [refresh])
-  usePolling(() => refresh(true), 30000)
+  useLiveRefresh(refresh, ['clients', 'products', 'orders', 'suppliers', 'projects'])
 
   useEffect(() => {
     if (!loading && isGestor && data?.counts.projects === 0) {

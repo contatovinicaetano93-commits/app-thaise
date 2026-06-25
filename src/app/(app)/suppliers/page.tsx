@@ -10,7 +10,7 @@ import { qcpsAverage } from '@/lib/qcps'
 import { Button } from '@/components/ui/Button'
 import { PanelCard } from '@/components/ui/PanelCard'
 import { suppliersApi, agentsApi } from '@/lib/api'
-import { useDebounce, usePolling } from '@/lib/hooks'
+import { useDebounce, useLiveRefresh } from '@/lib/hooks'
 import { toast } from 'sonner'
 import type { Supplier } from '@/types/database'
 
@@ -44,7 +44,7 @@ export default function SuppliersPage() {
   }, [])
 
   useEffect(() => { load() }, [load])
-  usePolling(() => load(true), 30000)
+  useLiveRefresh(load, ['suppliers'])
 
   async function handleDelete() {
     if (!deleting) return

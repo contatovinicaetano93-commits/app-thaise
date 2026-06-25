@@ -7,8 +7,9 @@ import { ProductForm } from '@/components/products/ProductForm'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { PanelCard } from '@/components/ui/PanelCard'
+import { ActivityTimeline } from '@/components/ui/ActivityTimeline'
 import { productsApi } from '@/lib/api'
-import { usePolling } from '@/lib/hooks'
+import { useLiveRefresh } from '@/lib/hooks'
 import { toast } from 'sonner'
 import type { Product } from '@/types/database'
 
@@ -33,7 +34,7 @@ export default function ProductsPage() {
   }, [])
 
   useEffect(() => { load() }, [load])
-  usePolling(() => load(true), 30000)
+  useLiveRefresh(load, ['products'])
 
   async function handleDelete() {
     if (!deleting) return
@@ -114,6 +115,7 @@ export default function ProductsPage() {
                   <p className="text-xs text-gray-400 mt-0.5">{product.lead_time_days} dias prazo</p>
                 )}
               </div>
+              <ActivityTimeline entityType="product" entityId={product.id} />
             </PanelCard>
           ))}
         </div>

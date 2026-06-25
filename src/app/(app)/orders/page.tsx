@@ -8,7 +8,7 @@ import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { PanelCard } from '@/components/ui/PanelCard'
 import { ordersApi } from '@/lib/api'
-import { useDebounce, usePolling } from '@/lib/hooks'
+import { useDebounce, useLiveRefresh } from '@/lib/hooks'
 import { SipocBadge } from '@/components/ui/SipocBadge'
 import { toast } from 'sonner'
 import type { Order } from '@/types/database'
@@ -45,7 +45,7 @@ export default function OrdersPage() {
   }, [])
 
   useEffect(() => { load() }, [load])
-  usePolling(() => load(true), 30000)
+  useLiveRefresh(load, ['orders'])
 
   async function updateStatus(id: string, status: string) {
     try {

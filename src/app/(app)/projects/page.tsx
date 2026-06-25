@@ -17,7 +17,7 @@ import { projectsApi, agentsApi } from '@/lib/api'
 import { isPhaseComplete, phaseProgress } from '@/lib/checklists'
 import { PHASES } from '@/lib/phases'
 import { PHASE_PROMPTS } from '@/lib/phase-prompts'
-import { useDebounce } from '@/lib/hooks'
+import { useDebounce, useLiveRefresh } from '@/lib/hooks'
 import { toast } from 'sonner'
 import type { Project } from '@/types/database'
 import type { PhaseChecklist as PhaseChecklistType } from '@/lib/auth/roles'
@@ -58,6 +58,7 @@ export default function ProjectsPage() {
   }, [])
 
   useEffect(() => { load() }, [load])
+  useLiveRefresh(load, ['projects'])
 
   async function handleAdvance(id: string) {
     setAdvancing(id)
