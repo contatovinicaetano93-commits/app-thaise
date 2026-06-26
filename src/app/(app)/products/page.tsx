@@ -1,19 +1,22 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, Package, Download } from 'lucide-react'
+import { Search, Package } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { ProductForm } from '@/components/products/ProductForm'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
+import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { Button } from '@/components/ui/Button'
 import { PanelCard } from '@/components/ui/PanelCard'
 import { ActivityTimeline } from '@/components/ui/ActivityTimeline'
 import { productsApi } from '@/lib/api'
 import { useLiveRefresh } from '@/lib/hooks'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { toast } from 'sonner'
 import type { Product } from '@/types/database'
 
 export default function ProductsPage() {
+  const { isGestor, role } = useAuth()
   const [products, setProducts] = useState<Product[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -55,20 +58,14 @@ export default function ProductsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Catálogo</h2>
-          <p className="text-gray-500 mt-1">{products.length} produto{products.length !== 1 ? 's' : ''}</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => productsApi.exportCsv().catch(() => toast.error('Erro ao exportar'))}>
-            <Download size={16} />CSV
-          </Button>
-          <Button onClick={() => { setEditing(undefined); setModalOpen(true) }}>
-            <Plus size={16} />Novo Produto
-          </Button>
-        </div>
-      </div>
+      <PageFeedHeader
+        title="Catálogo"
+        subtitle={`${products.length} produto${products.length !== 1 ? 's' : ''}`}
+        menuItems={(isGestor || role === 'fornecedor') ? [
+          { label: 'Novo produto', onClick: () => { setEditing(undefined); setModalOpen(true) } },
+          ...(isGestor ? [{ label: 'Exportar CSV', onClick: () => productsApi.exportCsv().catch(() => toast.error('Erro ao exportar')) }] : []),
+        ] : undefined}
+      />
 
       <div className="relative mb-4">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />

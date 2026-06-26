@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/Modal'
 import { SupplierForm } from '@/components/suppliers/SupplierForm'
 import { QcpsBar } from '@/components/ui/QcpsBar'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
+import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { qcpsAverage } from '@/lib/qcps'
 import { Button } from '@/components/ui/Button'
 import { PanelCard } from '@/components/ui/PanelCard'
@@ -78,15 +79,11 @@ export default function SuppliersPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Fornecedores</h2>
-          <p className="text-gray-500 mt-1">{suppliers.length} cadastrado{suppliers.length !== 1 ? 's' : ''}</p>
-        </div>
-        <Button onClick={() => { setEditing(undefined); setModalOpen(true) }}>
-          <Plus size={16} />Novo Fornecedor
-        </Button>
-      </div>
+      <PageFeedHeader
+        title="Fornecedores"
+        subtitle={`${suppliers.length} cadastrado${suppliers.length !== 1 ? 's' : ''}`}
+        menuItems={[{ label: 'Novo fornecedor', onClick: () => { setEditing(undefined); setModalOpen(true) } }]}
+      />
 
       <div className="relative mb-4">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />

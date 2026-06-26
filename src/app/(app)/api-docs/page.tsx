@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Code2, ChevronDown, ChevronRight } from 'lucide-react'
 import { PanelCard } from '@/components/ui/PanelCard'
+import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 
 const ENDPOINTS = [
   {
@@ -68,15 +69,13 @@ export default function ApiDocsPage() {
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-2">
-        <div className="p-2 bg-gray-100 rounded-lg">
-          <Code2 size={18} className="text-gray-600" />
-        </div>
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">API Docs</h2>
-          <p className="text-gray-500 text-sm">Todos os endpoints disponíveis · Base URL: <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">http://localhost:3000</code></p>
-        </div>
-      </div>
+      <PageFeedHeader
+        title="API Docs"
+        icon={Code2}
+        subtitle={<>Todos os endpoints · Base URL: <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">/api</code></>}
+        menuItems={[{ label: 'Health check', href: '/api/health' }, { label: 'OpenAPI JSON', href: '/api/openapi' }]}
+        className="mb-2"
+      />
 
       <PanelCard
         title="Formato padrão de resposta"

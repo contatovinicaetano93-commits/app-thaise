@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Calculator, TrendingUp } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { PanelCard } from '@/components/ui/PanelCard'
 import { toast } from 'sonner'
 
 interface SimResult {
@@ -25,13 +25,15 @@ export function SimulationPanel({ projectId, phase }: Props) {
 
   if (phase !== 'A') return null
 
-  async function run() {
+  async function run(nextTemplate?: 'residencial' | 'comercial') {
+    const tpl = nextTemplate ?? template
+    if (nextTemplate) setTemplate(nextTemplate)
     setLoading(true)
     try {
       const res = await fetch(`/api/projects/${projectId}/simulation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ template }),
+        body: JSON.stringify({ template: tpl }),
       })
       const json = await res.json()
       if (!json.ok) throw new Error(json.error)
@@ -45,23 +47,20 @@ export function SimulationPanel({ projectId, phase }: Props) {
   }
 
   return (
-    <div className="mt-4 p-4 bg-indigo-50 rounded-xl border border-indigo-100">
-      <div className="flex items-center gap-2 mb-3">
-        <Calculator size={16} className="text-indigo-600" />
-        <h4 className="text-sm font-semibold text-indigo-900">Simulação Fase A — VPL / TIR / Payback</h4>
-      </div>
-      <div className="flex flex-wrap gap-2 mb-3">
-        <select
-          value={template}
-          onChange={e => setTemplate(e.target.value as 'residencial' | 'comercial')}
-          className="text-sm border border-indigo-200 rounded-lg px-3 py-1.5 bg-white"
-        >
-          <option value="residencial">Residencial</option>
-          <option value="comercial">Comercial</option>
-        </select>
-        <Button onClick={run} loading={loading} className="!py-1.5 !px-3 text-xs">
-          <TrendingUp size={14} />Simular
-        </Button>
+    <PanelCard
+      className="mt-4 bg-indigo-50 border-indigo-100"
+      title="Simulação Fase A — VPL / TIR / Payback"
+      icon={Calculator}
+      padding="p-4"
+      defaultOpen={false}
+      menuItems={[
+        { label: 'Simular residencial', onClick: () => run('residencial'), disabled: loading },
+        { label: 'Simular comercial', onClick: () => run('comercial'), disabled: loading },
+      ]}
+    >
+      <div className="flex flex-wrap items-center gap-2 mb-3 text-xs text-indigo-700">
+        <TrendingUp size={14} />
+        <span>Modelo: <strong>{template === 'residencial' ? 'Residencial' : 'Comercial'}</strong></span>
       </div>
       {result && (
         <div className={`text-sm rounded-lg px-3 py-2 ${result.viavel ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
@@ -73,6 +72,6 @@ export function SimulationPanel({ projectId, phase }: Props) {
           </p>
         </div>
       )}
-    </div>
+    </PanelCard>
   )
 }

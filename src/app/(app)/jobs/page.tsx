@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { RefreshCw, Server } from 'lucide-react'
+import { Server } from 'lucide-react'
 import { jobsApi, type JobLogRow } from '@/lib/api'
 import { ListSkeleton } from '@/components/ui/EmptyState'
-import { Button } from '@/components/ui/Button'
+import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { PanelCard } from '@/components/ui/PanelCard'
 import { toast } from 'sonner'
 
@@ -47,18 +47,12 @@ export default function JobsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Server size={22} className="text-violet-600" />
-            Fila de Jobs
-          </h2>
-          <p className="text-gray-500 mt-1 text-sm">
-            {counts.failed} falho(s) · {counts.pending} pendente(s) — memória em job_logs
-          </p>
-        </div>
-        <Button variant="secondary" onClick={load}><RefreshCw size={16} />Atualizar</Button>
-      </div>
+      <PageFeedHeader
+        title="Fila de Jobs"
+        icon={Server}
+        subtitle={`${counts.failed} falho(s) · ${counts.pending} pendente(s) — memória em job_logs`}
+        menuItems={[{ label: 'Atualizar lista', onClick: load }]}
+      />
 
       {loading ? (
         <ListSkeleton rows={5} height="h-20" />

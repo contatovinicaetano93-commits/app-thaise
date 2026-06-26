@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Sparkles, Building2, Truck } from 'lucide-react'
 import { insightsApi, suppliersApi, type AgentInsightRow } from '@/lib/api'
 import { ListSkeleton } from '@/components/ui/EmptyState'
+import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { PanelCard } from '@/components/ui/PanelCard'
 import { QcpsComparisonChart } from '@/components/insights/QcpsComparisonChart'
 import { toast } from 'sonner'
@@ -25,13 +26,12 @@ export default function InsightsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Sparkles size={22} className="text-violet-600" />
-          Insights AI
-        </h2>
-        <p className="text-gray-500 mt-1 text-sm">Análises QCPS geradas pelo agente</p>
-      </div>
+      <PageFeedHeader
+        title="Insights AI"
+        icon={Sparkles}
+        subtitle="Análises QCPS geradas pelo agente"
+        menuItems={[{ label: 'Ver fornecedores', href: '/suppliers' }, { label: 'Ver empreendimentos', href: '/projects' }]}
+      />
 
       {!loading && <QcpsComparisonChart suppliers={suppliers} />}
 

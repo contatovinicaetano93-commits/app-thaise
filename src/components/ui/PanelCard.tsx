@@ -71,6 +71,7 @@ export function PanelDropdown({ items }: { items: PanelMenuItem[] }) {
 interface PanelCardProps {
   title?: ReactNode
   icon?: ElementType
+  iconClassName?: string
   menuItems?: PanelMenuItem[]
   headerRight?: ReactNode
   headerExtra?: ReactNode
@@ -87,6 +88,7 @@ interface PanelCardProps {
 export function PanelCard({
   title,
   icon: Icon,
+  iconClassName = 'text-violet-600',
   menuItems,
   headerRight,
   headerExtra,
@@ -117,7 +119,7 @@ export function PanelCard({
     <div className={`${bgClass} ${rounded} ${borderClass} ${shadowClass} ${className}`}>
       <div className={`flex items-start justify-between gap-2 ${padding} ${open ? 'pb-0' : ''}`}>
         <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
-          {Icon && <Icon size={16} className="text-violet-600 shrink-0" />}
+          {Icon && <Icon size={16} className={`${iconClassName} shrink-0`} />}
           {title && (
             typeof title === 'string'
               ? <h3 className="font-semibold text-gray-900 text-sm truncate">{title}</h3>

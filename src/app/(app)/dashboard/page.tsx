@@ -1,9 +1,8 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import Link from 'next/link'
 import {
-  TrendingUp, Truck, Users, ShoppingCart, Package, Clock, Plus,
+  TrendingUp, Truck, Users, ShoppingCart, Package, Clock,
 } from 'lucide-react'
 import {
   AreaChart, Area, BarChart, Bar,
@@ -14,6 +13,7 @@ import { formatRelativeDate } from '@/lib/format'
 import { ListSkeleton } from '@/components/ui/EmptyState'
 import { AlertsBanner } from '@/components/ui/AlertsBanner'
 import { PanelCard } from '@/components/ui/PanelCard'
+import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { FirstProjectWizard } from '@/components/projects/FirstProjectWizard'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useLiveRefresh } from '@/lib/hooks'
@@ -53,7 +53,7 @@ function StatCard({ label, value, sub, icon: Icon, iconBg, iconColor, href }: {
 }
 
 export default function DashboardPage() {
-  const { isGestor } = useAuth()
+  const { isGestor, role } = useAuth()
   const [data, setData] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [nextStep, setNextStep] = useState<{ label: string; href: string; reason: string } | null>(null)
@@ -125,7 +125,6 @@ export default function DashboardPage() {
         >
           <p className="font-semibold text-gray-900">{nextStep.label}</p>
           <p className="text-sm text-gray-500 mt-1">{nextStep.reason}</p>
-          <Link href={nextStep.href} className="inline-block mt-2 text-sm text-violet-600 hover:underline">Continuar →</Link>
         </PanelCard>
       )}
 
@@ -135,17 +134,21 @@ export default function DashboardPage() {
         </PanelCard>
       )}
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Visão Geral</h2>
-          <p className="text-gray-500 mt-0.5 text-sm capitalize">{monthLabel} · dados reais</p>
-        </div>
-        {isEmpty && (
-          <Link href="/suppliers" className="text-sm font-medium text-violet-600 hover:text-violet-800 flex items-center gap-1">
-            <Plus size={16} />Começar
-          </Link>
-        )}
-      </div>
+      <PageFeedHeader
+        title="Visão Geral"
+        subtitle={<span className="capitalize">{monthLabel} · dados reais</span>}
+        menuItems={isGestor ? [
+          ...(isEmpty ? [{ label: 'Começar — fornecedores', href: '/suppliers' }] : []),
+          { label: 'Novo pedido', href: '/orders' },
+          { label: 'Empreendimentos', href: '/projects' },
+        ] : role === 'fornecedor' ? [
+          { label: 'Meus pedidos', href: '/orders' },
+          { label: 'Catálogo', href: '/products' },
+        ] : [
+          { label: 'Meus pedidos', href: '/orders' },
+          { label: 'Empreendimentos', href: '/projects' },
+        ]}
+      />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
@@ -223,28 +226,33 @@ export default function DashboardPage() {
           className="lg:col-span-2"
           title="Pedidos recentes"
           icon={Clock}
-          headerRight={<Link href="/orders" className="text-xs text-violet-600 hover:underline">Ver todos</Link>}
-          menuItems={[{ label: 'Novo pedido', href: '/orders' }]}
+          menuItems={[{ label: 'Ver todos', href: '/orders' }, { label: 'Novo pedido', href: '/orders' }]}
         >
           {(data?.recentOrders ?? []).length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-8">
-              Nenhum pedido ainda. <Link href="/orders" className="text-violet-600 hover:underline">Criar pedido</Link>
+              Nenhum pedido ainda.
             </p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {data?.recentOrders.map(o => (
-                <div key={o.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{o.client}</p>
-                    <p className="text-xs text-gray-400">{o.supplier} · {formatRelativeDate(o.date)}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold text-gray-700">{fmt(o.value)}</span>
+                <PanelCard
+                  key={o.id}
+                  title={o.client}
+                  rounded="rounded-xl"
+                  padding="p-3"
+                  defaultOpen={false}
+                  headerExtra={
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLE[o.status] ?? 'bg-gray-100 text-gray-600'}`}>
                       {STATUS_LABEL[o.status] ?? o.status}
                     </span>
+                  }
+                  menuItems={[{ label: 'Ver pedidos', href: '/orders' }]}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs text-gray-400">{o.supplier} · {formatRelativeDate(o.date)}</p>
+                    <span className="text-sm font-semibold text-gray-700">{fmt(o.value)}</span>
                   </div>
-                </div>
+                </PanelCard>
               ))}
             </div>
           )}
@@ -253,26 +261,29 @@ export default function DashboardPage() {
         <PanelCard
           title="Top fornecedores"
           icon={Truck}
-          headerRight={<Link href="/suppliers" className="text-xs text-violet-600 hover:underline">Ver todos</Link>}
-          menuItems={[{ label: 'Cadastrar fornecedor', href: '/suppliers' }]}
+          menuItems={isGestor ? [{ label: 'Ver todos', href: '/suppliers' }, { label: 'Cadastrar', href: '/suppliers' }] : [{ label: 'Ver catálogo', href: '/products' }]}
         >
           {(data?.topSuppliers ?? []).length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-8">
-              <Link href="/suppliers" className="text-violet-600 hover:underline">Cadastrar fornecedor</Link>
+              Nenhum fornecedor ranqueado ainda.
             </p>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-2">
               {data?.topSuppliers.map(s => (
-                <div key={s.id}>
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-xs font-medium text-gray-700 truncate flex-1 pr-2">{s.nome}</p>
-                    <span className="text-xs font-bold text-violet-600">{s.score}</span>
-                  </div>
-                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <PanelCard
+                  key={s.id}
+                  title={s.nome}
+                  rounded="rounded-xl"
+                  padding="p-3"
+                  defaultOpen={false}
+                  headerExtra={<span className="text-xs font-bold text-violet-600">{s.score}</span>}
+                  menuItems={isGestor ? [{ label: 'Ver fornecedores', href: '/suppliers' }] : undefined}
+                >
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-1">
                     <div className="h-full bg-violet-500 rounded-full" style={{ width: `${(s.score / 10) * 100}%` }} />
                   </div>
-                  <p className="text-xs text-gray-400 mt-0.5">{s.pedidos} pedido(s)</p>
-                </div>
+                  <p className="text-xs text-gray-400">{s.pedidos} pedido(s)</p>
+                </PanelCard>
               ))}
             </div>
           )}

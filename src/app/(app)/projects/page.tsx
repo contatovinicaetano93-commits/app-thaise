@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, Building2, MapPin } from 'lucide-react'
+import { Search, Building2, MapPin } from 'lucide-react'
 import { SimulationPanel } from '@/components/projects/SimulationPanel'
 import { Modal } from '@/components/ui/Modal'
 import { ProjectForm } from '@/components/projects/ProjectForm'
@@ -12,6 +12,7 @@ import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
 import { ActivityTimeline } from '@/components/ui/ActivityTimeline'
 import { Button } from '@/components/ui/Button'
 import { PanelCard } from '@/components/ui/PanelCard'
+import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { projectsApi, agentsApi } from '@/lib/api'
 import { isPhaseComplete, phaseProgress } from '@/lib/checklists'
@@ -33,7 +34,7 @@ const STATUS_COLOR: Record<string, string> = {
 }
 
 export default function ProjectsPage() {
-  const { isGestor } = useAuth()
+  const { isGestor, role } = useAuth()
   const [projects, setProjects] = useState<Project[]>([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -130,17 +131,15 @@ export default function ProjectsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Empreendimentos</h2>
-          <p className="text-gray-500 mt-1 text-sm">Jornada guiada A → F · checklist obrigatório</p>
-        </div>
-        {isGestor && (
-          <Button onClick={() => { setEditing(undefined); setModalOpen(true) }}>
-            <Plus size={16} />Novo
-          </Button>
-        )}
-      </div>
+      <PageFeedHeader
+        title="Empreendimentos"
+        subtitle="Jornada guiada A → F · checklist obrigatório"
+        menuItems={isGestor ? [
+          { label: 'Novo empreendimento', onClick: () => { setEditing(undefined); setModalOpen(true) } },
+        ] : role === 'cliente' ? [
+          { label: 'Ver pedidos', href: '/orders' },
+        ] : undefined}
+      />
 
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="relative flex-1">
@@ -212,6 +211,8 @@ export default function ProjectsPage() {
                   { label: 'Recalcular QCPS', onClick: () => handleScore(project.id), disabled: scoring === project.id },
                   { label: 'Editar', onClick: () => { setEditing(project); setModalOpen(true) } },
                   { label: 'Excluir', onClick: () => setDeleting(project), danger: true },
+                ] : role === 'cliente' ? [
+                  { label: 'Ver pedidos', href: '/orders' },
                 ] : undefined}
               >
                 <div className="flex flex-wrap gap-3 text-xs text-gray-500 mb-3">

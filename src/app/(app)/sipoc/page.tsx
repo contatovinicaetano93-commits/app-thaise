@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { ArrowRight, GitBranch, Truck, Users, Package, ShoppingCart, Building2 } from 'lucide-react'
 import { sipocApi, type SipocData } from '@/lib/api'
 import { ListSkeleton } from '@/components/ui/EmptyState'
+import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { PanelCard } from '@/components/ui/PanelCard'
 import { SIPOC } from '@/lib/sipoc'
 
@@ -24,10 +24,12 @@ export default function SipocPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Mapa SIPOC</h2>
-        <p className="text-gray-500 mt-1 text-sm">Fornecedor → Entrada → Processo → Saída → Cliente</p>
-      </div>
+      <PageFeedHeader
+        title="Mapa SIPOC"
+        icon={GitBranch}
+        subtitle="Fornecedor → Entrada → Processo → Saída → Cliente"
+        menuItems={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Pedidos', href: '/orders' }]}
+      />
 
       <div className="flex flex-wrap items-center justify-center gap-2 mb-8 text-sm font-medium text-gray-500">
         {(['S', 'I', 'P', 'O', 'C'] as const).map((key, i) => (
@@ -73,7 +75,6 @@ export default function SipocPage() {
         <p className="text-sm text-gray-500">
           {SIPOC.suppliers.desc} → {SIPOC.inputs.desc} → {SIPOC.process.desc} → {SIPOC.outputs.desc} → {SIPOC.customers.desc}
         </p>
-        <Link href="/dashboard" className="inline-block mt-3 text-sm text-violet-600 hover:underline">Voltar ao dashboard</Link>
       </PanelCard>
     </div>
   )

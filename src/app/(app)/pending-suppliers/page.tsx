@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Check, X, Truck } from 'lucide-react'
+import { Truck } from 'lucide-react'
 import { pendingSuppliersApi } from '@/lib/api'
 import { ListSkeleton } from '@/components/ui/EmptyState'
-import { Button } from '@/components/ui/Button'
+import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { PanelCard } from '@/components/ui/PanelCard'
 import { toast } from 'sonner'
 import type { Supplier } from '@/types/database'
@@ -32,10 +32,12 @@ export default function PendingSuppliersPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Homologação</h2>
-        <p className="text-gray-500 mt-1 text-sm">SIPOC: fornecedores pendentes aguardam curadoria (S)</p>
-      </div>
+      <PageFeedHeader
+        title="Homologação"
+        icon={Truck}
+        subtitle="SIPOC: fornecedores pendentes aguardam curadoria (S)"
+        menuItems={[{ label: 'Ver fornecedores', href: '/suppliers' }]}
+      />
 
       {loading ? (
         <ListSkeleton rows={3} />
@@ -57,10 +59,6 @@ export default function PendingSuppliersPage() {
               ]}
             >
               <p className="text-sm text-gray-500">{s.category} · {s.contact_email}</p>
-              <div className="flex gap-2 mt-3">
-                <Button className="px-3 py-1.5 text-xs" onClick={() => review(s.id, 'approve')}><Check size={14} />Aprovar</Button>
-                <Button variant="secondary" className="px-3 py-1.5 text-xs" onClick={() => review(s.id, 'reject')}><X size={14} />Rejeitar</Button>
-              </div>
             </PanelCard>
           ))}
         </div>

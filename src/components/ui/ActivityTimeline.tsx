@@ -5,6 +5,7 @@ import { Clock } from 'lucide-react'
 import { activityApi, type ActivityEventRow } from '@/lib/api'
 import { formatRelativeDate } from '@/lib/format'
 import { useRealtimeRefresh, type RealtimeTable } from '@/lib/realtime'
+import { PanelCard } from '@/components/ui/PanelCard'
 
 const ENTITY_TABLE: Record<string, RealtimeTable | undefined> = {
   client: 'clients',
@@ -33,15 +34,18 @@ export function ActivityTimeline({ entityType, entityId }: { entityType: string;
     fetchEvents,
   )
 
-  if (loading) return <div className="h-16 bg-gray-50 rounded-lg animate-pulse mt-3" />
+  if (loading) return <div className="h-16 bg-gray-50 rounded-lg animate-pulse mt-4" />
   if (events.length === 0) return null
 
   return (
-    <div className="mt-4 pt-4 border-t border-gray-50">
-      <div className="flex items-center gap-2 mb-3">
-        <Clock size={14} className="text-gray-400" />
-        <h4 className="text-xs font-semibold text-gray-500 uppercase">Memória / Timeline</h4>
-      </div>
+    <PanelCard
+      className="mt-4 border-gray-50"
+      title="Memória / Timeline"
+      icon={Clock}
+      padding="p-4"
+      defaultOpen={false}
+      menuItems={[{ label: 'Atualizar', onClick: fetchEvents }]}
+    >
       <div className="space-y-2 pl-2 border-l-2 border-violet-100">
         {events.map(e => (
           <div key={e.id} className="pl-3 -ml-0.5">
@@ -51,6 +55,6 @@ export function ActivityTimeline({ entityType, entityId }: { entityType: string;
           </div>
         ))}
       </div>
-    </div>
+    </PanelCard>
   )
 }

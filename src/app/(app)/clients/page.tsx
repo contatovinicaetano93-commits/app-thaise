@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, Phone, Mail, Building2, Download } from 'lucide-react'
+import { Plus, Search, Phone, Mail, Building2 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { ClientForm } from '@/components/clients/ClientForm'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
-import { Button } from '@/components/ui/Button'
+import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { PanelCard } from '@/components/ui/PanelCard'
+import { Button } from '@/components/ui/Button'
 import { ActivityTimeline } from '@/components/ui/ActivityTimeline'
 import { clientsApi } from '@/lib/api'
 import { useDebounce, useLiveRefresh } from '@/lib/hooks'
@@ -57,20 +58,14 @@ export default function ClientsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Clientes</h2>
-          <p className="text-gray-500 mt-1 text-sm">{clients.length} cadastrado{clients.length !== 1 ? 's' : ''}</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => clientsApi.exportCsv().catch(() => toast.error('Erro ao exportar'))}>
-            <Download size={16} />CSV
-          </Button>
-          <Button onClick={() => { setEditing(undefined); setModalOpen(true) }}>
-            <Plus size={16} />Novo Cliente
-          </Button>
-        </div>
-      </div>
+      <PageFeedHeader
+        title="Clientes"
+        subtitle={`${clients.length} cadastrado${clients.length !== 1 ? 's' : ''}`}
+        menuItems={[
+          { label: 'Novo cliente', onClick: () => { setEditing(undefined); setModalOpen(true) } },
+          { label: 'Exportar CSV', onClick: () => clientsApi.exportCsv().catch(() => toast.error('Erro ao exportar')) },
+        ]}
+      />
 
       <div className="relative mb-4">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />

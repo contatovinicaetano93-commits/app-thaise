@@ -1,14 +1,15 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, ShoppingCart, Download } from 'lucide-react'
+import { Search, ShoppingCart } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { OrderForm } from '@/components/orders/OrderForm'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
-import { Button } from '@/components/ui/Button'
+import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { PanelCard } from '@/components/ui/PanelCard'
 import { ordersApi } from '@/lib/api'
 import { useDebounce, useLiveRefresh } from '@/lib/hooks'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { SipocBadge } from '@/components/ui/SipocBadge'
 import { toast } from 'sonner'
 import type { Order } from '@/types/database'
@@ -26,6 +27,7 @@ const STATUS_COLOR: Record<string, string> = {
 }
 
 export default function OrdersPage() {
+  const { isGestor } = useAuth()
   const [orders, setOrders] = useState<Order[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -69,25 +71,23 @@ export default function OrdersPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Pedidos</h2>
-          <p className="text-gray-500 mt-1 text-sm">
+      <PageFeedHeader
+        title="Pedidos"
+        subtitle={
+          <>
             {orders.length} pedido{orders.length !== 1 ? 's' : ''} ·{' '}
             <span className="text-violet-600 font-medium">
               {totalAberto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} em aberto
             </span>
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => ordersApi.exportCsv().catch(() => toast.error('Erro ao exportar'))}>
-            <Download size={16} />CSV
-          </Button>
-          <Button onClick={() => setModalOpen(true)}>
-            <Plus size={16} />Novo Pedido
-          </Button>
-        </div>
-      </div>
+          </>
+        }
+        menuItems={isGestor ? [
+          { label: 'Novo pedido', onClick: () => setModalOpen(true) },
+          { label: 'Exportar CSV', onClick: () => ordersApi.exportCsv().catch(() => toast.error('Erro ao exportar')) },
+        ] : [
+          { label: 'Atualizar lista', onClick: () => load() },
+        ]}
+      />
 
       <div className="relative mb-4">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
