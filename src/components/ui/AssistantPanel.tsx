@@ -5,8 +5,15 @@ import { MessageCircle, X, Sparkles } from 'lucide-react'
 import { assistantApi } from '@/lib/api'
 import { Button } from '@/components/ui/Button'
 
-export function AssistantPanel() {
-  const [open, setOpen] = useState(false)
+type AssistantPanelProps = {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
+
+export function AssistantPanel({ open: controlledOpen, onOpenChange }: AssistantPanelProps = {}) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = controlledOpen ?? internalOpen
+  const setOpen = onOpenChange ?? setInternalOpen
   const [reply, setReply] = useState('')
   const [loading, setLoading] = useState(false)
 

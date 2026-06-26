@@ -1,6 +1,6 @@
 import { ok, handleError } from '@/lib/api-response'
 import { requireProfile } from '@/lib/auth/api-context'
-import { createServerClient } from '@/lib/supabase-server'
+import { createSupabaseServer } from '@/lib/supabase/server'
 
 /** Próximo passo ordenado pelo fluxo SIPOC: S → I → P → O → C */
 export async function GET() {
@@ -8,7 +8,7 @@ export async function GET() {
     const { profile, error: authErr } = await requireProfile()
     if (authErr) return authErr
 
-    const db = createServerClient()
+    const db = await createSupabaseServer()
     const steps: Array<{ label: string; href: string; reason: string; sipoc: string }> = []
 
     const [

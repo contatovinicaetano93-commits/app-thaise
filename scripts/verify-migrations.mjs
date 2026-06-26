@@ -32,6 +32,12 @@ const tables = [
   ['scale_webhooks', 'webhooks'],
   ['scale_webhooks', 'notifications'],
   ['pipeline', 'opportunities'],
+  ['estlar_eos', 'weekly_reports'],
+  ['estlar_eos', 'welcome_kits'],
+  ['estlar_eos', 'project_diary_entries'],
+  ['estlar_eos', 'scope_amendments'],
+  ['estlar_eos', 'quotations'],
+  ['estlar_eos', 'operational_config'],
 ]
 
 console.log('\n📦 Verificando migrations no Supabase...\n')

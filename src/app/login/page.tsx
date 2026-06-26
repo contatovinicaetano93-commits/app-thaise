@@ -10,7 +10,31 @@ import { toast } from 'sonner'
 export default function LoginPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [resetting, setResetting] = useState(false)
   const [form, setForm] = useState({ email: '', password: '' })
+
+  async function handleForgotPassword() {
+    if (!form.email) {
+      toast.error('Digite seu e-mail acima primeiro')
+      return
+    }
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    if (!url) return
+
+    setResetting(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
+        redirectTo: `${window.location.origin}/login`,
+      })
+      if (error) throw error
+      toast.success('Link de redefinição enviado — verifique seu e-mail')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao enviar link')
+    } finally {
+      setResetting(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -94,6 +118,16 @@ export default function LoginPage() {
               value={form.password}
               onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
             />
+            <div className="flex justify-end -mt-2">
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={resetting}
+                className="text-xs text-violet-600 hover:text-violet-800 font-medium disabled:opacity-50"
+              >
+                {resetting ? 'Enviando…' : 'Esqueci minha senha'}
+              </button>
+            </div>
             <button
               type="submit"
               disabled={loading}

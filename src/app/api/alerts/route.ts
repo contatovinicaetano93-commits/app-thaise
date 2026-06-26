@@ -1,18 +1,66 @@
 import { ok, handleError } from '@/lib/api-response'
 import { requireGestor } from '@/lib/auth/api-context'
-import { createServerClient } from '@/lib/supabase-server'
+import { createSupabaseServer } from '@/lib/supabase/server'
 import { phaseProgress } from '@/lib/checklists'
 import type { ProjectPhase } from '@/lib/phases'
 import type { PhaseChecklist } from '@/lib/auth/roles'
 import { qcpsAverage } from '@/lib/qcps'
+import { checkProjectCap } from '@/lib/estlar/cap'
+import { ACTIVE_PIPELINE_STAGES } from '@/lib/pipeline'
 
 export async function GET() {
   try {
     const { error: authErr } = await requireGestor()
     if (authErr) return authErr
 
-    const db = createServerClient()
+    const db = await createSupabaseServer()
     const alerts: Array<{ type: string; severity: 'warning' | 'info'; message: string; href?: string }> = []
+
+    const capInfo = await checkProjectCap()
+    if (capInfo.atCap) {
+      alerts.push({
+        type: 'project_cap',
+        severity: 'warning',
+        message: `Cap trimestral atingido (${capInfo.active}/${capInfo.cap.max} projetos)`,
+        href: '/dashboard',
+      })
+    } else if (capInfo.available <= 2) {
+      alerts.push({
+        type: 'project_cap',
+        severity: 'info',
+        message: `Apenas ${capInfo.available} vaga(s) no cap trimestral`,
+        href: '/pipeline',
+      })
+    }
+
+    const { count: draftReports } = await db
+      .from('weekly_reports')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'draft')
+
+    if ((draftReports ?? 0) > 0) {
+      alerts.push({
+        type: 'weekly_reports_draft',
+        severity: 'info',
+        message: `${draftReports} Relatório(s) 360 aguardando revisão`,
+        href: '/reports/weekly',
+      })
+    }
+
+    const { count: intakeReview } = await db
+      .from('opportunities')
+      .select('id', { count: 'exact', head: true })
+      .in('intake_status', ['review', 'pending'])
+      .in('stage', ACTIVE_PIPELINE_STAGES)
+
+    if ((intakeReview ?? 0) > 0) {
+      alerts.push({
+        type: 'intake_review',
+        severity: 'info',
+        message: `${intakeReview} intake(s) aguardando revisão`,
+        href: '/pipeline',
+      })
+    }
 
     const { data: suppliers } = await db.from('suppliers').select('id, name, score_q, score_c, score_p, score_s, status')
     for (const s of (suppliers ?? []) as Array<{ id: string; name: string; score_q: number; score_c: number; score_p: number; score_s: number; status: string }>) {

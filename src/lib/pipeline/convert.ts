@@ -1,6 +1,7 @@
 import { createServiceClient } from '@/lib/supabase-server'
 import { auditAndInvalidate } from '@/lib/memory/audit'
 import { notifyUser } from '@/lib/webhooks/dispatch'
+import { generateWelcomeKitContent } from '@/lib/estlar/welcome-kit'
 import type { Opportunity } from '@/types/database'
 
 export interface ConvertResult {
@@ -30,6 +31,9 @@ export async function convertOpportunity(
   }
   if (opportunity.stage === 'perdido') {
     throw new Error('Oportunidade marcada como perdida')
+  }
+  if (!opportunity.signal_paid) {
+    throw new Error('Valide o sinal financeiro antes de converter (marque na oportunidade)')
   }
 
   const { data: client, error: clientErr } = await db
@@ -87,6 +91,18 @@ export async function convertOpportunity(
     .single()
 
   if (updateErr) throw new Error(updateErr.message)
+
+  const welcomeContent = generateWelcomeKitContent({
+    clientName: clientRow.name,
+    projectName: projectRow.name,
+    phase: 'A',
+  })
+
+  await db.from('welcome_kits').upsert({
+    project_id: projectRow.id,
+    content: welcomeContent,
+    generated_at: now,
+  } as never, { onConflict: 'project_id' })
 
   await auditAndInvalidate({
     entityType: 'client',

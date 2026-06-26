@@ -35,6 +35,7 @@ export const APP_NAV: NavItem[] = [
   { href: '/pending-suppliers', label: 'Homologação', icon: UserCheck, roles: ['gestor'], section: 'operacao' },
   { href: '/insights', label: 'Insights AI', icon: Sparkles, roles: ['gestor'], section: 'inteligencia' },
   { href: '/reports', label: 'Relatório IA', icon: FileBarChart, roles: ['gestor'], section: 'inteligencia' },
+  { href: '/reports/weekly', label: 'Relatório 360', icon: FileBarChart, roles: ['gestor'], section: 'inteligencia' },
   { href: '/sipoc', label: 'SIPOC', icon: GitBranch, roles: ['gestor'], section: 'inteligencia' },
   { href: '/jobs', label: 'Jobs / Fila', icon: Server, roles: ['gestor'], section: 'inteligencia' },
   { href: '/api-docs', label: 'API Docs', icon: Code2, roles: ['gestor'], section: 'sistema' },

@@ -1,6 +1,6 @@
 import { ok, handleError } from '@/lib/api-response'
 import { requireProfile } from '@/lib/auth/api-context'
-import { createServerClient } from '@/lib/supabase-server'
+import { createSupabaseServer } from '@/lib/supabase/server'
 import { qcpsAverage } from '@/lib/qcps'
 
 export async function POST(req: Request) {
@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     if (authErr) return authErr
 
     const { product_id, category } = await req.json() as { product_id?: string; category?: string }
-    const db = createServerClient()
+    const db = await createSupabaseServer()
 
     let productCategory = category
     if (product_id) {

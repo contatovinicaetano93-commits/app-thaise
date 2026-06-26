@@ -9,6 +9,16 @@ export const PHASES: { id: ProjectPhase; label: string; desc: string }[] = [
   { id: 'F', label: 'Pós-obra', desc: 'Checkout, as built e scoring final' },
 ]
 
+/** Labels Estlar — o que o cliente vê na jornada */
+export const CLIENT_PHASE_LABELS: Record<ProjectPhase, { label: string; desc: string }> = {
+  A: { label: 'Imersão & Estratégia', desc: 'Briefing, viabilidade e programa de necessidades' },
+  B: { label: 'Curadoria & Conceito', desc: 'Identidade visual, materiais e soluções de design' },
+  C: { label: 'Planejamento', desc: 'Custos, métodos construtivos e cronograma' },
+  D: { label: 'Detalhamento Executivo', desc: 'Guias técnicos para execução precisa' },
+  E: { label: 'Gestão & Materialização', desc: 'Acompanhamento técnico e fornecedores homologados' },
+  F: { label: 'Handover & Pós-obra', desc: 'Entrega cerimonial, as built e QCPS final' },
+}
+
 export const PHASE_ORDER: ProjectPhase[] = ['A', 'B', 'C', 'D', 'E', 'F']
 
 export function nextPhase(current: ProjectPhase): ProjectPhase | null {

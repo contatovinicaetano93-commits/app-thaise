@@ -1,13 +1,14 @@
-import { createServerClient } from '@/lib/supabase-server'
+import { createServiceClient } from '@/lib/supabase-server'
+import { sendEmail } from '@/lib/notify/email'
 
 export async function assertClientExists(clientId: string) {
-  const db = createServerClient()
+  const db = createServiceClient()
   const { data } = await db.from('clients').select('id').eq('id', clientId).single()
   if (!data) throw new Error('Cliente não encontrado')
 }
 
 export async function assertActiveSupplier(supplierId: string) {
-  const db = createServerClient()
+  const db = createServiceClient()
   const { data } = await db.from('suppliers').select('id, status').eq('id', supplierId).single() as {
     data: { id: string; status: string } | null
   }
@@ -16,7 +17,7 @@ export async function assertActiveSupplier(supplierId: string) {
 }
 
 export async function assertProductForSupplier(productId: string, supplierId: string) {
-  const db = createServerClient()
+  const db = createServiceClient()
   const { data } = await db.from('products').select('id, supplier_id, active').eq('id', productId).single() as {
     data: { id: string; supplier_id: string; active: boolean } | null
   }

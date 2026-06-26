@@ -1,10 +1,10 @@
 import { ok, handleError } from '@/lib/api-response'
-import { createServerClient } from '@/lib/supabase-server'
+import { createServiceClient } from '@/lib/supabase-server'
 import { getSupabaseUrl } from '@/lib/supabase/env'
 
 export async function GET() {
   try {
-    const db = createServerClient()
+    const db = createServiceClient()
     const start = Date.now()
     const { error } = await db.from('suppliers').select('id', { count: 'exact', head: true })
     const dbMs = Date.now() - start

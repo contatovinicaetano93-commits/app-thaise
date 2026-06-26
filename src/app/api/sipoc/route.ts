@@ -1,6 +1,6 @@
 import { ok, handleError } from '@/lib/api-response'
 import { requireGestor } from '@/lib/auth/api-context'
-import { createServerClient } from '@/lib/supabase-server'
+import { createSupabaseServer } from '@/lib/supabase/server'
 import { SIPOC } from '@/lib/sipoc'
 import { qcpsAverage } from '@/lib/qcps'
 
@@ -9,7 +9,7 @@ export async function GET() {
     const { error: authErr } = await requireGestor()
     if (authErr) return authErr
 
-    const db = createServerClient()
+    const db = await createSupabaseServer()
     const [suppliers, clients, products, projects, orders] = await Promise.all([
       db.from('suppliers').select('id, status, score_q, score_c, score_p, score_s'),
       db.from('clients').select('id', { count: 'exact', head: true }),

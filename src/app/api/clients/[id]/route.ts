@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
-import { createServerClient } from '@/lib/supabase-server'
+import { createSupabaseServer } from '@/lib/supabase/server'
 import { requireGestor } from '@/lib/auth/api-context'
 import { auditAndInvalidate } from '@/lib/memory/audit'
 
@@ -22,7 +22,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { id } = await params
     const body = await req.json()
     const payload = updateSchema.parse(body)
-    const db = createServerClient()
+    const db = await createSupabaseServer()
 
     const { data, error } = await db
       .from('clients')
@@ -57,7 +57,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     if (authErr) return authErr
 
     const { id } = await params
-    const db = createServerClient()
+    const db = await createSupabaseServer()
 
     const { data: existing } = await db.from('clients').select('name').eq('id', id).single() as {
       data: { name: string } | null

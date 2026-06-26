@@ -1,8 +1,9 @@
 // Cliente tipado que o frontend usa para consumir /api/*
 // NUNCA importe supabase diretamente nas páginas — use este arquivo
 
-import type { Supplier, Client, Product, Order, Project, Opportunity } from '@/types/database'
+import type { Supplier, Client, Product, Order, Project, Opportunity, WeeklyReport, WelcomeKit, ProjectDiaryEntry, ScopeAmendment, Quotation } from '@/types/database'
 import type { QcpsScores } from '@/lib/qcps'
+import type { BriefingData, BriefingType } from '@/lib/briefing'
 
 type ApiResult<T> = Promise<T>
 
@@ -340,4 +341,48 @@ export const usersApi = {
     client_id?: string | null
   }): ApiResult<AppUser> =>
     request('/api/users/invite', { method: 'POST', body: JSON.stringify(data) }),
+}
+
+export const estlarApi = {
+  listWeeklyReports: (status?: string): ApiResult<WeeklyReport[]> =>
+    request(`/api/weekly-reports${status ? `?status=${status}` : ''}`),
+
+  updateWeeklyReport: (id: string, status: 'approved' | 'sent'): ApiResult<WeeklyReport> =>
+    request('/api/weekly-reports', { method: 'PATCH', body: JSON.stringify({ id, status }) }),
+
+  generateWeeklyReport: (projectId: string): ApiResult<WeeklyReport> =>
+    request(`/api/projects/${projectId}/weekly-reports`, { method: 'POST' }),
+
+  getWelcomeKit: (projectId: string): ApiResult<WelcomeKit | null> =>
+    request(`/api/projects/${projectId}/welcome-kit`),
+
+  listDiary: (projectId: string): ApiResult<ProjectDiaryEntry[]> =>
+    request(`/api/projects/${projectId}/diary`),
+
+  saveDiary: (projectId: string, data: { planned?: string; actual?: string; risks?: string }): ApiResult<ProjectDiaryEntry> =>
+    request(`/api/projects/${projectId}/diary`, { method: 'POST', body: JSON.stringify(data) }),
+
+  listAmendments: (projectId: string): ApiResult<ScopeAmendment[]> =>
+    request(`/api/projects/${projectId}/amendments`),
+
+  createAmendment: (projectId: string, data: { description: string; amount: number; days_added: number }): ApiResult<ScopeAmendment> =>
+    request(`/api/projects/${projectId}/amendments`, { method: 'POST', body: JSON.stringify(data) }),
+
+  listQuotations: (projectId: string): ApiResult<Quotation[]> =>
+    request(`/api/projects/${projectId}/quotations`),
+
+  createQuotation: (projectId: string, data: { description: string; amount: number; score_q?: number; score_c?: number; score_p?: number; score_s?: number }): ApiResult<Quotation> =>
+    request(`/api/projects/${projectId}/quotations`, { method: 'POST', body: JSON.stringify(data) }),
+
+  selectQuotation: (projectId: string, quotationId: string): ApiResult<Quotation> =>
+    request(`/api/projects/${projectId}/quotations`, { method: 'PATCH', body: JSON.stringify({ quotation_id: quotationId }) }),
+
+  saveBriefing: (opportunityId: string, data: { briefing_type: BriefingType; briefing_data: BriefingData }): ApiResult<unknown> =>
+    request(`/api/opportunities/${opportunityId}/briefing`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  getProposal: (opportunityId: string): ApiResult<{ content: string }> =>
+    request(`/api/opportunities/${opportunityId}/proposal`),
+
+  getCap: (): ApiResult<{ cap: { max: number; label: string }; active: number; available: number; atCap: boolean }> =>
+    request('/api/operational/cap'),
 }

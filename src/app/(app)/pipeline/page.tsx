@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Kanban, Plus } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
+import { BriefingPanel } from '@/components/pipeline/BriefingPanel'
+import { Input, Select } from '@/components/ui/Input'
 import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
 import { OpportunityForm } from '@/components/pipeline/OpportunityForm'
@@ -128,7 +129,36 @@ export default function PipelinePage() {
           onCancel={() => setModalOpen(false)}
         />
         {editing && (
-          <div className="mt-4 pt-4 border-t border-gray-100">
+          <div className="mt-4 pt-4 border-t border-gray-100 space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <Select
+                label="Modelo de cobrança"
+                value={editing.fee_model ?? ''}
+                onChange={async e => {
+                  const fee_model = e.target.value as Opportunity['fee_model']
+                  await opportunitiesApi.update(editing.id, { fee_model: fee_model || null })
+                  load()
+                }}
+                options={[
+                  { value: '', label: '—' },
+                  { value: 'fixo', label: 'Fee fixo' },
+                  { value: 'variavel', label: 'Performance / VGV' },
+                  { value: 'hibrido', label: 'Híbrido' },
+                ]}
+              />
+              <label className="flex items-center gap-2 text-sm text-gray-700 mt-6">
+                <input
+                  type="checkbox"
+                  checked={editing.signal_paid ?? false}
+                  onChange={async e => {
+                    await opportunitiesApi.update(editing.id, { signal_paid: e.target.checked })
+                    load()
+                  }}
+                />
+                Sinal financeiro validado
+              </label>
+            </div>
+            <BriefingPanel opportunity={editing} onSaved={load} />
             <ActivityTimeline entityType="opportunity" entityId={editing.id} />
           </div>
         )}

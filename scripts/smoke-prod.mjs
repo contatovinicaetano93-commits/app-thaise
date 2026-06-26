@@ -95,10 +95,41 @@ async function testRole(user) {
   pass(`${user.label} orders visíveis: ${Array.isArray(orders) ? orders.length : 0}`)
 }
 
+async function testPublicPages() {
+  console.log('\n── Páginas públicas ──')
+  for (const path of ['/login', '/intake']) {
+    const res = await fetch(`${BASE}${path}`, { redirect: 'manual' })
+    if (res.status === 200 || res.status === 307 || res.status === 308) pass(`${path} acessível (${res.status})`)
+    else fail(`${path} HTTP ${res.status}`)
+  }
+}
+
+async function testGestorApi(token) {
+  console.log('\n── API gestor (cookie-less — esperado 401) ──')
+  const res = await fetch(`${BASE}/api/users`, { headers: { Authorization: `Bearer ${token}` } })
+  if (res.status === 401) pass('API /users exige sessão cookie (401 com bearer)')
+  else if (res.ok) pass('API /users ok')
+  else fail(`API /users HTTP ${res.status}`)
+}
+
 async function main() {
   console.log(`Smoke test · ${BASE}`)
   await testHealth()
-  for (const u of USERS) await testRole(u)
+  await testPublicPages()
+  let gestorToken = null
+  for (const u of USERS) {
+    await testRole(u)
+    if (u.label === 'gestor' && url && key) {
+      const authRes = await fetch(`${url}/auth/v1/token?grant_type=password`, {
+        method: 'POST',
+        headers: { apikey: key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: u.email, password: u.password }),
+      })
+      const authJson = await authRes.json()
+      gestorToken = authJson.access_token
+    }
+  }
+  if (gestorToken) await testGestorApi(gestorToken)
 
   const failed = results.filter(r => !r.ok).length
   console.log(`\n${failed === 0 ? '✅ Todos os testes passaram' : `❌ ${failed} falha(s)`}`)

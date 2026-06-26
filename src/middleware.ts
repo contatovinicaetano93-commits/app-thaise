@@ -4,7 +4,7 @@ import { canAccessRoute, type UserRole } from '@/lib/auth/roles'
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase/env'
 import { rateLimit } from '@/lib/rate-limit'
 
-const PUBLIC_PATHS = ['/login', '/onboarding']
+const PUBLIC_PATHS = ['/login', '/onboarding', '/intake']
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
@@ -14,7 +14,9 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith('/api/') &&
     !pathname.startsWith('/api/auth/') &&
     !pathname.startsWith('/api/health') &&
-    !pathname.startsWith('/api/v1/health')
+    !pathname.startsWith('/api/v1/health') &&
+    !pathname.startsWith('/api/intake') &&
+    !pathname.startsWith('/api/cron/')
   ) {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0] ?? 'local'
     const { ok: allowed, remaining } = rateLimit(ip, 120)

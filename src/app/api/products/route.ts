@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
-import { createServerClient } from '@/lib/supabase-server'
+import { createSupabaseServer } from '@/lib/supabase/server'
 import { requireProfile } from '@/lib/auth/api-context'
 import { assertActiveSupplier } from '@/lib/gates'
 import { auditAndInvalidate } from '@/lib/memory/audit'
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     const { profile, error: authErr } = await requireProfile()
     if (authErr) return authErr
 
-    const db = createServerClient()
+    const db = await createSupabaseServer()
     const supplierId = req.nextUrl.searchParams.get('supplier_id')
       ?? (profile!.role === 'fornecedor' ? profile!.supplier_id : null)
     const { limit, cursor } = parsePagination(req.nextUrl.searchParams)
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
 
     await assertActiveSupplier(payload.supplier_id)
 
-    const db = createServerClient()
+    const db = await createSupabaseServer()
 
     const { data, error } = await db
       .from('products')

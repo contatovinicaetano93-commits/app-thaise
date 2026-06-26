@@ -4,6 +4,7 @@ import { scoreSupplier } from '@/lib/agents/scoring-agent'
 import { logActivity } from '@/lib/memory/events'
 import { jobKey, isJobProcessed, markJobProcessed } from '@/lib/queue/idempotency'
 import { dispatchWebhooks } from '@/lib/webhooks/dispatch'
+import { sendEmail } from '@/lib/notify/email'
 
 export async function processOrderJob(
   jobType: OrderJobType,
@@ -23,30 +24,26 @@ export async function processOrderJob(
       .eq('id', payload.supplierId)
       .single() as { data: { contact_email: string; name: string } | null }
 
-    const emailStub = {
+    const emailResult = await sendEmail({
       to: supplier?.contact_email ?? 'fornecedor@exemplo.com',
       subject: `Nova OS — Pedido ${payload.orderId.slice(0, 8)}`,
       body: `Olá ${supplier?.name ?? 'Fornecedor'}, um pedido foi aprovado e aguarda produção.`,
-      sent_at: new Date().toISOString(),
-      provider: 'stub',
-    }
-
-    console.info(`[email-stub]`, emailStub)
+    })
 
     await logActivity({
       entityType: 'order',
       entityId: payload.orderId,
       eventType: 'order.approved',
       title: 'Pedido aprovado — OS enviada',
-      detail: `Notificação para ${emailStub.to}`,
-      metadata: { emailStub },
+      detail: `Notificação para ${emailResult.sent ? supplier?.contact_email : 'stub'}`,
+      metadata: { email: emailResult },
     })
 
     const result = {
       action: 'notify_supplier',
       orderId: payload.orderId,
       supplierEmail: supplier?.contact_email,
-      emailStub,
+      email: emailResult,
       message: 'Ordem de serviço enfileirada para o fornecedor',
     }
     await markJobProcessed(key, jobType, payload.orderId, result)

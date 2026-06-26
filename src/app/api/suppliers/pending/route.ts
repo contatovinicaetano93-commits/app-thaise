@@ -1,6 +1,6 @@
 import { ok, err, handleError } from '@/lib/api-response'
 import { requireGestor } from '@/lib/auth/api-context'
-import { createServerClient } from '@/lib/supabase-server'
+import { createSupabaseServer } from '@/lib/supabase/server'
 import { logActivity } from '@/lib/memory/events'
 
 export async function GET() {
@@ -8,7 +8,7 @@ export async function GET() {
     const { error: authErr } = await requireGestor()
     if (authErr) return authErr
 
-    const db = createServerClient()
+    const db = await createSupabaseServer()
     const { data, error } = await db
       .from('suppliers')
       .select('*')
@@ -30,7 +30,7 @@ export async function PATCH(req: Request) {
     const { id, action } = await req.json() as { id: string; action: 'approve' | 'reject' }
     if (!id || !action) return err('id e action são obrigatórios', 422)
 
-    const db = createServerClient()
+    const db = await createSupabaseServer()
     const newStatus = action === 'approve' ? 'active' : 'inactive'
 
     const { data, error } = await db

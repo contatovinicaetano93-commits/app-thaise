@@ -1,7 +1,13 @@
-import type { QcpsScores } from '@/lib/qcps'
+import type { QcpsScores, HomologationTier } from '@/lib/qcps'
 import type { ProjectPhase } from '@/lib/phases'
 import type { OpportunitySource, OpportunityStage } from '@/lib/pipeline'
+import type { IntakeData, IntakeStatus } from '@/lib/intake'
+import type { BriefingData, BriefingType } from '@/lib/briefing'
 import type { PhaseChecklist, Profile, AgentInsight, JobLog } from '@/lib/auth/roles'
+
+export type FeeModel = 'fixo' | 'variavel' | 'hibrido'
+export type WeeklyReportStatus = 'draft' | 'approved' | 'sent'
+export type AmendmentStatus = 'draft' | 'approved' | 'rejected'
 
 export type SupplierStatus = 'active' | 'inactive' | 'pending'
 export type OrderStatus = 'pending' | 'approved' | 'processing' | 'delivered' | 'cancelled'
@@ -17,6 +23,7 @@ export interface Supplier extends QcpsScores {
   website?: string
   score: number
   status: SupplierStatus
+  homologation_tier?: HomologationTier | null
   notes?: string
   created_at: string
   updated_at: string
@@ -47,9 +54,80 @@ export interface Opportunity {
   lost_reason?: string | null
   client_id?: string | null
   project_id?: string | null
+  intake_data?: IntakeData | null
+  intake_score?: number | null
+  intake_status?: IntakeStatus | null
+  briefing_data?: BriefingData | null
+  briefing_type?: BriefingType | null
+  fee_model?: FeeModel | null
+  fee_fixed?: number | null
+  fee_variable_pct?: number | null
+  signal_paid?: boolean | null
   created_at: string
   updated_at: string
   closed_at?: string | null
+}
+
+export interface WelcomeKit {
+  id: string
+  project_id: string
+  content: string
+  generated_at: string
+}
+
+export interface WeeklyReport {
+  id: string
+  project_id: string
+  week_label: string
+  week_start: string
+  completed: string[]
+  next_steps: string[]
+  risks?: string | null
+  schedule_pct?: number | null
+  budget_status?: string | null
+  status: WeeklyReportStatus
+  generated_at: string
+  approved_at?: string | null
+  sent_at?: string | null
+}
+
+export interface ProjectDiaryEntry {
+  id: string
+  project_id: string
+  week_start: string
+  planned?: string | null
+  actual?: string | null
+  risks?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ScopeAmendment {
+  id: string
+  project_id: string
+  number: number
+  description: string
+  amount: number
+  days_added: number
+  status: AmendmentStatus
+  created_at: string
+  approved_at?: string | null
+}
+
+export interface Quotation {
+  id: string
+  project_id: string
+  supplier_id?: string | null
+  description: string
+  amount: number
+  score_q: number
+  score_c: number
+  score_p: number
+  score_s: number
+  qcps_total?: number | null
+  selected: boolean
+  created_at: string
+  supplier?: Supplier
 }
 
 export interface Project extends QcpsScores {

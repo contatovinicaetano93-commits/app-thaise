@@ -17,7 +17,8 @@ import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { projectsApi, agentsApi } from '@/lib/api'
 import { isPhaseComplete, phaseProgress } from '@/lib/checklists'
-import { PHASES } from '@/lib/phases'
+import { ProjectOpsPanel } from '@/components/projects/ProjectOpsPanel'
+import { CLIENT_PHASE_LABELS, PHASES } from '@/lib/phases'
 import { PHASE_PROMPTS } from '@/lib/phase-prompts'
 import { useDebounce, useLiveRefresh } from '@/lib/hooks'
 import { toast } from 'sonner'
@@ -230,7 +231,7 @@ export default function ProjectsPage() {
                 title={project.name}
                 defaultOpen={false}
                 summary={[
-                  `Fase ${project.phase}`,
+                  role === 'cliente' ? CLIENT_PHASE_LABELS[project.phase].label : `Fase ${project.phase}`,
                   project.client?.name,
                   project.location,
                   STATUS_LABEL[project.status],
@@ -260,6 +261,7 @@ export default function ProjectsPage() {
 
                 <PhaseStepper
                   current={project.phase}
+                  clientView={role === 'cliente'}
                   onAdvance={isGestor ? () => handleAdvance(project.id) : undefined}
                   advancing={advancing === project.id}
                   canAdvance={canAdvance}
@@ -282,6 +284,10 @@ export default function ProjectsPage() {
                 <div className="mt-4 pt-4 border-t border-gray-50">
                   <QcpsBar scores={project} />
                 </div>
+
+                {isGestor && (
+                  <ProjectOpsPanel projectId={project.id} projectName={project.name} />
+                )}
 
                 <ActivityTimeline entityType="project" entityId={project.id} />
               </PanelCard>

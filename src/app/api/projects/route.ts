@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
-import { createServerClient } from '@/lib/supabase-server'
+import { createSupabaseServer } from '@/lib/supabase/server'
 import { requireProfile, filterProjectsByRole } from '@/lib/auth/api-context'
 import { assertProjectHasClient } from '@/lib/gates'
 import { auditAndInvalidate } from '@/lib/memory/audit'
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     const { profile, error: authErr } = await requireProfile()
     if (authErr) return authErr
 
-    const db = createServerClient()
+    const db = await createSupabaseServer()
     const search = req.nextUrl.searchParams.get('search')
     const { limit, cursor } = parsePagination(req.nextUrl.searchParams)
     const cacheKey = `projects:${profile!.role}:${search ?? ''}:${limit}:${cursor ?? ''}`
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     const payload = schema.parse(body)
     await assertProjectHasClient(payload.client_id)
 
-    const db = createServerClient()
+    const db = await createSupabaseServer()
 
     const { data, error } = await db
       .from('projects')

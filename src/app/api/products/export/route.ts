@@ -1,13 +1,13 @@
 import { err, handleError } from '@/lib/api-response'
 import { requireGestor } from '@/lib/auth/api-context'
-import { createServerClient } from '@/lib/supabase-server'
+import { createSupabaseServer } from '@/lib/supabase/server'
 
 export async function GET() {
   try {
     const { error: authErr } = await requireGestor()
     if (authErr) return authErr
 
-    const db = createServerClient()
+    const db = await createSupabaseServer()
     const { data, error } = await db
       .from('products')
       .select('id, name, category, price, unit, active, lead_time_days, created_at, supplier:suppliers(name)')

@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
-import { createServerClient } from '@/lib/supabase-server'
+import { createSupabaseServer } from '@/lib/supabase/server'
 import { requireProfile } from '@/lib/auth/api-context'
 import type { ProjectPhase } from '@/lib/phases'
 import type { PhaseChecklist } from '@/lib/auth/roles'
@@ -23,7 +23,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const { id } = await params
     const { phase, itemId, checked, evidence, filePath, fileName } = schema.parse(await req.json())
-    const db = createServerClient()
+    const db = await createSupabaseServer()
 
     const { data: project, error: fetchErr } = await db
       .from('projects')

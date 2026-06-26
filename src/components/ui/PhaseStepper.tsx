@@ -1,17 +1,18 @@
 'use client'
 
-import { PHASES, phaseIndex, type ProjectPhase } from '@/lib/phases'
+import { PHASES, CLIENT_PHASE_LABELS, phaseIndex, type ProjectPhase } from '@/lib/phases'
 
 interface Props {
   current: ProjectPhase
   onAdvance?: () => void
   advancing?: boolean
   canAdvance?: boolean
+  clientView?: boolean
 }
 
-export function PhaseStepper({ current, onAdvance, advancing, canAdvance = true }: Props) {
+export function PhaseStepper({ current, onAdvance, advancing, canAdvance = true, clientView }: Props) {
   const idx = phaseIndex(current)
-  const phaseInfo = PHASES[idx]
+  const phaseInfo = clientView ? CLIENT_PHASE_LABELS[current] : PHASES[idx]
   const isLast = current === 'F'
 
   return (
@@ -41,7 +42,9 @@ export function PhaseStepper({ current, onAdvance, advancing, canAdvance = true 
       </div>
       <div className="mt-2 flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-gray-900">Fase {current} · {phaseInfo.label}</p>
+          <p className="text-sm font-medium text-gray-900">
+            {clientView ? phaseInfo.label : `Fase ${current} · ${phaseInfo.label}`}
+          </p>
           <p className="text-xs text-gray-500 mt-0.5">{phaseInfo.desc}</p>
         </div>
         {onAdvance && !isLast && (

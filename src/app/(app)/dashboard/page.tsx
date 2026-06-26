@@ -133,6 +133,7 @@ export default function DashboardPage() {
         subtitle={<span className="capitalize">{monthLabel} · dados reais</span>}
         menuItems={isGestor ? [
           { label: 'Relatório IA', href: '/reports' },
+          { label: 'Convidar usuário', href: '/users' },
           ...(isEmpty ? [{ label: 'Começar — fornecedores', href: '/suppliers' }] : []),
           { label: 'Novo pedido', href: '/orders' },
           { label: 'Empreendimentos', href: '/projects' },

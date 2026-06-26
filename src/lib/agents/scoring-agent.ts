@@ -5,7 +5,7 @@
 
 import { createServiceClient } from '@/lib/supabase-server'
 import type { QcpsScores } from '@/lib/qcps'
-import { qcpsAverage } from '@/lib/qcps'
+import { qcpsAverage, homologationTierFromQcps } from '@/lib/qcps'
 
 interface OrderRow {
   status: string
@@ -117,7 +117,10 @@ export async function scoreSupplier(supplierId: string) {
   const { data: orders } = await db.from('orders').select('status, total_price, created_at, updated_at').eq('supplier_id', supplierId)
   const scores = computeSupplierScores((orders ?? []) as OrderRow[])
 
-  await db.from('suppliers').update(scores as never).eq('id', supplierId)
+  await db.from('suppliers').update({
+    ...scores,
+    homologation_tier: homologationTierFromQcps(qcpsAverage(scores)),
+  } as never).eq('id', supplierId)
 
   const insight = await generateInsight(
     'supplier',

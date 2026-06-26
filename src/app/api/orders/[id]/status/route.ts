@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
-import { createServerClient } from '@/lib/supabase-server'
+import { createSupabaseServer } from '@/lib/supabase/server'
 import { requireProfile } from '@/lib/auth/api-context'
 import { enqueueOrderJob } from '@/lib/queue'
 import { logActivity, logOrderStatus } from '@/lib/memory/events'
@@ -18,7 +18,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { id } = await params
     const body = await req.json()
     const { status } = schema.parse(body)
-    const db = createServerClient()
+    const db = await createSupabaseServer()
 
     const { data: prev } = await db.from('orders').select('status, supplier_id, client_id').eq('id', id).single() as {
       data: { status: string; supplier_id: string; client_id: string } | null

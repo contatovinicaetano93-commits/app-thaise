@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
-import { createServerClient } from '@/lib/supabase-server'
+import { createSupabaseServer } from '@/lib/supabase/server'
 import { requireProfile, filterOrdersByRole } from '@/lib/auth/api-context'
 import { assertActiveSupplier, assertProductForSupplier } from '@/lib/gates'
 import { logActivity, logOrderStatus } from '@/lib/memory/events'
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     const { profile, error: authErr } = await requireProfile()
     if (authErr) return authErr
 
-    const db = createServerClient()
+    const db = await createSupabaseServer()
     const search = req.nextUrl.searchParams.get('search')
     const limit = Math.min(Number(req.nextUrl.searchParams.get('limit') ?? 50), 100)
     const cursor = req.nextUrl.searchParams.get('cursor')
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     await assertActiveSupplier(payload.supplier_id)
     await assertProductForSupplier(payload.product_id, payload.supplier_id)
 
-    const db = createServerClient()
+    const db = await createSupabaseServer()
 
     const { data, error } = await (db
       .from('orders')

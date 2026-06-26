@@ -19,6 +19,7 @@
     "seed:pipeline": "node scripts/seed-pipeline-data.mjs",
     "setup:pipeline": "node scripts/setup-pipeline.mjs",
     "verify:pipeline": "node scripts/verify-pipeline.mjs",
+    "cleanup:demo": "node scripts/cleanup-demo.mjs",
     "setup:migration": "node scripts/apply-migration.mjs",
     "smoke:prod": "node scripts/smoke-prod.mjs",
     "load-test": "k6 run scripts/load-test.k6.js",

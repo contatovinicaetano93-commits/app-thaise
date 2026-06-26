@@ -14,6 +14,13 @@ const updateSchema = z.object({
   budget_estimate: z.coerce.number().positive().optional().nullable().transform(v => v ?? null),
   notes: z.string().optional().transform(v => v || null),
   lost_reason: z.string().optional().transform(v => v || null),
+  intake_status: z.enum(['pending', 'approved', 'review', 'rejected']).optional().nullable(),
+  briefing_type: z.enum(['corporativo', 'residencial', 'comercial', 'desenvolvimento']).optional().nullable(),
+  briefing_data: z.record(z.string(), z.string()).optional().nullable(),
+  fee_model: z.enum(['fixo', 'variavel', 'hibrido']).optional().nullable(),
+  fee_fixed: z.coerce.number().nonnegative().optional().nullable(),
+  fee_variable_pct: z.coerce.number().min(0).max(100).optional().nullable(),
+  signal_paid: z.boolean().optional(),
 })
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

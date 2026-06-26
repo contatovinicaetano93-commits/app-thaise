@@ -1,7 +1,7 @@
 import { ok, handleError } from '@/lib/api-response'
 import { requireGestor } from '@/lib/auth/api-context'
 import { generateMonthlySummary } from '@/lib/agents/monthly-report-agent'
-import { createServerClient } from '@/lib/supabase-server'
+import { createSupabaseServer } from '@/lib/supabase/server'
 import { qcpsAverage } from '@/lib/qcps'
 
 export async function GET() {
@@ -9,7 +9,7 @@ export async function GET() {
     const { error: authErr } = await requireGestor()
     if (authErr) return authErr
 
-    const db = createServerClient()
+    const db = await createSupabaseServer()
     const now = new Date()
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
     const periodLabel = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })

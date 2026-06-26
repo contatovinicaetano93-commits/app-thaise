@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
-import { createServerClient } from '@/lib/supabase-server'
+import { createSupabaseServer } from '@/lib/supabase/server'
 import { requireProfile } from '@/lib/auth/api-context'
 import { auditAndInvalidate } from '@/lib/memory/audit'
 
@@ -24,7 +24,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { id } = await params
     const body = await req.json()
     const payload = updateSchema.parse(body)
-    const db = createServerClient()
+    const db = await createSupabaseServer()
 
     const { data: existing } = await db.from('products').select('supplier_id, name').eq('id', id).single() as {
       data: { supplier_id: string; name: string } | null
@@ -69,7 +69,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     if (profile!.role !== 'gestor') return err('Apenas gestor pode excluir produtos', 403)
 
     const { id } = await params
-    const db = createServerClient()
+    const db = await createSupabaseServer()
 
     const { data: existing } = await db.from('products').select('name').eq('id', id).single() as {
       data: { name: string } | null

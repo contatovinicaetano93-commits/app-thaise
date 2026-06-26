@@ -7,7 +7,7 @@ import { SupplierForm } from '@/components/suppliers/SupplierForm'
 import { QcpsBar } from '@/components/ui/QcpsBar'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
 import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
-import { qcpsAverage } from '@/lib/qcps'
+import { homologationTierLabel, qcpsAverage } from '@/lib/qcps'
 import { Button } from '@/components/ui/Button'
 import { PanelCard } from '@/components/ui/PanelCard'
 import { PanelToolbar } from '@/components/ui/PanelToolbar'
@@ -126,7 +126,7 @@ export default function SuppliersPage() {
               panelId={`supplier-${supplier.id}`}
               title={supplier.name}
               defaultOpen={false}
-              summary={`${supplier.category} · QCPS ${qcpsAverage(supplier)} · ${STATUS_LABEL[supplier.status]}`}
+              summary={`${supplier.category} · QCPS ${qcpsAverage(supplier)}${supplier.homologation_tier ? ` · ${homologationTierLabel(supplier.homologation_tier)}` : ''} · ${STATUS_LABEL[supplier.status]}`}
               headerExtra={
                 <>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[supplier.status]}`}>

@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { ok, handleError } from '@/lib/api-response'
-import { createServerClient } from '@/lib/supabase-server'
+import { createSupabaseServer } from '@/lib/supabase/server'
 import { requireProfile, filterProductsByRole } from '@/lib/auth/api-context'
 
 export async function GET(req: NextRequest) {
@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const q = req.nextUrl.searchParams.get('q')?.trim()
     if (!q || q.length < 2) return ok({ suppliers: [], clients: [], projects: [], orders: [], products: [] })
 
-    const db = createServerClient()
+    const db = await createSupabaseServer()
     const pattern = `%${q}%`
 
     const [suppliers, clients, projects, orders, products] = await Promise.all([

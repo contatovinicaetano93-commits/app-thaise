@@ -12,6 +12,7 @@ import {
 } from '@/lib/pipeline'
 import { toast } from 'sonner'
 import type { Opportunity } from '@/types/database'
+import { intakeStatusLabel, intakeStatusColor } from '@/lib/intake'
 
 const WON_STAGE = 'ganho'
 
@@ -42,6 +43,11 @@ function OpportunityCard({
           </button>
           <p className="text-xs font-medium text-violet-700 mt-1.5">{formatBudget(opp.budget_estimate)}</p>
           <p className="text-[11px] text-gray-400 mt-1">{SOURCE_LABELS[opp.source]}</p>
+          {opp.intake_status && (
+            <span className={`inline-block text-[10px] px-1.5 py-0.5 rounded mt-1.5 ${intakeStatusColor(opp.intake_status)}`}>
+              Intake: {intakeStatusLabel(opp.intake_status)} {opp.intake_score != null ? `(${opp.intake_score})` : ''}
+            </span>
+          )}
           {opp.notes && (
             <p className="text-xs text-gray-500 mt-2 line-clamp-2 border-t border-gray-50 pt-2">{opp.notes}</p>
           )}
