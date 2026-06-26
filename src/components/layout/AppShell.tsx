@@ -25,8 +25,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <CommandPalette />
           <div
             className={[
-              'max-w-6xl mx-auto pl-4 lg:pl-6 py-6 lg:py-8 pt-16 lg:pt-8 pb-32',
-              assistantOpen ? 'pr-4 lg:pr-[21.5rem]' : 'pr-20',
+              'max-w-6xl mx-auto pl-4 lg:pl-6 py-6 lg:py-8 pt-20 lg:pt-16 pb-32',
+              assistantOpen ? 'pr-4 lg:pr-[21.5rem]' : 'pr-28',
             ].join(' ')}
           >
             {children}

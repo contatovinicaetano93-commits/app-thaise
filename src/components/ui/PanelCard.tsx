@@ -14,7 +14,7 @@ export interface PanelMenuItem {
   disabled?: boolean
 }
 
-export function PanelDropdown({ items }: { items: PanelMenuItem[] }) {
+export function PanelDropdown({ items, compact = false }: { items: PanelMenuItem[]; compact?: boolean }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -34,7 +34,11 @@ export function PanelDropdown({ items }: { items: PanelMenuItem[] }) {
       <button
         type="button"
         onClick={e => { e.stopPropagation(); setOpen(o => !o) }}
-        className="flex items-center justify-center h-full px-3 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors border-l border-gray-100"
+        className={
+          compact
+            ? 'flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 bg-white text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors shadow-sm'
+            : 'flex items-center justify-center h-full px-3 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors border-l border-gray-100'
+        }
         aria-label="Opções"
         aria-expanded={open}
       >
