@@ -80,11 +80,11 @@ export function Sidebar() {
                 </p>
                 <p className="text-[11px] text-slate-500 truncate">{profile.email}</p>
               </div>
-              <LogoutButton variant="icon" />
             </div>
             <span className="inline-block mt-2 text-[10px] font-semibold uppercase tracking-wide bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full">
               {ROLE_LABELS[role]}
             </span>
+            <LogoutButton variant="prominent" className="mt-3" />
           </div>
         )}
         <p className="text-[10px] text-slate-600 px-1">v1.1 · Fase 2</p>

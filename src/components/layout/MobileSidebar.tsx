@@ -89,11 +89,11 @@ export function MobileSidebar() {
                       <p className="text-sm font-medium text-white truncate">{profile.full_name || profile.email}</p>
                       <p className="text-[11px] text-slate-500 truncate">{profile.email}</p>
                     </div>
-                    <LogoutButton variant="icon" />
                   </div>
                   <span className="inline-block mt-2 text-[10px] font-semibold uppercase bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full">
                     {ROLE_LABELS[role]}
                   </span>
+                  <LogoutButton variant="prominent" className="mt-3" />
                 </div>
               </div>
             )}

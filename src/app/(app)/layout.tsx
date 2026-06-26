@@ -20,7 +20,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <AppLogoutBar />
           <KeyboardShortcuts />
           <CommandPalette />
-          <div className="max-w-6xl mx-auto px-4 lg:px-6 py-6 lg:py-8 pt-16 lg:pt-8 pr-24 lg:pr-6">
+          <div className="max-w-6xl mx-auto px-4 lg:px-6 py-6 lg:py-8 pt-16 lg:pt-8 pr-28 lg:pr-6">
             {children}
           </div>
           <AssistantPanel />
