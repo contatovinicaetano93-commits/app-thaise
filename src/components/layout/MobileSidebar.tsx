@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, ChevronDown } from 'lucide-react'
+import { LogoutButton } from '@/components/layout/LogoutButton'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { ROLE_LABELS } from '@/lib/auth/roles'
 import { navBySection } from '@/components/layout/nav-config'
@@ -13,6 +14,65 @@ function initials(name?: string | null, email?: string) {
   const parts = base.split(/\s+/).filter(Boolean)
   if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
   return base.slice(0, 2).toUpperCase()
+}
+
+function MobileSection({
+  section,
+  label,
+  items,
+  pathname,
+  onNavigate,
+}: {
+  section: string
+  label: string
+  items: { href: string; label: string; icon: React.ElementType }[]
+  pathname: string
+  onNavigate: () => void
+}) {
+  const hasActive = items.some(i => pathname === i.href || pathname.startsWith(`${i.href}/`))
+  const [open, setOpen] = useState(hasActive || section === 'operacao')
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 hover:text-slate-300 transition-colors group"
+      >
+        {label}
+        <ChevronDown
+          size={13}
+          className={`text-slate-600 group-hover:text-slate-400 transition-transform duration-200 ${open ? 'rotate-0' : '-rotate-90'}`}
+        />
+      </button>
+
+      {open && (
+        <div className="mt-0.5 space-y-0.5">
+          {items.map(({ href, label: itemLabel, icon: Icon }) => {
+            const active = pathname === href || pathname.startsWith(`${href}/`)
+            return (
+              <Link
+                key={href}
+                href={href}
+                onClick={onNavigate}
+                className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  active ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                }`}
+              >
+                {active && (
+                  <span
+                    className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-full"
+                    style={{ background: 'var(--estlar-wine-light)' }}
+                  />
+                )}
+                <Icon size={17} className={active ? 'text-[var(--estlar-sand)]' : 'text-slate-500'} />
+                {itemLabel}
+              </Link>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function MobileSidebar() {
@@ -52,37 +112,16 @@ export function MobileSidebar() {
               </button>
             </div>
 
-            <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
+            <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
               {sections.map(({ section, label, items }) => (
-                <div key={section}>
-                  <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    {label}
-                  </p>
-                  <div className="space-y-0.5">
-                    {items.map(({ href, label: itemLabel, icon: Icon }) => {
-                      const active = pathname.startsWith(href)
-                      return (
-                        <Link
-                          key={href}
-                          href={href}
-                          onClick={() => setOpen(false)}
-                          className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium ${
-                            active ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5'
-                          }`}
-                        >
-                          {active && (
-                            <span
-                              className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-full"
-                              style={{ background: 'var(--estlar-wine-light)' }}
-                            />
-                          )}
-                          <Icon size={17} className={active ? 'text-[var(--estlar-sand)]' : 'text-slate-500'} />
-                          {itemLabel}
-                        </Link>
-                      )
-                    })}
-                  </div>
-                </div>
+                <MobileSection
+                  key={section}
+                  section={section}
+                  label={label}
+                  items={items}
+                  pathname={pathname}
+                  onNavigate={() => setOpen(false)}
+                />
               ))}
             </nav>
 
@@ -107,6 +146,7 @@ export function MobileSidebar() {
                   <span className="inline-block mt-2 text-[10px] font-semibold uppercase bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full">
                     {ROLE_LABELS[role]}
                   </span>
+                  <LogoutButton variant="prominent" className="mt-3" />
                 </div>
               </div>
             )}
