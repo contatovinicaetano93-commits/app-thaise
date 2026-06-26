@@ -8,6 +8,7 @@ import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
 import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { Button } from '@/components/ui/Button'
 import { PanelCard } from '@/components/ui/PanelCard'
+import { PanelToolbar } from '@/components/ui/PanelToolbar'
 import { ActivityTimeline } from '@/components/ui/ActivityTimeline'
 import { productsApi } from '@/lib/api'
 import { useLiveRefresh } from '@/lib/hooks'
@@ -77,6 +78,13 @@ export default function ProductsPage() {
           className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white"
         />
       </div>
+
+      {!loading && filtered.length > 0 && (
+        <PanelToolbar
+          sections={filtered.map(p => ({ id: `product-${p.id}`, priority: 'secondary' as const }))}
+          className="mb-2"
+        />
+      )}
 
       {loading ? (
         <ListSkeleton rows={6} height="h-36" />

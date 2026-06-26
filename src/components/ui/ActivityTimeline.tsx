@@ -34,16 +34,20 @@ export function ActivityTimeline({ entityType, entityId }: { entityType: string;
     fetchEvents,
   )
 
-  if (loading) return <div className="h-16 bg-gray-50 rounded-lg animate-pulse mt-4" />
+  if (loading) return <div className="h-12 bg-gray-50 rounded-2xl animate-pulse mt-3" />
   if (events.length === 0) return null
+
+  const last = events[0]
 
   return (
     <PanelCard
-      className="mt-4 border-gray-50"
+      className="mt-3 border-gray-50"
+      panelId={`timeline-${entityType}-${entityId}`}
       title="Memória / Timeline"
       icon={Clock}
-      padding="p-4"
       defaultOpen={false}
+      summary={`${events.length} evento(s) · ${last?.title ?? 'Atividade recente'}`}
+      badge={events.length}
       menuItems={[{ label: 'Atualizar', onClick: fetchEvents }]}
     >
       <div className="space-y-2 pl-2 border-l-2 border-violet-100">

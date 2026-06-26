@@ -7,6 +7,7 @@ import { ClientForm } from '@/components/clients/ClientForm'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
 import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { PanelCard } from '@/components/ui/PanelCard'
+import { PanelToolbar } from '@/components/ui/PanelToolbar'
 import { Button } from '@/components/ui/Button'
 import { ActivityTimeline } from '@/components/ui/ActivityTimeline'
 import { clientsApi } from '@/lib/api'
@@ -77,6 +78,13 @@ export default function ClientsPage() {
           className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white"
         />
       </div>
+
+      {!loading && filtered.length > 0 && (
+        <PanelToolbar
+          sections={filtered.map(c => ({ id: `client-${c.id}`, priority: 'secondary' as const }))}
+          className="mb-2"
+        />
+      )}
 
       {loading ? (
         <ListSkeleton rows={4} />

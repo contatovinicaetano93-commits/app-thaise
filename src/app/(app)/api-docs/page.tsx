@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { Code2, ChevronDown, ChevronRight } from 'lucide-react'
+import { Code2 } from 'lucide-react'
 import { PanelCard } from '@/components/ui/PanelCard'
 import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
+import { PanelToolbar } from '@/components/ui/PanelToolbar'
 
 const ENDPOINTS = [
   {
@@ -60,30 +60,31 @@ const GROUP_COLOR: Record<string, string> = {
   rose:    'bg-rose-50 border-rose-200',
 }
 
+const API_PANELS = [
+  { id: 'api-format', priority: 'primary' as const },
+  ...ENDPOINTS.map(g => ({ id: `api-${g.group.toLowerCase()}`, priority: 'primary' as const })),
+]
+
 export default function ApiDocsPage() {
-  const [open, setOpen] = useState<string | null>(null)
-
-  function toggle(key: string) {
-    setOpen(o => o === key ? null : key)
-  }
-
   return (
-    <div>
+    <div className="space-y-3">
       <PageFeedHeader
         title="API Docs"
         icon={Code2}
         subtitle={<>Todos os endpoints · Base URL: <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">/api</code></>}
         menuItems={[{ label: 'Health check', href: '/api/health' }, { label: 'OpenAPI JSON', href: '/api/openapi' }]}
-        className="mb-2"
       />
 
+      <PanelToolbar sections={API_PANELS} />
+
       <PanelCard
-        title="Formato padrão de resposta"
-        padding="p-4"
-        rounded="rounded-xl"
-        className="mt-2 mb-6 bg-gray-900 border-gray-800"
+        panelId="api-format"
+        title={<span className="text-white">Formato padrão de resposta</span>}
+        icon={Code2}
+        defaultOpen={false}
+        summary="{ ok: true, data } · { ok: false, error }"
+        className="bg-gray-900 border-gray-800"
         shadow={false}
-        collapsible
       >
         <div className="text-xs text-gray-300 font-mono">
           <span className="text-gray-500"># Formato padrão de resposta</span><br />
@@ -92,59 +93,64 @@ export default function ApiDocsPage() {
         </div>
       </PanelCard>
 
-      <div className="space-y-4">
+      <div className="space-y-2">
         {ENDPOINTS.map(group => (
           <PanelCard
             key={group.group}
+            panelId={`api-${group.group.toLowerCase()}`}
             title={group.group}
-            padding="p-1"
+            defaultOpen={false}
+            summary={`${group.routes.length} endpoint(s)`}
+            badge={group.routes.length}
             className={GROUP_COLOR[group.color]}
-            menuItems={[{ label: 'Expandir todos', onClick: () => setOpen(`${group.group}-0`) }]}
+            flush
           >
-            <div className="bg-white rounded-xl overflow-hidden border border-gray-100 divide-y divide-gray-50">
+            <div className="divide-y divide-gray-50">
               {group.routes.map((route, i) => {
-                const key = `${group.group}-${i}`
-                const isOpen = open === key
+                const routeId = `api-${group.group}-${i}`
                 return (
-                  <div key={key}>
-                    <button
-                      onClick={() => toggle(key)}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
-                    >
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded font-mono w-14 text-center flex-shrink-0 ${METHOD_COLOR[route.method]}`}>
+                  <PanelCard
+                    key={routeId}
+                    panelId={routeId}
+                    title={route.path}
+                    defaultOpen={false}
+                    summary={`${route.method} — ${route.desc}`}
+                    headerExtra={
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded font-mono ${METHOD_COLOR[route.method]}`}>
                         {route.method}
                       </span>
-                      <code className="text-sm text-gray-700 font-mono flex-1">{route.path}</code>
-                      <span className="text-xs text-gray-400 hidden sm:block">{route.desc}</span>
-                      {isOpen ? <ChevronDown size={14} className="text-gray-400 flex-shrink-0" /> : <ChevronRight size={14} className="text-gray-400 flex-shrink-0" />}
-                    </button>
-                    {isOpen && (
-                      <div className="px-4 pb-4 pt-1 bg-gray-50 space-y-3 text-xs animate-fade-in">
-                        {route.params && (
-                          <div>
-                            <p className="font-semibold text-gray-600 mb-1">Query params</p>
-                            {route.params.map(p => (
-                              <div key={p.n} className="flex gap-2">
-                                <code className="text-violet-700 font-mono">{p.n}</code>
-                                <span className="text-gray-400">{p.t}</span>
-                                <span className="text-gray-500">— {p.d}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {'body' in route && route.body && (
-                          <div>
-                            <p className="font-semibold text-gray-600 mb-1">Request body (JSON)</p>
-                            <code className="text-gray-600">{route.body}</code>
-                          </div>
-                        )}
+                    }
+                    rounded="rounded-none"
+                    shadow={false}
+                    borderless
+                    className="bg-white"
+                  >
+                    <div className="space-y-3 text-xs">
+                      <p className="text-gray-500">{route.desc}</p>
+                      {'params' in route && route.params && (
                         <div>
-                          <p className="font-semibold text-gray-600 mb-1">Response</p>
-                          <code className="text-emerald-700 font-mono">{route.response}</code>
+                          <p className="font-semibold text-gray-600 mb-1">Query params</p>
+                          {route.params.map(p => (
+                            <div key={p.n} className="flex gap-2 flex-wrap">
+                              <code className="text-violet-700 font-mono">{p.n}</code>
+                              <span className="text-gray-400">{p.t}</span>
+                              <span className="text-gray-500">— {p.d}</span>
+                            </div>
+                          ))}
                         </div>
+                      )}
+                      {'body' in route && route.body && (
+                        <div>
+                          <p className="font-semibold text-gray-600 mb-1">Request body (JSON)</p>
+                          <code className="text-gray-600">{route.body}</code>
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-semibold text-gray-600 mb-1">Response</p>
+                        <code className="text-emerald-700 font-mono">{route.response}</code>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  </PanelCard>
                 )
               })}
             </div>

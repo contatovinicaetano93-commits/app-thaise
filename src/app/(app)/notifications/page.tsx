@@ -5,6 +5,8 @@ import { Bell } from 'lucide-react'
 import { ListSkeleton } from '@/components/ui/EmptyState'
 import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { PanelCard } from '@/components/ui/PanelCard'
+import { PanelToolbar } from '@/components/ui/PanelToolbar'
+import type { PanelPriority } from '@/lib/use-panel-state'
 import { toast } from 'sonner'
 
 interface Notification {
@@ -49,9 +51,13 @@ export default function NotificationsPage() {
   }
 
   const unread = items.filter(n => !n.read).length
+  const panels = items.map(n => ({
+    id: `notif-${n.id}`,
+    priority: (n.read ? 'secondary' : 'primary') as PanelPriority,
+  }))
 
   return (
-    <div>
+    <div className="space-y-3">
       <PageFeedHeader
         title="Notificações"
         icon={Bell}
@@ -59,10 +65,18 @@ export default function NotificationsPage() {
         menuItems={unread > 0 ? [{ label: 'Marcar todas como lidas', onClick: markAllRead }] : undefined}
       />
 
+      {panels.length > 0 && <PanelToolbar sections={panels} />}
+
       {loading ? (
-        <ListSkeleton rows={4} />
+        <ListSkeleton rows={4} height="h-14" />
       ) : items.length === 0 ? (
-        <PanelCard title="Nenhuma notificação" icon={Bell} padding="p-12" collapsible={false}>
+        <PanelCard
+          panelId="notifications-empty"
+          title="Nenhuma notificação"
+          icon={Bell}
+          collapsible={false}
+          summary="Eventos de pedidos e empreendimentos aparecerão aqui"
+        >
           <p className="text-sm text-gray-400 text-center">
             Eventos de pedidos e empreendimentos aparecerão aqui.
           </p>
@@ -72,9 +86,11 @@ export default function NotificationsPage() {
           {items.map(n => (
             <PanelCard
               key={n.id}
+              panelId={`notif-${n.id}`}
               title={n.title}
-              rounded="rounded-xl"
-              padding="p-4"
+              defaultOpen={false}
+              summary={[n.body, new Date(n.created_at).toLocaleString('pt-BR')].filter(Boolean).join(' · ')}
+              badge={!n.read ? 'Nova' : undefined}
               className={!n.read ? 'border-violet-200 bg-violet-50/30' : ''}
               menuItems={[
                 ...(n.href ? [{ label: 'Abrir', href: n.href }] : []),

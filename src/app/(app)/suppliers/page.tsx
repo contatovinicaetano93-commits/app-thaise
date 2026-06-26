@@ -10,6 +10,7 @@ import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { qcpsAverage } from '@/lib/qcps'
 import { Button } from '@/components/ui/Button'
 import { PanelCard } from '@/components/ui/PanelCard'
+import { PanelToolbar } from '@/components/ui/PanelToolbar'
 import { suppliersApi, agentsApi } from '@/lib/api'
 import { useDebounce, useLiveRefresh } from '@/lib/hooks'
 import { toast } from 'sonner'
@@ -95,6 +96,13 @@ export default function SuppliersPage() {
           className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
         />
       </div>
+
+      {!loading && filtered.length > 0 && (
+        <PanelToolbar
+          sections={filtered.map(s => ({ id: `supplier-${s.id}`, priority: 'secondary' as const }))}
+          className="mb-2"
+        />
+      )}
 
       {loading ? (
         <ListSkeleton rows={3} height="h-28" />

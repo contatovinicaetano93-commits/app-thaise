@@ -12,6 +12,7 @@ import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
 import { ActivityTimeline } from '@/components/ui/ActivityTimeline'
 import { Button } from '@/components/ui/Button'
 import { PanelCard } from '@/components/ui/PanelCard'
+import { PanelToolbar } from '@/components/ui/PanelToolbar'
 import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { projectsApi, agentsApi } from '@/lib/api'
@@ -173,6 +174,13 @@ export default function ProjectsPage() {
           ))}
         </select>
       </div>
+
+      {!loading && filtered.length > 0 && (
+        <PanelToolbar
+          sections={filtered.map(p => ({ id: `project-${p.id}`, priority: 'secondary' as const }))}
+          className="mb-2"
+        />
+      )}
 
       {loading ? (
         <ListSkeleton rows={2} height="h-40" />

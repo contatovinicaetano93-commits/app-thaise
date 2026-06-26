@@ -20,10 +20,12 @@ export function AlertsBanner() {
       {alerts.slice(0, 4).map((a, i) => (
         <PanelCard
           key={i}
+          panelId={`alert-${i}`}
           title={a.severity === 'warning' ? 'Alerta' : 'Informação'}
           icon={a.severity === 'warning' ? AlertTriangle : Info}
-          padding="px-4 py-2.5"
-          rounded="rounded-xl"
+          iconClassName={a.severity === 'warning' ? 'text-amber-600' : 'text-blue-600'}
+          defaultOpen={false}
+          summary={a.message}
           className={a.severity === 'warning' ? 'bg-amber-50 border-amber-100' : 'bg-blue-50 border-blue-100'}
           menuItems={a.href ? [{ label: 'Ver detalhes', href: a.href }] : undefined}
         >

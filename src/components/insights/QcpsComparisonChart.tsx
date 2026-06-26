@@ -21,10 +21,16 @@ export function QcpsComparisonChart({ suppliers }: Props) {
 
   if (data.length === 0) return null
 
+  const top = data[0]
+
   return (
     <PanelCard
-      className="mb-6"
+      panelId="qcps-chart"
       title="Comparativo QCPS — fornecedores ativos"
+      defaultOpen={false}
+      summary={`${data.length} fornecedor(es) · topo: ${top?.name} (${top?.score})`}
+      badge={data.length}
+      href="/suppliers"
       menuItems={[{ label: 'Ver fornecedores', href: '/suppliers' }]}
     >
       <ResponsiveContainer width="100%" height={200}>

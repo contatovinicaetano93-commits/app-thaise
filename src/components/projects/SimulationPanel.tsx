@@ -48,11 +48,12 @@ export function SimulationPanel({ projectId, phase }: Props) {
 
   return (
     <PanelCard
-      className="mt-4 bg-indigo-50 border-indigo-100"
+      className="mt-3 bg-indigo-50 border-indigo-100"
+      panelId={`simulation-${projectId}`}
       title="Simulação Fase A — VPL / TIR / Payback"
       icon={Calculator}
-      padding="p-4"
       defaultOpen={false}
+      summary={result ? result.resumo : `Modelo ${template === 'residencial' ? 'residencial' : 'comercial'} — clique para simular`}
       menuItems={[
         { label: 'Simular residencial', onClick: () => run('residencial'), disabled: loading },
         { label: 'Simular comercial', onClick: () => run('comercial'), disabled: loading },
