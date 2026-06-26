@@ -5,11 +5,15 @@ import { createServiceClient } from '@/lib/supabase-server'
 import { notifyUser } from '@/lib/webhooks/dispatch'
 
 export async function GET(req: NextRequest) {
-  const secret = req.headers.get('authorization')?.replace('Bearer ', '')
-    ?? req.nextUrl.searchParams.get('secret')
-  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
-    return err('Não autorizado', 401)
-  }
+  const cronSecret = process.env.CRON_SECRET?.trim()
+  const authHeader = req.headers.get('authorization')
+  const querySecret = req.nextUrl.searchParams.get('secret')?.trim()
+
+  const authorized =
+    !!cronSecret &&
+    (authHeader === `Bearer ${cronSecret}` || querySecret === cronSecret)
+
+  if (!authorized) return err('Não autorizado', 401)
 
   try {
     const result = await generateAllWeeklyReports()
