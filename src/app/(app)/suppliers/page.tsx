@@ -108,14 +108,14 @@ export default function SuppliersPage() {
           onAction={search ? undefined : () => { setEditing(undefined); setModalOpen(true) }}
         />
       ) : (
-        <div className="grid gap-4">
+        <div className="space-y-2">
           {filtered.map(supplier => (
             <PanelCard
               key={supplier.id}
+              panelId={`supplier-${supplier.id}`}
               title={supplier.name}
-              rounded="rounded-xl"
-              padding="p-5"
-              className="hover:shadow-md transition-shadow"
+              defaultOpen={false}
+              summary={`${supplier.category} · QCPS ${qcpsAverage(supplier)} · ${STATUS_LABEL[supplier.status]}`}
               headerExtra={
                 <>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[supplier.status]}`}>

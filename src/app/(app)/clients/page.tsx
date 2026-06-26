@@ -90,13 +90,14 @@ export default function ClientsPage() {
           onAction={search ? undefined : () => { setEditing(undefined); setModalOpen(true) }}
         />
       ) : (
-        <div className="grid gap-3">
+        <div className="space-y-2">
           {filtered.map(client => (
             <PanelCard
               key={client.id}
+              panelId={`client-${client.id}`}
               title={client.name}
-              padding="p-5"
-              className="hover:shadow-md transition-shadow"
+              defaultOpen={false}
+              summary={[client.company, client.email, client.phone].filter(Boolean).join(' · ')}
               headerExtra={client.segment && (
                 <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full font-medium">
                   {client.segment}

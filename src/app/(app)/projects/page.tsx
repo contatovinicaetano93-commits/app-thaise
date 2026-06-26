@@ -190,7 +190,7 @@ export default function ProjectsPage() {
           onAction={isGestor && !search && !statusFilter && !phaseFilter ? () => { setEditing(undefined); setModalOpen(true) } : undefined}
         />
       ) : (
-        <div className="grid gap-4">
+        <div className="space-y-2">
           {filtered.map(project => {
             const checklist = (project.checklist ?? {}) as PhaseChecklistType
             const canAdvance = isPhaseComplete(project.phase, checklist)
@@ -199,8 +199,15 @@ export default function ProjectsPage() {
             return (
               <PanelCard
                 key={project.id}
+                panelId={`project-${project.id}`}
                 title={project.name}
-                padding="p-5"
+                defaultOpen={false}
+                summary={[
+                  `Fase ${project.phase}`,
+                  project.client?.name,
+                  project.location,
+                  STATUS_LABEL[project.status],
+                ].filter(Boolean).join(' · ')}
                 headerExtra={
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[project.status]}`}>
                     {STATUS_LABEL[project.status]}

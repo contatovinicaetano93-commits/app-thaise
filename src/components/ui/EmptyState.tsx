@@ -25,11 +25,11 @@ export function EmptyState({ icon: Icon, iconClass = 'text-violet-600', title, d
   )
 }
 
-export function ListSkeleton({ rows = 3, height = 'h-20' }: { rows?: number; height?: string }) {
+export function ListSkeleton({ rows = 3, height = 'h-14' }: { rows?: number; height?: string }) {
   return (
-    <div className="grid gap-3">
+    <div className="space-y-2">
       {[...Array(rows)].map((_, i) => (
-        <div key={i} className={`bg-white rounded-xl border border-gray-100 p-5 animate-pulse ${height}`} />
+        <div key={i} className={`bg-white rounded-2xl border border-gray-100 animate-pulse ${height}`} />
       ))}
     </div>
   )

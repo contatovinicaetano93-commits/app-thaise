@@ -112,13 +112,14 @@ export default function OrdersPage() {
           onAction={search ? undefined : () => setModalOpen(true)}
         />
       ) : (
-        <div className="grid gap-3">
+        <div className="space-y-2">
           {filtered.map(order => (
             <PanelCard
               key={order.id}
+              panelId={`order-${order.id}`}
               title={order.client?.name ?? 'Pedido'}
-              padding="p-5"
-              className="hover:shadow-md transition-shadow"
+              defaultOpen={false}
+              summary={`${order.supplier?.name ?? '—'} · ${(order.total_price ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} · ${STATUS_LABEL[order.status]}`}
               headerExtra={
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[order.status]}`}>
                   {STATUS_LABEL[order.status]}

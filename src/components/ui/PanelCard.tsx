@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useRef, useEffect, type ReactNode, type ElementType } from 'react'
-import { ChevronDown, MoreHorizontal } from 'lucide-react'
+import { ChevronDown, MoreHorizontal, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import type { PanelPriority } from '@/lib/use-panel-state'
+import { usePanelSection } from '@/lib/use-panel-state'
 
 export interface PanelMenuItem {
   label: string
@@ -32,7 +34,7 @@ export function PanelDropdown({ items }: { items: PanelMenuItem[] }) {
       <button
         type="button"
         onClick={e => { e.stopPropagation(); setOpen(o => !o) }}
-        className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
+        className="flex items-center justify-center h-full px-3 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors border-l border-gray-100"
         aria-label="Opções"
         aria-expanded={open}
       >
@@ -69,12 +71,17 @@ export function PanelDropdown({ items }: { items: PanelMenuItem[] }) {
 }
 
 interface PanelCardProps {
+  panelId?: string
   title?: ReactNode
   icon?: ElementType
   iconClassName?: string
   menuItems?: PanelMenuItem[]
   headerRight?: ReactNode
   headerExtra?: ReactNode
+  summary?: string
+  badge?: string | number
+  priority?: PanelPriority
+  href?: string
   children: ReactNode
   className?: string
   defaultOpen?: boolean
@@ -83,25 +90,40 @@ interface PanelCardProps {
   collapsible?: boolean
   shadow?: boolean
   borderless?: boolean
+  flush?: boolean
 }
 
 export function PanelCard({
+  panelId,
   title,
   icon: Icon,
   iconClassName = 'text-violet-600',
   menuItems,
   headerRight,
   headerExtra,
+  summary,
+  badge,
+  priority = 'primary',
+  href,
   children,
   className = '',
-  defaultOpen = true,
-  padding = 'p-6',
+  defaultOpen,
+  padding = 'px-4 pb-4 sm:px-5 sm:pb-5 pt-3',
   rounded = 'rounded-2xl',
   collapsible = true,
   shadow = true,
   borderless = false,
+  flush = false,
 }: PanelCardProps) {
-  const [open, setOpen] = useState(defaultOpen)
+  const persisted = usePanelSection(panelId, priority, defaultOpen)
+  const [localOpen, setLocalOpen] = useState(defaultOpen ?? priority !== 'secondary')
+  const open = panelId ? persisted.open : localOpen
+
+  const toggle = () => {
+    if (panelId) persisted.toggle()
+    else setLocalOpen(o => !o)
+  }
+
   const hasHeader = Boolean(title || Icon || menuItems?.length || headerRight || collapsible)
   const borderClass = borderless || /border-/.test(className) ? '' : 'border border-gray-100'
   const shadowClass = shadow ? 'shadow-sm' : ''
@@ -115,35 +137,73 @@ export function PanelCard({
     )
   }
 
+  const contentPadding = flush ? '' : padding
+
+  const contentOpen = !collapsible || open
+
   return (
-    <div className={`${bgClass} ${rounded} ${borderClass} ${shadowClass} ${className}`}>
-      <div className={`flex items-start justify-between gap-2 ${padding} ${open ? 'pb-0' : ''}`}>
-        <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
+    <section
+      className={`${bgClass} ${rounded} ${borderClass} ${shadowClass} overflow-hidden ${className}`}
+      data-panel-id={panelId}
+    >
+      <div className="flex items-stretch min-h-[3rem]">
+        <button
+          type="button"
+          onClick={collapsible ? toggle : undefined}
+          disabled={!collapsible}
+          aria-expanded={contentOpen}
+          aria-controls={panelId ? `panel-content-${panelId}` : undefined}
+          className="flex flex-1 items-center gap-2.5 min-w-0 px-4 py-3 sm:px-5 text-left hover:bg-gray-50/80 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500 disabled:cursor-default disabled:hover:bg-transparent"
+        >
           {Icon && <Icon size={16} className={`${iconClassName} shrink-0`} />}
-          {title && (
-            typeof title === 'string'
-              ? <h3 className="font-semibold text-gray-900 text-sm truncate">{title}</h3>
-              : title
-          )}
+          <span className="flex-1 min-w-0">
+            {title && (
+              typeof title === 'string'
+                ? <span className="block text-sm font-bold text-gray-800 truncate">{title}</span>
+                : title
+            )}
+            {!contentOpen && summary && (
+              <span className="block text-xs text-gray-400 truncate mt-0.5">{summary}</span>
+            )}
+          </span>
           {headerExtra}
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          {headerRight}
-          {menuItems && menuItems.length > 0 && <PanelDropdown items={menuItems} />}
-          {collapsible && (
-            <button
-              type="button"
-              onClick={() => setOpen(o => !o)}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
-              aria-label={open ? 'Recolher' : 'Expandir'}
-              aria-expanded={open}
-            >
-              <ChevronDown size={16} className={`transition-transform duration-200 ${open ? '' : '-rotate-90'}`} />
-            </button>
+          {badge !== undefined && badge !== '' && (
+            <span className="shrink-0 text-xs font-semibold tabular-nums bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+              {badge}
+            </span>
           )}
+          {headerRight}
+          {collapsible && (
+            <ChevronDown
+              size={16}
+              className={`shrink-0 text-gray-400 transition-transform duration-200 ${contentOpen ? 'rotate-180' : ''}`}
+              aria-hidden
+            />
+          )}
+        </button>
+        {href && (
+          <Link
+            href={href}
+            onClick={e => e.stopPropagation()}
+            className="shrink-0 flex items-center gap-1 px-3 sm:px-4 text-xs text-violet-600 font-semibold border-l border-gray-100 hover:bg-violet-50/50 transition-colors"
+          >
+            Ver tudo
+            <ArrowRight size={12} />
+          </Link>
+        )}
+        {menuItems && menuItems.length > 0 && <PanelDropdown items={menuItems} />}
+      </div>
+
+      <div
+        id={panelId ? `panel-content-${panelId}` : undefined}
+        className={`grid transition-[grid-template-rows] duration-200 ease-out ${contentOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+      >
+        <div className="overflow-hidden">
+          <div className={`${contentPadding} border-t border-gray-50`}>
+            {children}
+          </div>
         </div>
       </div>
-      {open && <div className={`${padding} pt-3`}>{children}</div>}
-    </div>
+    </section>
   )
 }

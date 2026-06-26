@@ -90,13 +90,14 @@ export default function ProductsPage() {
           onAction={search ? undefined : () => { setEditing(undefined); setModalOpen(true) }}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="space-y-2">
           {filtered.map(product => (
             <PanelCard
               key={product.id}
+              panelId={`product-${product.id}`}
               title={product.name}
-              padding="p-5"
-              className="hover:shadow-md transition-shadow"
+              defaultOpen={false}
+              summary={`${product.category} · ${product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/${product.unit}`}
               headerExtra={
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${product.active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
                   {product.active ? 'Ativo' : 'Inativo'}
