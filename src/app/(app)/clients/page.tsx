@@ -64,6 +64,7 @@ export default function ClientsPage() {
         subtitle={`${clients.length} cadastrado${clients.length !== 1 ? 's' : ''}`}
         menuItems={[
           { label: 'Novo cliente', onClick: () => { setEditing(undefined); setModalOpen(true) } },
+          { label: 'Criar login de cliente', href: '/users?role=cliente' },
           { label: 'Exportar CSV', onClick: () => clientsApi.exportCsv().catch(() => toast.error('Erro ao exportar')) },
         ]}
       />
@@ -112,6 +113,7 @@ export default function ClientsPage() {
                 </span>
               )}
               menuItems={[
+                { label: 'Criar login', href: `/users?role=cliente&client_id=${client.id}` },
                 { label: 'Editar', onClick: () => { setEditing(client); setModalOpen(true) } },
                 { label: 'Excluir', onClick: () => setDeleting(client), danger: true },
               ]}

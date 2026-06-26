@@ -1,7 +1,7 @@
 import type { ElementType } from 'react'
 import {
   LayoutDashboard, Building2, Truck, Users, Package, ShoppingCart,
-  Code2, Sparkles, GitBranch, Server, UserCheck, Bell, Kanban, FileBarChart,
+  Code2, Sparkles, GitBranch, Server, UserCheck, Bell, Kanban, FileBarChart, UserPlus,
 } from 'lucide-react'
 import type { UserRole } from '@/lib/auth/roles'
 
@@ -38,6 +38,7 @@ export const APP_NAV: NavItem[] = [
   { href: '/sipoc', label: 'SIPOC', icon: GitBranch, roles: ['gestor'], section: 'inteligencia' },
   { href: '/jobs', label: 'Jobs / Fila', icon: Server, roles: ['gestor'], section: 'inteligencia' },
   { href: '/api-docs', label: 'API Docs', icon: Code2, roles: ['gestor'], section: 'sistema' },
+  { href: '/users', label: 'Convidar usuário', icon: UserPlus, roles: ['gestor'], section: 'sistema' },
 ]
 
 export function navForRole(role: UserRole) {

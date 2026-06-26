@@ -83,7 +83,10 @@ export default function SuppliersPage() {
       <PageFeedHeader
         title="Fornecedores"
         subtitle={`${suppliers.length} cadastrado${suppliers.length !== 1 ? 's' : ''}`}
-        menuItems={[{ label: 'Novo fornecedor', onClick: () => { setEditing(undefined); setModalOpen(true) } }]}
+        menuItems={[
+          { label: 'Novo fornecedor', onClick: () => { setEditing(undefined); setModalOpen(true) } },
+          { label: 'Criar login de fornecedor', href: '/users?role=fornecedor' },
+        ]}
       />
 
       <div className="relative mb-4">
@@ -135,6 +138,7 @@ export default function SuppliersPage() {
                 </>
               }
               menuItems={[
+                { label: 'Criar login', href: `/users?role=fornecedor&supplier_id=${supplier.id}` },
                 { label: 'Recalcular QCPS', onClick: () => handleScore(supplier.id), disabled: scoring === supplier.id },
                 { label: 'Editar', onClick: () => { setEditing(supplier); setModalOpen(true) } },
                 { label: 'Excluir', onClick: () => setDeleting(supplier), danger: true },

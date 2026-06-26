@@ -318,3 +318,26 @@ export const notificationsApi = {
   markAllRead: (): ApiResult<{ success: boolean }> =>
     request('/api/notifications', { method: 'PATCH', body: JSON.stringify({ readAll: true }) }),
 }
+
+export interface AppUser {
+  id: string
+  email: string
+  full_name: string | null
+  role: 'gestor' | 'fornecedor' | 'cliente'
+  supplier_id: string | null
+  client_id: string | null
+  created_at: string
+}
+
+export const usersApi = {
+  list: (): ApiResult<AppUser[]> => request('/api/users'),
+  invite: (data: {
+    email: string
+    password: string
+    full_name: string
+    role: 'fornecedor' | 'cliente'
+    supplier_id?: string | null
+    client_id?: string | null
+  }): ApiResult<AppUser> =>
+    request('/api/users/invite', { method: 'POST', body: JSON.stringify(data) }),
+}
