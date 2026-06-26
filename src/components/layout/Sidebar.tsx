@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { Layers, LogOut } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { Layers } from 'lucide-react'
+import { LogoutButton } from '@/components/layout/LogoutButton'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { ROLE_LABELS } from '@/lib/auth/roles'
 import { navBySection } from '@/components/layout/nav-config'
@@ -16,15 +17,8 @@ function initials(name?: string | null, email?: string) {
 
 export function Sidebar() {
   const pathname = usePathname()
-  const router = useRouter()
   const { role, profile } = useAuth()
   const sections = navBySection(role)
-
-  async function logout() {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    router.push('/login')
-    router.refresh()
-  }
 
   return (
     <aside className="w-64 min-h-screen bg-[#0b1220] text-slate-300 flex flex-col border-r border-white/5">
@@ -86,14 +80,7 @@ export function Sidebar() {
                 </p>
                 <p className="text-[11px] text-slate-500 truncate">{profile.email}</p>
               </div>
-              <button
-                type="button"
-                onClick={logout}
-                className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
-                aria-label="Sair"
-              >
-                <LogOut size={16} />
-              </button>
+              <LogoutButton variant="icon" />
             </div>
             <span className="inline-block mt-2 text-[10px] font-semibold uppercase tracking-wide bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full">
               {ROLE_LABELS[role]}

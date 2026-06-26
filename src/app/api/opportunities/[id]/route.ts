@@ -64,7 +64,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { error: authErr } = await requireGestor()
+    const { profile, error: authErr } = await requireGestor()
     if (authErr) return authErr
 
     const { id } = await params
@@ -72,9 +72,9 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
     const { data: existing } = await db
       .from('opportunities')
-      .select('stage')
+      .select('stage, name')
       .eq('id', id)
-      .single() as { data: { stage: string } | null }
+      .single() as { data: { stage: string; name: string } | null }
 
     if (!existing) return err('Oportunidade não encontrada', 404)
     if (existing.stage === 'ganho') return err('Não é possível excluir oportunidade convertida', 422)
@@ -87,6 +87,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
       entityId: id,
       eventType: 'opportunity.deleted',
       title: 'Oportunidade removida',
+      detail: existing.name,
+      actorId: profile!.id,
       cachePrefix: 'opportunities',
     })
 

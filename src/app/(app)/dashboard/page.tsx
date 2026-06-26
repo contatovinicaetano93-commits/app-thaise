@@ -8,7 +8,7 @@ import {
   AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts'
-import { dashboardApi, type DashboardStats, nextStepApi, reportsApi } from '@/lib/api'
+import { dashboardApi, type DashboardStats, nextStepApi } from '@/lib/api'
 import { formatRelativeDate } from '@/lib/format'
 import { ListSkeleton } from '@/components/ui/EmptyState'
 import { AlertsBanner } from '@/components/ui/AlertsBanner'
@@ -16,7 +16,9 @@ import { PanelCard } from '@/components/ui/PanelCard'
 import { PanelToolbar } from '@/components/ui/PanelToolbar'
 import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { FirstProjectWizard } from '@/components/projects/FirstProjectWizard'
+import { MonthlyReportPanel } from '@/components/reports/MonthlyReportPanel'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { useMonthlyReport } from '@/lib/hooks/use-monthly-report'
 import { useLiveRefresh } from '@/lib/hooks'
 import { toast } from 'sonner'
 
@@ -35,8 +37,8 @@ const STATUS_LABEL: Record<string, string> = {
 const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
 
 const DASHBOARD_PANELS = [
-  { id: 'next-step', priority: 'primary' as const },
   { id: 'monthly-report', priority: 'primary' as const },
+  { id: 'next-step', priority: 'primary' as const },
   { id: 'kpi-revenue', priority: 'primary' as const },
   { id: 'kpi-suppliers', priority: 'primary' as const },
   { id: 'kpi-clients', priority: 'primary' as const },
@@ -63,29 +65,27 @@ function StatBody({ value, sub, icon: Icon, iconBg, iconColor }: {
 
 export default function DashboardPage() {
   const { isGestor, role } = useAuth()
+  const monthly = useMonthlyReport({ autoFetch: false })
   const [data, setData] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [nextStep, setNextStep] = useState<{ label: string; href: string; reason: string } | null>(null)
   const [showWizard, setShowWizard] = useState(false)
-  const [monthlyReport, setMonthlyReport] = useState<string | null>(null)
 
   const refresh = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
     try {
-      const [dash, step, report] = await Promise.all([
+      const tasks: Promise<unknown>[] = [
         dashboardApi.get().then(setData),
         nextStepApi.get().then(r => setNextStep(r.next)),
-        reportsApi.monthly().then(r => setMonthlyReport(r.summary)).catch(() => setMonthlyReport(null)),
-      ])
-      void dash
-      void step
-      void report
+      ]
+      if (isGestor) tasks.push(monthly.refresh())
+      await Promise.all(tasks)
     } catch (e) {
       if (!silent) toast.error(e instanceof Error ? e.message : 'Erro ao carregar dashboard')
     } finally {
       if (!silent) setLoading(false)
     }
-  }, [])
+  }, [isGestor, monthly.refresh])
 
   useEffect(() => { refresh() }, [refresh])
   useLiveRefresh(refresh, ['clients', 'products', 'orders', 'suppliers', 'projects'])
@@ -113,7 +113,7 @@ export default function DashboardPage() {
   const isEmpty = !c || (c.orders === 0 && c.suppliers === 0 && c.clients === 0)
   const panels = DASHBOARD_PANELS.filter(p => {
     if (p.id === 'next-step') return Boolean(nextStep)
-    if (p.id === 'monthly-report') return Boolean(monthlyReport)
+    if (p.id === 'monthly-report') return isGestor
     return true
   })
 
@@ -132,6 +132,7 @@ export default function DashboardPage() {
         title="Visão Geral"
         subtitle={<span className="capitalize">{monthLabel} · dados reais</span>}
         menuItems={isGestor ? [
+          { label: 'Relatório IA', href: '/reports' },
           ...(isEmpty ? [{ label: 'Começar — fornecedores', href: '/suppliers' }] : []),
           { label: 'Novo pedido', href: '/orders' },
           { label: 'Empreendimentos', href: '/projects' },
@@ -146,6 +147,16 @@ export default function DashboardPage() {
 
       <PanelToolbar sections={panels} className="mb-1" />
 
+      {isGestor && (
+        <MonthlyReportPanel
+          data={monthly.data}
+          loading={monthly.loading}
+          error={monthly.error}
+          onRetry={monthly.refresh}
+          compact
+        />
+      )}
+
       {nextStep && (
         <PanelCard
           panelId="next-step"
@@ -157,19 +168,6 @@ export default function DashboardPage() {
         >
           <p className="font-semibold text-gray-900">{nextStep.label}</p>
           <p className="text-sm text-gray-500 mt-1">{nextStep.reason}</p>
-        </PanelCard>
-      )}
-
-      {monthlyReport && (
-        <PanelCard
-          panelId="monthly-report"
-          title="Resumo do mês"
-          icon={TrendingUp}
-          summary={monthlyReport.slice(0, 80) + (monthlyReport.length > 80 ? '…' : '')}
-          href="/insights"
-          menuItems={[{ label: 'Ver insights', href: '/insights' }]}
-        >
-          <p className="text-sm text-gray-600 leading-relaxed">{monthlyReport}</p>
         </PanelCard>
       )}
 

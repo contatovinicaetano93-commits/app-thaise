@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { Menu, X, Layers, LogOut } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { Menu, X, Layers } from 'lucide-react'
+import { LogoutButton } from '@/components/layout/LogoutButton'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { ROLE_LABELS } from '@/lib/auth/roles'
 import { navBySection } from '@/components/layout/nav-config'
@@ -18,15 +19,8 @@ function initials(name?: string | null, email?: string) {
 export function MobileSidebar() {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
-  const router = useRouter()
   const { role, profile } = useAuth()
   const sections = navBySection(role)
-
-  async function logout() {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    router.push('/login')
-    router.refresh()
-  }
 
   return (
     <>
@@ -95,9 +89,7 @@ export function MobileSidebar() {
                       <p className="text-sm font-medium text-white truncate">{profile.full_name || profile.email}</p>
                       <p className="text-[11px] text-slate-500 truncate">{profile.email}</p>
                     </div>
-                    <button type="button" onClick={logout} className="p-1.5 text-slate-500 hover:text-red-400">
-                      <LogOut size={16} />
-                    </button>
+                    <LogoutButton variant="icon" />
                   </div>
                   <span className="inline-block mt-2 text-[10px] font-semibold uppercase bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full">
                     {ROLE_LABELS[role]}
