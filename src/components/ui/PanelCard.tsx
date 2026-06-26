@@ -14,7 +14,18 @@ export interface PanelMenuItem {
   disabled?: boolean
 }
 
-export function PanelDropdown({ items, compact = false }: { items: PanelMenuItem[]; compact?: boolean }) {
+export function PanelDropdown({
+  items,
+  compact = false,
+  variant,
+  label = 'Ações rápidas',
+}: {
+  items: PanelMenuItem[]
+  compact?: boolean
+  variant?: 'panel' | 'icon' | 'button'
+  label?: string
+}) {
+  const resolvedVariant = variant ?? (compact ? 'icon' : 'panel')
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -35,17 +46,33 @@ export function PanelDropdown({ items, compact = false }: { items: PanelMenuItem
         type="button"
         onClick={e => { e.stopPropagation(); setOpen(o => !o) }}
         className={
-          compact
-            ? 'flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 bg-white text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors shadow-sm'
-            : 'flex items-center justify-center h-full px-3 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors border-l border-gray-100'
+          resolvedVariant === 'button'
+            ? 'inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3.5 py-2 text-sm font-semibold text-violet-800 hover:bg-violet-100 transition-colors shadow-sm'
+            : resolvedVariant === 'icon'
+              ? 'flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 bg-white text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors shadow-sm'
+              : 'flex items-center justify-center h-full px-3 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors border-l border-gray-100'
         }
-        aria-label="Opções"
+        aria-label={resolvedVariant === 'button' ? label : 'Opções'}
         aria-expanded={open}
       >
-        <MoreHorizontal size={16} />
+        {resolvedVariant === 'button' ? (
+          <>
+            {label}
+            <ChevronDown
+              size={15}
+              className={`text-violet-600 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+            />
+          </>
+        ) : (
+          <MoreHorizontal size={16} />
+        )}
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-30 min-w-[10rem] bg-white border border-gray-100 rounded-xl shadow-lg py-1">
+        <div
+          className={`absolute top-full mt-1.5 z-30 min-w-[11rem] bg-white border border-gray-100 rounded-xl shadow-lg py-1 ${
+            resolvedVariant === 'button' ? 'left-0' : 'right-0'
+          }`}
+        >
           {items.map(item =>
             item.href ? (
               <Link
