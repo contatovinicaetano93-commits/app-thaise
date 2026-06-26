@@ -20,7 +20,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 
 /** Rotas permitidas por role (prefix match) */
 export const ROLE_ROUTES: Record<UserRole, string[]> = {
-  gestor: ['/dashboard', '/projects', '/suppliers', '/clients', '/products', '/orders', '/insights', '/sipoc', '/jobs', '/pending-suppliers', '/notifications', '/api-docs'],
+  gestor: ['/dashboard', '/pipeline', '/projects', '/suppliers', '/clients', '/products', '/orders', '/insights', '/reports', '/sipoc', '/jobs', '/pending-suppliers', '/notifications', '/api-docs'],
   fornecedor: ['/dashboard', '/products', '/orders', '/notifications'],
   cliente: ['/dashboard', '/projects', '/orders', '/notifications'],
 }

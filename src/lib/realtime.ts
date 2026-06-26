@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-export type RealtimeTable = 'clients' | 'products' | 'orders' | 'suppliers' | 'projects' | 'activity_events'
+export type RealtimeTable = 'clients' | 'products' | 'orders' | 'suppliers' | 'projects' | 'activity_events' | 'opportunities'
 
 /** Recarrega dados quando o Supabase Realtime detecta mudança nas tabelas. */
 export function useRealtimeRefresh(tables: RealtimeTable[], onRefresh: () => void) {

@@ -13,6 +13,7 @@ const ENTITY_TABLE: Record<string, RealtimeTable | undefined> = {
   order: 'orders',
   supplier: 'suppliers',
   project: 'projects',
+  opportunity: 'opportunities',
 }
 
 export function ActivityTimeline({ entityType, entityId }: { entityType: string; entityId: string }) {

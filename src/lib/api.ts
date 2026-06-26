@@ -1,7 +1,7 @@
 // Cliente tipado que o frontend usa para consumir /api/*
 // NUNCA importe supabase diretamente nas páginas — use este arquivo
 
-import type { Supplier, Client, Product, Order, Project } from '@/types/database'
+import type { Supplier, Client, Product, Order, Project, Opportunity } from '@/types/database'
 import type { QcpsScores } from '@/lib/qcps'
 
 type ApiResult<T> = Promise<T>
@@ -101,6 +101,37 @@ export const clientsApi = {
 
   exportCsv: (): Promise<void> =>
     downloadCsv('/api/clients/export', `clientes-${new Date().toISOString().slice(0, 10)}.csv`),
+}
+
+// --- Pipeline / Oportunidades ---
+export const opportunitiesApi = {
+  list: (includeClosed = false): ApiResult<Opportunity[]> =>
+    request(`/api/opportunities${includeClosed ? '?include_closed=1' : ''}`),
+
+  create: (data: Omit<Opportunity, 'id' | 'created_at' | 'updated_at' | 'closed_at' | 'client_id' | 'project_id' | 'lost_reason'> & { lost_reason?: string | null }): ApiResult<Opportunity> =>
+    request('/api/opportunities', { method: 'POST', body: JSON.stringify(data) }),
+
+  update: (id: string, data: Partial<Opportunity>): ApiResult<Opportunity> =>
+    request(`/api/opportunities/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  moveStage: (id: string, stage: string, lostReason?: string): ApiResult<Opportunity> =>
+    request(`/api/opportunities/${id}/stage`, {
+      method: 'PATCH',
+      body: JSON.stringify({ stage, lost_reason: lostReason }),
+    }),
+
+  convert: (id: string, projectName?: string): ApiResult<{
+    opportunity: Opportunity
+    client: { id: string; name: string }
+    project: { id: string; name: string }
+  }> =>
+    request(`/api/opportunities/${id}/convert`, {
+      method: 'POST',
+      body: JSON.stringify({ project_name: projectName }),
+    }),
+
+  remove: (id: string): ApiResult<void> =>
+    request(`/api/opportunities/${id}`, { method: 'DELETE' }),
 }
 
 // --- Products ---
@@ -259,8 +290,20 @@ export const assistantApi = {
 }
 
 export const reportsApi = {
-  monthly: (): ApiResult<{ summary: string; metrics: Record<string, number> }> =>
-    request('/api/reports/monthly'),
+  monthly: (): ApiResult<{
+    summary: string
+    aiPowered: boolean
+    metrics: {
+      orders: number
+      revenue: number
+      activeSuppliers: number
+      avgQcps: number
+      activeProjects: number
+      insights: number
+      delivered: number
+      pending: number
+    }
+  }> => request('/api/reports/monthly'),
 }
 
 export const pendingSuppliersApi = {

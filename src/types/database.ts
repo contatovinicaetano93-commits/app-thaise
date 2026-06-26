@@ -1,5 +1,6 @@
 import type { QcpsScores } from '@/lib/qcps'
 import type { ProjectPhase } from '@/lib/phases'
+import type { OpportunitySource, OpportunityStage } from '@/lib/pipeline'
 import type { PhaseChecklist, Profile, AgentInsight, JobLog } from '@/lib/auth/roles'
 
 export type SupplierStatus = 'active' | 'inactive' | 'pending'
@@ -31,6 +32,24 @@ export interface Client {
   notes?: string
   created_at: string
   updated_at: string
+}
+
+export interface Opportunity {
+  id: string
+  name: string
+  company?: string | null
+  email: string
+  phone: string
+  source: OpportunitySource
+  budget_estimate?: number | null
+  stage: OpportunityStage
+  notes?: string | null
+  lost_reason?: string | null
+  client_id?: string | null
+  project_id?: string | null
+  created_at: string
+  updated_at: string
+  closed_at?: string | null
 }
 
 export interface Project extends QcpsScores {
@@ -86,6 +105,7 @@ export interface Database {
     Tables: {
       suppliers: { Row: Supplier; Insert: Omit<Supplier, 'id' | 'created_at' | 'updated_at' | 'score'>; Update: Partial<Omit<Supplier, 'score'>> }
       clients: { Row: Client; Insert: Omit<Client, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Client> }
+      opportunities: { Row: Opportunity; Insert: Omit<Opportunity, 'id' | 'created_at' | 'updated_at' | 'closed_at' | 'client_id' | 'project_id'>; Update: Partial<Opportunity> }
       projects: { Row: Project; Insert: Omit<Project, 'id' | 'created_at' | 'updated_at' | 'client'>; Update: Partial<Omit<Project, 'client'>> }
       products: { Row: Product; Insert: Omit<Product, 'id' | 'created_at'>; Update: Partial<Product> }
       orders: { Row: Order; Insert: Omit<Order, 'id' | 'created_at' | 'updated_at' | 'total_price' | 'client' | 'supplier' | 'product' | 'project'>; Update: Partial<Order> }

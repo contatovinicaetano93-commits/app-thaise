@@ -1,6 +1,6 @@
 import { createServiceClient } from '@/lib/supabase-server'
 
-export type EntityType = 'project' | 'order' | 'supplier' | 'client' | 'product'
+export type EntityType = 'project' | 'order' | 'supplier' | 'client' | 'product' | 'opportunity'
 
 export interface ActivityEvent {
   id: string

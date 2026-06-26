@@ -31,6 +31,7 @@ const tables = [
   ['resilience_memory', 'processed_jobs'],
   ['scale_webhooks', 'webhooks'],
   ['scale_webhooks', 'notifications'],
+  ['pipeline', 'opportunities'],
 ]
 
 console.log('\n📦 Verificando migrations no Supabase...\n')

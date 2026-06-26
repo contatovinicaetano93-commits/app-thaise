@@ -1,7 +1,7 @@
 import type { ElementType } from 'react'
 import {
   LayoutDashboard, Building2, Truck, Users, Package, ShoppingCart,
-  Code2, Sparkles, GitBranch, Server, UserCheck, Bell,
+  Code2, Sparkles, GitBranch, Server, UserCheck, Bell, Kanban, FileBarChart,
 } from 'lucide-react'
 import type { UserRole } from '@/lib/auth/roles'
 
@@ -25,6 +25,7 @@ export const NAV_SECTION_ORDER: NavSection[] = ['operacao', 'inteligencia', 'sis
 
 export const APP_NAV: NavItem[] = [
   { href: '/dashboard', label: 'Visão Geral', icon: LayoutDashboard, roles: ['gestor', 'fornecedor', 'cliente'], section: 'operacao' },
+  { href: '/pipeline', label: 'Pipeline Comercial', icon: Kanban, roles: ['gestor'], section: 'operacao' },
   { href: '/projects', label: 'Empreendimentos', icon: Building2, roles: ['gestor', 'cliente'], section: 'operacao' },
   { href: '/suppliers', label: 'Fornecedores', icon: Truck, roles: ['gestor'], section: 'operacao' },
   { href: '/clients', label: 'Clientes', icon: Users, roles: ['gestor'], section: 'operacao' },
@@ -33,6 +34,7 @@ export const APP_NAV: NavItem[] = [
   { href: '/notifications', label: 'Notificações', icon: Bell, roles: ['gestor', 'fornecedor', 'cliente'], section: 'operacao' },
   { href: '/pending-suppliers', label: 'Homologação', icon: UserCheck, roles: ['gestor'], section: 'operacao' },
   { href: '/insights', label: 'Insights AI', icon: Sparkles, roles: ['gestor'], section: 'inteligencia' },
+  { href: '/reports', label: 'Relatório IA', icon: FileBarChart, roles: ['gestor'], section: 'inteligencia' },
   { href: '/sipoc', label: 'SIPOC', icon: GitBranch, roles: ['gestor'], section: 'inteligencia' },
   { href: '/jobs', label: 'Jobs / Fila', icon: Server, roles: ['gestor'], section: 'inteligencia' },
   { href: '/api-docs', label: 'API Docs', icon: Code2, roles: ['gestor'], section: 'sistema' },

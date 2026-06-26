@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Popula clientes, produtos, empreendimento e pedidos de demonstração.
+ * Popula clientes, produtos, empreendimento, pipeline comercial e pedidos de demonstração.
  * Idempotente — pula registros que já existem (por email/nome).
  *
  * Uso: npm run seed:data
@@ -120,6 +120,31 @@ async function ensureProject({ name, client_id, location }) {
   return row
 }
 
+async function ensureOpportunity({ name, email, phone, company, source, stage, budget_estimate, notes }) {
+  const existing = await findOne('opportunities', `email=eq.${encodeURIComponent(email)}`)
+  if (existing) {
+    console.log(`  ↳ oportunidade já existe: ${email}`)
+    return existing
+  }
+  const r = await api('/rest/v1/opportunities', {
+    method: 'POST',
+    body: JSON.stringify({
+      name,
+      email,
+      phone,
+      company,
+      source,
+      stage,
+      budget_estimate,
+      notes,
+    }),
+  })
+  const row = r.json?.[0] ?? r.json
+  if (!row?.id) throw new Error(`Falha ao criar oportunidade ${email}: ${JSON.stringify(r.json)}`)
+  console.log(`  ✅ oportunidade: ${name} (${stage})`)
+  return row
+}
+
 async function ensureOrder({ project_id, client_id, supplier_id, product_id, quantity, unit_price, status }) {
   const r = await api('/rest/v1/orders', {
     method: 'POST',
@@ -221,6 +246,58 @@ const project = await ensureProject({
   location: 'Campinas, SP',
 })
 
+console.log('\nPipeline comercial (oportunidades Thaise):')
+const o1 = await ensureOpportunity({
+  name: 'Roberto Almeida',
+  email: 'roberto.almeida@pipeline.demo',
+  phone: '(11) 91234-5678',
+  company: 'Almeida Capital',
+  source: 'whatsapp',
+  stage: 'primeiro_contato',
+  budget_estimate: 3500000,
+  notes: 'Contato via WhatsApp após post sobre obra fechada em Alphaville.',
+})
+const o2 = await ensureOpportunity({
+  name: 'Fundo Horizonte',
+  email: 'contato@fundohorizonte.pipeline.demo',
+  phone: '(11) 92345-6789',
+  company: 'Fundo Horizonte Investimentos',
+  source: 'indicacao',
+  stage: 'briefing',
+  budget_estimate: 8000000,
+  notes: 'Briefing agendado — perfil investidor institucional, foco residencial alto padrão.',
+})
+const o3 = await ensureOpportunity({
+  name: 'Patrícia Souza',
+  email: 'patricia.souza@pipeline.demo',
+  phone: '(21) 93456-7890',
+  company: 'PS Holdings',
+  source: 'parceiro',
+  stage: 'viabilidade_previa',
+  budget_estimate: 2200000,
+  notes: 'Viabilidade prévia Thaise em andamento — terreno em Angra dos Reis.',
+})
+const o4 = await ensureOpportunity({
+  name: 'Grupo Nexus',
+  email: 'investimentos@gruponexus.pipeline.demo',
+  phone: '(31) 94567-8901',
+  company: 'Grupo Nexus',
+  source: 'evento',
+  stage: 'proposta',
+  budget_estimate: 12000000,
+  notes: 'Proposta Obra Fechada entregue — aguardando retorno do board.',
+})
+const o5 = await ensureOpportunity({
+  name: 'Lucas Ferreira',
+  email: 'lucas.ferreira@pipeline.demo',
+  phone: '(48) 95678-9012',
+  company: 'Ferreira Family Office',
+  source: 'instagram',
+  stage: 'contrato',
+  budget_estimate: 5000000,
+  notes: 'Minuta contratual em revisão jurídica — fechamento previsto em 2 semanas.',
+})
+
 console.log('\nPedidos:')
 await ensureOrder({
   project_id: project.id,
@@ -255,12 +332,14 @@ for (const [entity_type, entity_id, title] of [
   ['client', c1.id, 'Cliente demo — Maria Oliveira'],
   ['product', p1.id, 'Produto demo — Porcelanato'],
   ['project', project.id, 'Empreendimento demo — Jardim das Acácias'],
+  ['opportunity', o1.id, 'Pipeline demo — Roberto Almeida'],
+  ['opportunity', o3.id, 'Pipeline demo — Viabilidade Prévia Thaise'],
 ]) {
   await logActivity(entity_type, entity_id, `${entity_type}.seed`, 'Dado de demonstração', title)
 }
 console.log('  ✅ eventos registrados')
 
 console.log('\n✅ Seed de dados concluído!')
-console.log('→ npm run dev → http://localhost:3000/dashboard\n')
+console.log('→ npm run dev → http://localhost:3000/pipeline\n')
 console.log('💡 Para Realtime instantâneo, rode no Supabase SQL Editor:')
 console.log('   supabase/migration_realtime.sql\n')
