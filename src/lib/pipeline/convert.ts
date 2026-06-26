@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase-server'
+import { createServiceClient } from '@/lib/supabase-server'
 import { auditAndInvalidate } from '@/lib/memory/audit'
 import { notifyUser } from '@/lib/webhooks/dispatch'
 import type { Opportunity } from '@/types/database'
@@ -14,7 +14,7 @@ export async function convertOpportunity(
   actorId: string,
   projectName?: string,
 ): Promise<ConvertResult> {
-  const db = createServerClient()
+  const db = createServiceClient()
 
   const { data: opp, error: fetchErr } = await db
     .from('opportunities')

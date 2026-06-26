@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
-import { createServerClient } from '@/lib/supabase-server'
+import { createSupabaseServer } from '@/lib/supabase/server'
 import { requireGestor } from '@/lib/auth/api-context'
 import { auditAndInvalidate } from '@/lib/memory/audit'
 import { ACTIVE_PIPELINE_STAGES, STAGE_LABELS, type OpportunityStage } from '@/lib/pipeline'
@@ -22,7 +22,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const body = await req.json()
     const { stage, lost_reason } = schema.parse(body)
 
-    const db = createServerClient()
+    const db = await createSupabaseServer()
 
     const { data: existing } = await db
       .from('opportunities')

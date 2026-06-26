@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
-import { createServerClient } from '@/lib/supabase-server'
+import { createSupabaseServer } from '@/lib/supabase/server'
 import { requireGestor } from '@/lib/auth/api-context'
 import { auditAndInvalidate } from '@/lib/memory/audit'
 import { cacheGet, cacheSet } from '@/lib/cache'
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     const cached = await cacheGet<unknown[]>(cacheKey)
     if (cached) return ok(cached)
 
-    const db = createServerClient()
+    const db = await createSupabaseServer()
     let query = db
       .from('opportunities')
       .select('*')
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json()
     const payload = createSchema.parse(body)
-    const db = createServerClient()
+    const db = await createSupabaseServer()
 
     const { data, error } = await db
       .from('opportunities')
