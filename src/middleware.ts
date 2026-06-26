@@ -68,14 +68,9 @@ export async function middleware(req: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    if (!profile?.role) {
-      if (!pathname.startsWith('/onboarding')) {
-        return NextResponse.redirect(new URL('/onboarding', req.url))
-      }
-      return response
-    }
-
-    const role = profile.role as UserRole
+    // Se perfil sem role ainda não foi configurado, deixa passar com role padrão
+    // (evita loop infinito onboarding → dashboard → onboarding)
+    const role = (profile?.role ?? 'gestor') as UserRole
     if (!canAccessRoute(role, pathname)) {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }
