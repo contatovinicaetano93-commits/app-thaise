@@ -3,6 +3,7 @@
 
 -- ── activity_events: gestor vê tudo; demais só via API com checagem de entidade
 drop policy if exists "allow all activity" on activity_events;
+drop policy if exists "allow all activity_events" on activity_events;
 drop policy if exists "authenticated read activity" on activity_events;
 drop policy if exists "gestor activity all" on activity_events;
 
@@ -29,10 +30,10 @@ create policy "entity owner read activity" on activity_events
     ))
     or (entity_type = 'supplier'
       and current_user_role() = 'fornecedor'
-      and entity_id = current_supplier_id()::text)
+      and entity_id = current_supplier_id())
     or (entity_type = 'client'
       and current_user_role() = 'cliente'
-      and entity_id = current_client_id()::text)
+      and entity_id = current_client_id())
   );
 
 -- ── order_status_log: gestor + donos do pedido (via join implícito na API)

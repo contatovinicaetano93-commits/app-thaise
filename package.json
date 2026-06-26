@@ -21,6 +21,7 @@
     "verify:pipeline": "node scripts/verify-pipeline.mjs",
     "cleanup:demo": "node scripts/cleanup-demo.mjs",
     "setup:migration": "node scripts/apply-migration.mjs",
+    "setup:apply-pending": "node scripts/apply-pending-migrations.mjs",
     "smoke:prod": "node scripts/smoke-prod.mjs",
     "load-test": "k6 run scripts/load-test.k6.js",
     "worker": "tsx src/workers/run-all.ts",
