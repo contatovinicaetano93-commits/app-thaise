@@ -17,7 +17,7 @@ export interface EmailResult {
 export async function sendEmail(message: EmailMessage): Promise<EmailResult> {
   const sentAt = new Date().toISOString()
   const apiKey = process.env.RESEND_API_KEY
-  const from = process.env.EMAIL_FROM ?? 'Plataforma Thaise <noreply@plataforma.com>'
+  const from = process.env.EMAIL_FROM ?? 'Estlar <noreply@estlar.com.br>'
 
   if (apiKey) {
     try {

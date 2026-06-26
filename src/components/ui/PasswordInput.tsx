@@ -26,7 +26,7 @@ export function PasswordInput({ label, error, className, wrapperClassName, id, .
           id={inputId}
           type={show ? 'text' : 'password'}
           autoComplete={props.autoComplete ?? 'current-password'}
-          className={`w-full px-4 py-3 pr-11 border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-500 transition-colors ${
+          className={`w-full px-4 py-3 pr-11 border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--estlar-wine)]/40 focus:border-[var(--estlar-wine)] transition-colors ${
             error ? 'border-red-400 bg-red-50' : 'border-gray-200'
           } ${className ?? ''}`}
         />

@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Layers } from 'lucide-react'
 import { LogoutButton } from '@/components/layout/LogoutButton'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { ROLE_LABELS } from '@/lib/auth/roles'
@@ -21,16 +20,21 @@ export function Sidebar() {
   const sections = navBySection(role)
 
   return (
-    <aside className="w-64 min-h-screen bg-[#0b1220] text-slate-300 flex flex-col border-r border-white/5">
+    <aside
+      className="w-64 min-h-screen text-slate-300 flex flex-col border-r border-white/5"
+      style={{ background: 'var(--estlar-obsidian)' }}
+    >
       <div className="px-5 py-6 border-b border-white/5">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-violet-600 flex items-center justify-center shadow-lg shadow-violet-900/40">
-            <Layers size={18} className="text-white" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-sm font-bold text-white tracking-tight truncate">Plataforma Thaise</h1>
-            <p className="text-[11px] text-slate-500 truncate">Hub operacional QCPS</p>
-          </div>
+        <div className="min-w-0">
+          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-[var(--estlar-titanium)]">
+            Estlar
+          </p>
+          <h1 className="text-sm font-medium text-[var(--estlar-linen)] tracking-wide truncate mt-0.5">
+            Hub de Arquitetura
+          </h1>
+          <p className="text-[10px] text-[var(--estlar-titanium)] truncate mt-1 tracking-wide">
+            Inteligência · Método QCPS
+          </p>
         </div>
       </div>
 
@@ -54,9 +58,12 @@ export function Sidebar() {
                     }`}
                   >
                     {active && (
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-full bg-emerald-400" />
+                      <span
+                        className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-full"
+                        style={{ background: 'var(--estlar-wine-light)' }}
+                      />
                     )}
-                    <Icon size={17} className={active ? 'text-emerald-400' : 'text-slate-500'} />
+                    <Icon size={17} className={active ? 'text-[var(--estlar-sand)]' : 'text-slate-500'} />
                     <span className="truncate">{itemLabel}</span>
                   </Link>
                 )
@@ -71,7 +78,14 @@ export function Sidebar() {
         {profile && (
           <div className="rounded-xl bg-white/5 border border-white/5 p-3">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-violet-600/30 border border-violet-500/30 flex items-center justify-center text-xs font-bold text-violet-200 shrink-0">
+              <div
+                className="w-9 h-9 rounded-full border flex items-center justify-center text-xs font-bold shrink-0"
+                style={{
+                  background: 'color-mix(in srgb, var(--estlar-wine) 25%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--estlar-wine-light) 40%, transparent)',
+                  color: 'var(--estlar-sand)',
+                }}
+              >
                 {initials(profile.full_name, profile.email)}
               </div>
               <div className="min-w-0 flex-1">

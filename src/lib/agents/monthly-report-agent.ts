@@ -34,7 +34,7 @@ export async function generateMonthlySummary(periodLabel: string, metrics: Month
           {
             role: 'system',
             content:
-              'Você é analista da Plataforma Thaise (gestão de fornecedores, empreendimentos e pedidos). ' +
+              'Você é analista do Hub Estlar (curadoria de ativos, empreendimentos e consolidação patrimonial). ' +
               'Escreva um parágrafo executivo em português (3–4 frases), objetivo e acionável para a gestora.',
           },
           {

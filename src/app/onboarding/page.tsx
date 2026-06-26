@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Truck, Users, Package, ShoppingCart, Check, ArrowRight, Layers } from 'lucide-react'
+import { Truck, Users, Package, ShoppingCart, Check, ArrowRight } from 'lucide-react'
 
 const GESTOR_STEPS = [
-  { icon: Layers, color: 'bg-violet-100 text-violet-600', title: 'Bem-vinda, Gestora', desc: 'Centralize fornecedores, empreendimentos e pedidos. O mapa SIPOC guia cada etapa.', cta: 'Começar' },
+  { icon: Package, color: 'bg-stone-100 text-stone-800', title: 'Bem-vinda ao Hub Estlar', desc: 'Inteligência para curadoria de ativos, empreendimentos e consolidação patrimonial.', cta: 'Começar' },
   { icon: Truck, color: 'bg-indigo-100 text-indigo-600', title: 'Homologue fornecedores', desc: 'Fornecedores pendentes passam por curadoria antes de entrar no catálogo.', cta: 'Entendido', action: '/pending-suppliers', actionLabel: 'Ver fila →' },
   { icon: Users, color: 'bg-emerald-100 text-emerald-600', title: 'Clientes e empreendimentos', desc: 'Cada empreendimento exige cliente — jornada A→F com checklist.', cta: 'Entendido', action: '/projects', actionLabel: 'Empreendimentos →' },
   { icon: ShoppingCart, color: 'bg-rose-100 text-rose-600', title: 'Pronto!', desc: 'Use o assistente ✨ e o dashboard para saber o próximo passo.', cta: 'Ir para o Dashboard' },
@@ -17,7 +17,7 @@ const FORNECEDOR_STEPS = [
 ]
 
 const CLIENTE_STEPS = [
-  { icon: Layers, color: 'bg-violet-100 text-violet-600', title: 'Portal Cliente', desc: 'Acompanhe seus empreendimentos e pedidos em tempo real.', cta: 'Começar' },
+  { icon: Package, color: 'bg-stone-100 text-stone-700', title: 'Refúgio Digital', desc: 'Acompanhe seus ativos e empreendimentos com precisão editorial.', cta: 'Começar' },
   { icon: Users, color: 'bg-emerald-100 text-emerald-600', title: 'Empreendimentos', desc: 'Veja em qual fase A–F está cada projeto.', cta: 'Ver projetos', action: '/projects' },
 ]
 

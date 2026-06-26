@@ -7,6 +7,7 @@ import { z } from 'zod'
 import Link from 'next/link'
 import { Input, Select } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { BRAND } from '@/lib/brand'
 import {
   INTAKE_SCOPE_OPTIONS,
   INTAKE_INTERVENTION_OPTIONS,
@@ -60,68 +61,142 @@ export default function IntakePage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-6">
-        <div className="max-w-lg w-full bg-white rounded-2xl shadow-sm border border-stone-200 p-8 text-center">
-          <p className="text-xs uppercase tracking-widest text-stone-400 mb-2">Estlar</p>
-          <h1 className="text-2xl font-light text-stone-900 mb-4">Obrigado pelo seu interesse</h1>
-          <p className="text-stone-600 mb-2">{submitted.reason}</p>
-          <p className="text-sm text-stone-400 mb-6">
+      <div
+        className="min-h-screen flex items-center justify-center p-6"
+        style={{ background: 'var(--background)' }}
+      >
+        <div className="max-w-lg w-full rounded-2xl border border-[var(--border)] bg-white p-8 text-center shadow-sm">
+          <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-[var(--estlar-titanium)] mb-2">
+            {BRAND.name}
+          </p>
+          <h1 className="font-display text-2xl font-light text-gray-900 tracking-wide mb-4">
+            Mapeamento recebido
+          </h1>
+          <p className="text-gray-600 mb-2 leading-relaxed">{submitted.reason}</p>
+          <p className="text-sm text-[var(--estlar-titanium)] mb-6">
             Status: {intakeStatusLabel(submitted.status)} · Score {submitted.score}
           </p>
           {submitted.status === 'approved' && (
-            <p className="text-sm text-emerald-700 bg-emerald-50 rounded-lg px-4 py-3">
+            <p
+              className="text-sm rounded-xl px-4 py-3 leading-relaxed"
+              style={{
+                color: 'var(--estlar-wine)',
+                background: 'color-mix(in srgb, var(--estlar-wine) 8%, white)',
+              }}
+            >
               Nossa equipe entrará em contato em até 48 horas para agendar a Reunião de Imersão.
             </p>
           )}
-          <Link href="/login" className="inline-block mt-6 text-sm text-violet-600 hover:underline">
-            Área restrita
-          </Link>
+          <div className="mt-8 flex flex-col items-center gap-3">
+            <Link
+              href="/"
+              className="text-sm transition-colors hover:opacity-80"
+              style={{ color: 'var(--estlar-wine)' }}
+            >
+              Voltar ao site
+            </Link>
+            <Link href="/login" className="text-xs text-[var(--estlar-titanium)] hover:text-gray-700">
+              Área restrita
+            </Link>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 py-12 px-6">
-      <div className="max-w-xl mx-auto">
-        <div className="text-center mb-10">
-          <p className="text-xs uppercase tracking-widest text-stone-400 mb-2">Estlar · Hub de Arquitetura</p>
-          <h1 className="text-3xl font-light text-stone-900">Mapeamento de Projeto</h1>
-          <p className="text-stone-500 mt-3 text-sm leading-relaxed">
+    <div className="min-h-screen flex">
+      {/* Painel editorial — Obsidiana */}
+      <div
+        className="hidden lg:flex w-[42%] flex-col justify-between p-12 lg:p-16 shrink-0"
+        style={{ background: 'var(--estlar-obsidian)' }}
+      >
+        <div>
+          <Link href="/" className="inline-block group">
+            <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-[var(--estlar-titanium)] group-hover:text-[var(--estlar-sand)] transition-colors">
+              {BRAND.name}
+            </p>
+            <p className="text-sm text-[var(--estlar-sand)] mt-1 tracking-wide">{BRAND.subtitle}</p>
+          </Link>
+        </div>
+
+        <div className="max-w-sm">
+          <p className="text-[11px] uppercase tracking-[0.3em] text-[var(--estlar-wine-light)] mb-6">
+            Mapeamento inicial
+          </p>
+          <blockquote className="font-display text-[1.5rem] font-light text-[var(--estlar-linen)] leading-snug tracking-wide">
+            &ldquo;{BRAND.manifesto}&rdquo;
+          </blockquote>
+          <p className="mt-8 text-sm leading-relaxed text-[var(--estlar-titanium)]">
             Para garantirmos que nossa expertise é ideal para o seu momento,
-            pedimos que preencha este breve mapeamento de 2 minutos.
+            pedimos que preencha este breve mapeamento de cerca de dois minutos.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-2xl shadow-sm border border-stone-200 p-8 space-y-5">
-          <Input label="Nome completo *" error={errors.name?.message} {...register('name')} />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input label="Email *" type="email" error={errors.email?.message} {...register('email')} />
-            <Input label="Telefone *" error={errors.phone?.message} {...register('phone')} />
+        <p className="text-xs text-[var(--estlar-titanium)] tracking-wide">
+          {BRAND.tagline}
+        </p>
+      </div>
+
+      {/* Formulário — Areia / Linho */}
+      <div
+        className="flex-1 py-10 px-6 lg:py-16 lg:px-12 overflow-y-auto"
+        style={{ background: 'var(--background)' }}
+      >
+        <div className="max-w-xl mx-auto">
+          <div className="mb-10 lg:hidden">
+            <Link href="/">
+              <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-[var(--estlar-titanium)]">
+                {BRAND.name}
+              </p>
+              <p className="text-sm text-gray-600 mt-0.5">{BRAND.subtitle}</p>
+            </Link>
           </div>
-          <Input label="Empresa (opcional)" {...register('company')} />
 
-          <Select label="Escopo principal *" options={INTAKE_SCOPE_OPTIONS.map(o => ({ value: o.value, label: o.label }))} {...register('scope')} />
-          <Select label="Nível de intervenção *" options={INTAKE_INTERVENTION_OPTIONS.map(o => ({ value: o.value, label: o.label }))} {...register('intervention')} />
-          <Select label="Expectativa de investimento (obra + interiores) *" options={INTAKE_BUDGET_OPTIONS.map(o => ({ value: o.value, label: o.label }))} {...register('budget')} />
-          <Select label="Prazo ideal *" options={INTAKE_URGENCY_OPTIONS.map(o => ({ value: o.value, label: o.label }))} {...register('urgency')} />
-          <Select
-            label="Como nos encontrou"
-            options={[
-              { value: 'instagram', label: 'Instagram' },
-              { value: 'indicacao', label: 'Indicação' },
-              { value: 'whatsapp', label: 'WhatsApp' },
-              { value: 'parceiro', label: 'Parceiro' },
-              { value: 'evento', label: 'Evento' },
-              { value: 'outro', label: 'Outro' },
-            ]}
-            {...register('source')}
-          />
+          <div className="mb-8">
+            <h1 className="text-2xl font-light text-gray-900 tracking-wide">Mapeamento de Projeto</h1>
+            <p className="text-sm text-[var(--estlar-titanium)] mt-2 leading-relaxed">
+              Estruture a decisão antes de executar.
+            </p>
+          </div>
 
-          <Button type="submit" loading={isSubmitting} className="w-full">
-            Enviar mapeamento
-          </Button>
-        </form>
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8 space-y-5 shadow-sm"
+          >
+            <Input label="Nome completo *" error={errors.name?.message} {...register('name')} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input label="E-mail *" type="email" error={errors.email?.message} {...register('email')} />
+              <Input label="Telefone *" error={errors.phone?.message} {...register('phone')} />
+            </div>
+            <Input label="Empresa (opcional)" {...register('company')} />
+
+            <Select label="Escopo principal *" options={INTAKE_SCOPE_OPTIONS.map(o => ({ value: o.value, label: o.label }))} {...register('scope')} />
+            <Select label="Nível de intervenção *" options={INTAKE_INTERVENTION_OPTIONS.map(o => ({ value: o.value, label: o.label }))} {...register('intervention')} />
+            <Select label="Expectativa de investimento (obra + interiores) *" options={INTAKE_BUDGET_OPTIONS.map(o => ({ value: o.value, label: o.label }))} {...register('budget')} />
+            <Select label="Prazo ideal *" options={INTAKE_URGENCY_OPTIONS.map(o => ({ value: o.value, label: o.label }))} {...register('urgency')} />
+            <Select
+              label="Como nos encontrou"
+              options={[
+                { value: 'instagram', label: 'Instagram' },
+                { value: 'indicacao', label: 'Indicação' },
+                { value: 'whatsapp', label: 'WhatsApp' },
+                { value: 'parceiro', label: 'Parceiro' },
+                { value: 'evento', label: 'Evento' },
+                { value: 'outro', label: 'Outro' },
+              ]}
+              {...register('source')}
+            />
+
+            <Button type="submit" loading={isSubmitting} className="w-full !rounded-xl !py-3">
+              Enviar mapeamento
+            </Button>
+          </form>
+
+          <p className="text-xs text-[var(--estlar-titanium)] text-center mt-8 tracking-wide">
+            {BRAND.name} · {BRAND.subtitle} © {new Date().getFullYear()}
+          </p>
+        </div>
       </div>
     </div>
   )

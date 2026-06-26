@@ -16,7 +16,7 @@ export function Input({ label, error, type, className, ...props }: InputProps) {
     <input
       {...props}
       type={isPassword && showPassword ? 'text' : type}
-      className={`px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors ${
+      className={`px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--estlar-wine)]/40 focus:border-[var(--estlar-wine)] transition-colors ${
         error ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white'
       } ${isPassword ? 'pr-10' : ''} ${className ?? ''}`}
     />
@@ -59,7 +59,7 @@ export function Select({ label, error, options, placeholder, ...props }: SelectP
       <label className="text-sm font-medium text-gray-700">{label}</label>
       <select
         {...props}
-        className={`px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors bg-white ${
+        className={`px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--estlar-wine)]/40 focus:border-[var(--estlar-wine)] transition-colors bg-white ${
           error ? 'border-red-400' : 'border-gray-200'
         } ${props.className ?? ''}`}
       >
@@ -85,7 +85,7 @@ export function Textarea({ label, error, ...props }: TextareaProps) {
       <textarea
         rows={3}
         {...props}
-        className={`px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors resize-none ${
+        className={`px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--estlar-wine)]/40 focus:border-[var(--estlar-wine)] transition-colors resize-none ${
           error ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white'
         } ${props.className ?? ''}`}
       />

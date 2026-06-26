@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, X, Layers } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 import { LogoutButton } from '@/components/layout/LogoutButton'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { ROLE_LABELS } from '@/lib/auth/roles'
@@ -26,7 +26,8 @@ export function MobileSidebar() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2.5 bg-[#0b1220] rounded-xl border border-white/10 shadow-lg"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2.5 rounded-xl border border-white/10 shadow-lg"
+        style={{ background: 'var(--estlar-obsidian)' }}
       >
         <Menu size={20} className="text-slate-200" />
       </button>
@@ -34,13 +35,18 @@ export function MobileSidebar() {
       {open && (
         <>
           <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setOpen(false)} />
-          <div className="fixed inset-y-0 left-0 w-72 bg-[#0b1220] z-50 shadow-2xl lg:hidden flex flex-col border-r border-white/5">
+          <div
+            className="fixed inset-y-0 left-0 w-72 z-50 shadow-2xl lg:hidden flex flex-col border-r border-white/5"
+            style={{ background: 'var(--estlar-obsidian)' }}
+          >
             <div className="flex items-center justify-between px-5 py-5 border-b border-white/5">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center">
-                  <Layers size={15} className="text-white" />
-                </div>
-                <span className="font-bold text-white text-sm">Plataforma Thaise</span>
+              <div>
+                <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-[var(--estlar-titanium)]">
+                  Estlar
+                </p>
+                <span className="font-medium text-[var(--estlar-linen)] text-sm tracking-wide">
+                  Hub de Arquitetura
+                </span>
               </div>
               <button onClick={() => setOpen(false)} className="p-1 text-slate-500 hover:text-white">
                 <X size={18} />
@@ -66,9 +72,12 @@ export function MobileSidebar() {
                           }`}
                         >
                           {active && (
-                            <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-full bg-emerald-400" />
+                            <span
+                              className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-full"
+                              style={{ background: 'var(--estlar-wine-light)' }}
+                            />
                           )}
-                          <Icon size={17} className={active ? 'text-emerald-400' : 'text-slate-500'} />
+                          <Icon size={17} className={active ? 'text-[var(--estlar-sand)]' : 'text-slate-500'} />
                           {itemLabel}
                         </Link>
                       )
@@ -82,7 +91,13 @@ export function MobileSidebar() {
               <div className="px-3 py-4 border-t border-white/5">
                 <div className="rounded-xl bg-white/5 border border-white/5 p-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-violet-600/30 flex items-center justify-center text-xs font-bold text-violet-200">
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold"
+                      style={{
+                        background: 'color-mix(in srgb, var(--estlar-wine) 25%, transparent)',
+                        color: 'var(--estlar-sand)',
+                      }}
+                    >
                       {initials(profile.full_name, profile.email)}
                     </div>
                     <div className="min-w-0 flex-1">

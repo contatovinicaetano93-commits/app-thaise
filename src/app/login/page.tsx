@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Layers } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { PasswordInput } from '@/components/ui/PasswordInput'
+import { BRAND } from '@/lib/brand'
 import { toast } from 'sonner'
 
 export default function LoginPage() {
@@ -53,7 +53,7 @@ export default function LoginPage() {
         password: form.password,
       })
       if (error) throw error
-      toast.success('Bem-vinda!')
+      toast.success('Acesso autorizado')
       router.push('/dashboard')
       router.refresh()
     } catch (e) {
@@ -65,54 +65,76 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex">
-      <div className="hidden lg:flex w-1/2 bg-[#1a1033] flex-col justify-between p-12">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-violet-500 flex items-center justify-center">
-            <Layers size={16} className="text-white" />
-          </div>
-          <span className="text-white font-semibold tracking-tight">Plataforma Thaise</span>
-        </div>
+      {/* Painel editorial — Obsidiana */}
+      <div
+        className="hidden lg:flex w-1/2 flex-col justify-between p-12 lg:p-16"
+        style={{ background: 'var(--estlar-obsidian)' }}
+      >
         <div>
-          <blockquote className="text-2xl font-medium text-white leading-snug mb-4">
-            &ldquo;O primeiro que fazemos sempre tem que ser case de resultado.&rdquo;
-          </blockquote>
-          <p className="text-violet-300 text-sm">Thaise Resende · Fundadora</p>
+          <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-[var(--estlar-titanium)]">
+            {BRAND.name}
+          </p>
+          <p className="text-sm text-[var(--estlar-sand)] mt-1 tracking-wide">{BRAND.subtitle}</p>
         </div>
-        <div className="grid grid-cols-3 gap-4">
-          {['Fornecedores', 'Clientes', 'Pedidos'].map(l => (
-            <div key={l} className="bg-white/5 rounded-xl p-4">
-              <p className="text-xs text-violet-300 mt-0.5">{l}</p>
+
+        <div className="max-w-md">
+          <blockquote className="font-display text-[1.65rem] font-light text-[var(--estlar-linen)] leading-snug tracking-wide">
+            &ldquo;{BRAND.manifesto}&rdquo;
+          </blockquote>
+          <p className="mt-8 text-sm text-[var(--estlar-titanium)] tracking-wide">
+            {BRAND.founder}
+          </p>
+          <p className="text-xs text-[var(--estlar-wine-light)] mt-1 tracking-wider">
+            {BRAND.tagline}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          {BRAND.valueCycles.map(label => (
+            <div
+              key={label}
+              className="rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3"
+            >
+              <p className="text-[11px] text-[var(--estlar-titanium)] tracking-wide">{label}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-8 bg-[#f8f7f5]">
+      {/* Formulário — Areia / Linho */}
+      <div
+        className="flex-1 flex items-center justify-center p-8"
+        style={{ background: 'var(--background)' }}
+      >
         <div className="w-full max-w-sm animate-fade-in">
-          <div className="flex items-center gap-2 mb-10 lg:hidden">
-            <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center">
-              <Layers size={14} className="text-white" />
-            </div>
-            <span className="font-semibold text-gray-900">Plataforma Thaise</span>
+          <div className="mb-10 lg:hidden">
+            <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-[var(--estlar-titanium)]">
+              {BRAND.name}
+            </p>
+            <p className="text-sm text-gray-600 mt-0.5">{BRAND.subtitle}</p>
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Bem-vinda de volta</h1>
-          <p className="text-sm text-gray-500 mb-8">Gestor · Fornecedor · Cliente</p>
+          <h1 className="text-2xl font-light text-gray-900 tracking-wide mb-1">Acesso ao Hub</h1>
+          <p className="text-sm text-[var(--estlar-titanium)] mb-8">
+            Área restrita · Gestão de ativos
+          </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                E-mail institucional
+              </label>
               <input
                 type="email"
                 required
-                placeholder="thaise@empresa.com"
+                placeholder="seu@email.com"
                 value={form.email}
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="w-full px-4 py-3 border border-[var(--border)] rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--estlar-wine)]/40 focus:border-[var(--estlar-wine)]"
               />
             </div>
             <PasswordInput
-              label="Senha"
+              label="Senha de acesso"
               required
               placeholder="••••••••"
               value={form.password}
@@ -123,22 +145,24 @@ export default function LoginPage() {
                 type="button"
                 onClick={handleForgotPassword}
                 disabled={resetting}
-                className="text-xs text-violet-600 hover:text-violet-800 font-medium disabled:opacity-50"
+                className="text-xs font-medium disabled:opacity-50 transition-colors"
+                style={{ color: 'var(--estlar-wine)' }}
               >
-                {resetting ? 'Enviando…' : 'Esqueci minha senha'}
+                {resetting ? 'Enviando…' : 'Recuperar acesso'}
               </button>
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-violet-600 hover:bg-violet-700 disabled:opacity-60 text-white font-medium rounded-xl text-sm mt-2"
+              className="w-full py-3 disabled:opacity-60 text-white font-medium rounded-xl text-sm mt-2 transition-colors hover:opacity-95"
+              style={{ background: 'var(--estlar-wine)' }}
             >
-              {loading ? 'Entrando...' : 'Entrar'}
+              {loading ? 'Entrando…' : 'Entrar no Hub'}
             </button>
           </form>
 
-          <p className="text-xs text-gray-400 text-center mt-8">
-            Plataforma privada · Thaise Resende © {new Date().getFullYear()}
+          <p className="text-xs text-[var(--estlar-titanium)] text-center mt-8 tracking-wide">
+            {BRAND.name} · Área privada © {new Date().getFullYear()}
           </p>
         </div>
       </div>

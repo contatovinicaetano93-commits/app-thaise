@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
-/* ── Design Tokens · Plataforma Thaise ── */
+/* ── Design Tokens · Estlar ── */
 :root {
   --background: #f8f7f5;
   --foreground: #1a1a1a;
 
-  --brand-50:  #f5f3ff;
-  --brand-100: #ede9fe;
-  --brand-200: #ddd6fe;
-  --brand-500: #8b5cf6;
-  --brand-600: #7c3aed;
-  --brand-700: #6d28d9;
+  --brand-50:  #faf6f5;
+  --brand-100: #f0e8e6;
+  --brand-200: #dcc9c5;
+  --brand-500: #8b4545;
+  --brand-600: #722f37;
+  --brand-700: #5c2a2a;
 
   --surface:   #ffffff;
   --border:    #e8e6e1;
@@ -20,12 +20,22 @@
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 24px;
+
+  /* Estlar · Identidade sensorial */
+  --estlar-obsidian:       #0c0b0a;
+  --estlar-obsidian-soft:  #141210;
+  --estlar-linen:          #e8e4dc;
+  --estlar-sand:           #d4cfc4;
+  --estlar-titanium:       #9a9590;
+  --estlar-wine:           #5c2a2a;
+  --estlar-wine-light:     #8b4545;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist);
+  --font-display: var(--font-cormorant);
 }
 
 * { box-sizing: border-box; }
@@ -53,3 +63,7 @@ body {
 
 .animate-fade-in  { animation: fade-in  0.3s ease both; }
 .animate-slide-in { animation: slide-in 0.25s ease both; }
+
+.font-display {
+  font-family: var(--font-cormorant), Georgia, 'Times New Roman', serif;
+}
