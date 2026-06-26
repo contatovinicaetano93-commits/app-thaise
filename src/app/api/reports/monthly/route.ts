@@ -1,5 +1,6 @@
 import { ok, handleError } from '@/lib/api-response'
 import { requireGestor } from '@/lib/auth/api-context'
+import { generateMonthlySummary } from '@/lib/agents/monthly-report-agent'
 import { createServerClient } from '@/lib/supabase-server'
 import { qcpsAverage } from '@/lib/qcps'
 
@@ -11,6 +12,7 @@ export async function GET() {
     const db = createServerClient()
     const now = new Date()
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+    const periodLabel = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
 
     const [ordersRes, suppliersRes, projectsRes, insightsRes] = await Promise.all([
       db.from('orders').select('id, status, total_price, created_at').gte('created_at', monthStart),
@@ -23,9 +25,9 @@ export async function GET() {
     const suppliers = suppliersRes.data ?? []
     const projects = projectsRes.data ?? []
 
-    const revenue = orders
-      .filter((o: { status: string }) => o.status === 'delivered')
-      .reduce((acc: number, o: { total_price: number }) => acc + Number(o.total_price), 0)
+    const delivered = orders.filter((o: { status: string }) => o.status === 'delivered')
+    const revenue = delivered.reduce((acc: number, o: { total_price: number }) => acc + Number(o.total_price), 0)
+    const pending = orders.filter((o: { status: string }) => o.status === 'pending' || o.status === 'approved').length
 
     const activeSuppliers = suppliers.filter((s: { status: string }) => s.status === 'active')
     const avgQcps = activeSuppliers.length
@@ -33,25 +35,24 @@ export async function GET() {
           acc + qcpsAverage(s as { score_q: number; score_c: number; score_p: number; score_s: number }), 0) / activeSuppliers.length * 10) / 10
       : 0
 
-    const summary = [
-      `Relatório ${now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}`,
-      `${orders.length} pedido(s) no mês · receita entregue ${revenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`,
-      `${activeSuppliers.length} fornecedor(es) ativo(s) · QCPS médio ${avgQcps}/10`,
-      `${projects.filter((p: { status: string }) => p.status === 'active').length} empreendimento(s) ativo(s)`,
-      `${insightsRes.data?.length ?? 0} insight(s) AI gerados no mês`,
-    ].join(' · ')
+    const metrics = {
+      orders: orders.length,
+      revenue,
+      activeSuppliers: activeSuppliers.length,
+      avgQcps,
+      activeProjects: projects.filter((p: { status: string }) => p.status === 'active').length,
+      insights: insightsRes.data?.length ?? 0,
+      delivered: delivered.length,
+      pending,
+    }
+
+    const summary = await generateMonthlySummary(periodLabel, metrics)
 
     return ok({
       period: { from: monthStart, to: now.toISOString() },
-      metrics: {
-        orders: orders.length,
-        revenue,
-        activeSuppliers: activeSuppliers.length,
-        avgQcps,
-        activeProjects: projects.filter((p: { status: string }) => p.status === 'active').length,
-        insights: insightsRes.data?.length ?? 0,
-      },
+      metrics,
       summary,
+      aiPowered: Boolean(process.env.OPENAI_API_KEY),
     })
   } catch (e) {
     return handleError(e)

@@ -11,6 +11,8 @@ const schema = z.object({
   itemId: z.string(),
   checked: z.boolean(),
   evidence: z.string().optional().transform(v => v?.trim() || undefined),
+  filePath: z.string().optional(),
+  fileName: z.string().optional(),
 })
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -20,7 +22,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (profile!.role !== 'gestor') return err('Apenas gestor pode editar checklist', 403)
 
     const { id } = await params
-    const { phase, itemId, checked, evidence } = schema.parse(await req.json())
+    const { phase, itemId, checked, evidence, filePath, fileName } = schema.parse(await req.json())
     const db = createServerClient()
 
     const { data: project, error: fetchErr } = await db
@@ -33,8 +35,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (project.phase !== phase) return err('Só é possível editar o checklist da fase atual', 400)
 
     const checklist = { ...(project.checklist ?? {}) } as PhaseChecklist
-    const value = evidence
-      ? { checked, evidence }
+    const prev = checklist[phase]?.[itemId]
+    const prevObj = prev && typeof prev === 'object' && 'checked' in prev ? prev : null
+
+    const value = prevObj || evidence || filePath || fileName
+      ? {
+          checked,
+          evidence: evidence ?? prevObj?.evidence,
+          filePath: filePath ?? prevObj?.filePath,
+          fileName: fileName ?? prevObj?.fileName,
+        }
       : checked
     checklist[phase] = { ...(checklist[phase] ?? {}), [itemId]: value }
 

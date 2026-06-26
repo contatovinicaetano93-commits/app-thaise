@@ -77,11 +77,30 @@ export default function ProjectsPage() {
 
   async function handleChecklistToggle(project: Project, itemId: string, checked: boolean, evidence?: string) {
     try {
-      const updated = await projectsApi.updateChecklist(project.id, project.phase, itemId, checked, evidence)
+      const updated = await projectsApi.updateChecklist(project.id, project.phase, itemId, checked, { evidence })
       setProjects(prev => prev.map(p => p.id === project.id ? updated : p))
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Erro ao atualizar checklist')
     }
+  }
+
+  async function handleChecklistAttach(project: Project, itemId: string, file: File) {
+    const uploaded = await projectsApi.uploadChecklistFile(project.id, project.phase, itemId, file)
+    const value = phaseDone(project, itemId)
+    const checked = value?.checked ?? true
+    const updated = await projectsApi.updateChecklist(project.id, project.phase, itemId, checked, {
+      evidence: value?.evidence,
+      filePath: uploaded.path,
+      fileName: uploaded.fileName,
+    })
+    setProjects(prev => prev.map(p => p.id === project.id ? updated : p))
+  }
+
+  function phaseDone(project: Project, itemId: string) {
+    const checklist = (project.checklist ?? {}) as PhaseChecklistType
+    const raw = checklist[project.phase]?.[itemId]
+    if (raw && typeof raw === 'object' && 'checked' in raw) return raw
+    return undefined
   }
 
   async function handleScore(projectId: string) {
@@ -249,7 +268,8 @@ export default function ProjectsPage() {
                 <PhaseChecklist
                   phase={project.phase}
                   checklist={checklist}
-                  onToggle={(itemId, checked) => handleChecklistToggle(project, itemId, checked)}
+                  onToggle={(itemId, checked, evidence) => handleChecklistToggle(project, itemId, checked, evidence)}
+                  onAttach={isGestor ? (itemId, file) => handleChecklistAttach(project, itemId, file) : undefined}
                   readOnly={!isGestor}
                 />
 

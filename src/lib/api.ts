@@ -150,8 +150,37 @@ export const projectsApi = {
   advancePhase: (id: string): ApiResult<Project> =>
     request(`/api/projects/${id}/phase`, { method: 'PATCH', body: JSON.stringify({}) }),
 
-  updateChecklist: (id: string, phase: string, itemId: string, checked: boolean, evidence?: string): ApiResult<Project> =>
-    request(`/api/projects/${id}/checklist`, { method: 'PATCH', body: JSON.stringify({ phase, itemId, checked, evidence }) }),
+  updateChecklist: (
+    id: string,
+    phase: string,
+    itemId: string,
+    checked: boolean,
+    opts?: { evidence?: string; filePath?: string; fileName?: string },
+  ): ApiResult<Project> =>
+    request(`/api/projects/${id}/checklist`, {
+      method: 'PATCH',
+      body: JSON.stringify({ phase, itemId, checked, ...opts }),
+    }),
+
+  uploadChecklistFile: async (
+    id: string,
+    phase: string,
+    itemId: string,
+    file: File,
+  ): Promise<{ path: string; fileName: string; signedUrl: string }> => {
+    const form = new FormData()
+    form.append('file', file)
+    form.append('phase', phase)
+    form.append('itemId', itemId)
+    const res = await fetch(`/api/projects/${id}/checklist/upload`, {
+      method: 'POST',
+      credentials: 'include',
+      body: form,
+    })
+    const json = await res.json()
+    if (!json.ok) throw new Error(json.error ?? 'Erro ao enviar arquivo')
+    return json.data
+  },
 
   remove: (id: string): ApiResult<void> =>
     request(`/api/projects/${id}`, { method: 'DELETE' }),
