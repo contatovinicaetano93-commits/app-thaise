@@ -103,12 +103,14 @@ if (firstOpp?.id) {
 }
 
 // ── 3. Dados demo por etapa ──
+let dbOpportunityCount = 0
 const allRes = await fetch(
   `${supabaseUrl}/rest/v1/opportunities?select=stage,name&stage=in.(${STAGES.join(',')})`,
   { headers: svcHeaders() },
 )
 if (allRes.ok) {
   const rows = await allRes.json()
+  dbOpportunityCount = rows.length
   const byStage = Object.fromEntries(STAGES.map(s => [s, rows.filter(r => r.stage === s)]))
   ok(`${rows.length} oportunidade(s) ativa(s) no funil`)
   for (const stage of STAGES) {
@@ -157,7 +159,11 @@ if (gestorCookie) {
   try { oppJson = JSON.parse(oppText) } catch { oppJson = null }
   if (oppApi.ok && oppJson?.ok) {
     const count = Array.isArray(oppJson.data) ? oppJson.data.length : 0
-    ok(`GET /api/opportunities → ${count} oportunidade(s)`)
+    if (count === 0 && dbOpportunityCount > 0) {
+      bad(`GET /api/opportunities → 0 (banco tem ${dbOpportunityCount}) — sessão/RLS ou cache; atualize o deploy`)
+    } else {
+      ok(`GET /api/opportunities → ${count} oportunidade(s)`)
+    }
   } else if (oppApi.status === 404) {
     bad('GET /api/opportunities — 404 (código do pipeline ainda não deployado na Vercel)')
   } else {
