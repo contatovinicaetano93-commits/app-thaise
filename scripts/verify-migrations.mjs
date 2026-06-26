@@ -38,6 +38,8 @@ const tables = [
   ['estlar_eos', 'scope_amendments'],
   ['estlar_eos', 'quotations'],
   ['estlar_eos', 'operational_config'],
+  ['rls_tighten', 'job_logs'],
+  ['rls_tighten', 'agent_insights'],
 ]
 
 console.log('\n📦 Verificando migrations no Supabase...\n')

@@ -1,4 +1,4 @@
-# Plataforma Thaise
+# Estlar Hub
 
 Hub operacional para digitalizar fornecedores curados, clientes, catálogo e pedidos — com jornada de empreendimentos (Fases A–F), avaliação QCPS e agente de scoring.
 

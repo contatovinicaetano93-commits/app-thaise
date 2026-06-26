@@ -1,22 +1,23 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
-import { getSupabaseAnonKey, getSupabaseUrl, requireSupabaseConfig } from '@/lib/supabase/env'
+import { getSupabaseUrl, requireSupabaseConfig } from '@/lib/supabase/env'
 
-// Usado apenas nos Route Handlers (server-side) — nunca no client
-export function createServerClient() {
-  const { url, key } = requireSupabaseConfig()
+// Service role — workers, intake, cron, audit writes (NUNCA fallback para anon)
+export function createServiceClient() {
+  const url = getSupabaseUrl()
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY
+
+  if (!url || !key) {
+    throw new Error(
+      'SUPABASE_SERVICE_ROLE_KEY não configurada — obrigatória para workers, intake e agents',
+    )
+  }
+
   return createClient<Database>(url, key)
 }
 
-// Service role — workers e jobs em background
-export function createServiceClient() {
-  const url = getSupabaseUrl()
-  const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ??
-    process.env.SUPABASE_SECRET_KEY ??
-    getSupabaseAnonKey()
-
-  if (!url || !key) throw new Error('Supabase não configurado')
-
+/** @deprecated Use createSupabaseServer() para rotas com sessão ou createServiceClient() para sistema */
+export function createServerClient() {
+  const { url, key } = requireSupabaseConfig()
   return createClient<Database>(url, key)
 }

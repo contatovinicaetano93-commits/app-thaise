@@ -1,13 +1,13 @@
 import { ok, handleError } from '@/lib/api-response'
 import { requireGestor } from '@/lib/auth/api-context'
-import { createServiceClient } from '@/lib/supabase-server'
+import { createSupabaseServer } from '@/lib/supabase/server'
 
 export async function GET() {
   try {
     const { error: authErr } = await requireGestor()
     if (authErr) return authErr
 
-    const db = createServiceClient()
+    const db = await createSupabaseServer()
     const { data, error } = await db
       .from('job_logs')
       .select('*')

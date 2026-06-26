@@ -1,4 +1,4 @@
-# Setup em 3 passos — Plataforma Thaise
+# Setup em 3 passos — Estlar Hub
 
 Projeto Supabase: **jaokeypptatywvarwlao**
 

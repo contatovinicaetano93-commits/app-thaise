@@ -6,18 +6,24 @@ import { rateLimit } from '@/lib/rate-limit'
 
 const PUBLIC_PATHS = ['/login', '/onboarding', '/intake']
 
+const PUBLIC_API_PREFIXES = [
+  '/api/auth/',
+  '/api/health',
+  '/api/v1/health',
+  '/api/intake',
+  '/api/cron/',
+  '/api/openapi',
+]
+
+function isPublicApi(pathname: string) {
+  return PUBLIC_API_PREFIXES.some(p => pathname.startsWith(p))
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
   let rateRemaining: number | undefined
 
-  if (
-    pathname.startsWith('/api/') &&
-    !pathname.startsWith('/api/auth/') &&
-    !pathname.startsWith('/api/health') &&
-    !pathname.startsWith('/api/v1/health') &&
-    !pathname.startsWith('/api/intake') &&
-    !pathname.startsWith('/api/cron/')
-  ) {
+  if (pathname.startsWith('/api/') && !isPublicApi(pathname)) {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0] ?? 'local'
     const { ok: allowed, remaining } = rateLimit(ip, 120)
     if (!allowed) {
@@ -39,9 +45,13 @@ export async function middleware(req: NextRequest) {
 
   const isPublic =
     PUBLIC_PATHS.some(p => pathname.startsWith(p)) ||
-    pathname.startsWith('/api/auth/') ||
+    isPublicApi(pathname) ||
     pathname.startsWith('/_next/') ||
     pathname === '/favicon.ico'
+
+  if (!user && pathname.startsWith('/api/') && !isPublicApi(pathname)) {
+    return NextResponse.json({ ok: false, error: 'Não autenticado' }, { status: 401 })
+  }
 
   if (!user && !isPublic && !pathname.startsWith('/api/')) {
     return NextResponse.redirect(new URL('/login', req.url))
@@ -58,7 +68,14 @@ export async function middleware(req: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    const role = (profile?.role ?? 'gestor') as UserRole
+    if (!profile?.role) {
+      if (!pathname.startsWith('/onboarding')) {
+        return NextResponse.redirect(new URL('/onboarding', req.url))
+      }
+      return response
+    }
+
+    const role = profile.role as UserRole
     if (!canAccessRoute(role, pathname)) {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }

@@ -1,4 +1,4 @@
-# Plano autônomo — Plataforma Thaise (overnight)
+# Plano autônomo — Estlar Hub (overnight)
 
 > **Objetivo:** adiantar revisão, correções, estabilização e melhorias sem pedir permissão ao usuário.  
 > **Produção:** https://app-thaise.vercel.app  
@@ -214,6 +214,7 @@ curl -s https://app-thaise.vercel.app/api/health | jq .data.status
 | 06:15 | 5 | ✅ | — | lib/notify/email.ts |
 | 06:30 | 6 | ✅ | — | smoke estendido, verify-migrations |
 | 06:45 | 7 | ✅ | — | CHANGELOG, DADOS-REAIS, .env.example |
+| 12:00 | S1–S4 | ✅ | sprint segurança | IDOR, agents gestor-only, middleware 401, RLS tighten, BullMQ job_logs, intake rate limit, CI lint |
 
 ---
 

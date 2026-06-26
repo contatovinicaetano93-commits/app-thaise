@@ -20,8 +20,8 @@ export async function PATCH(req: NextRequest) {
     if (authErr) return authErr
 
     const body = await req.json() as { max?: number; label?: string }
-    const { createServiceClient } = await import('@/lib/supabase-server')
-    const db = createServiceClient()
+    const { createSupabaseServer } = await import('@/lib/supabase/server')
+    const db = await createSupabaseServer()
 
     const { data: existing } = await db
       .from('operational_config')

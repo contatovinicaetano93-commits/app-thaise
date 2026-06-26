@@ -1,6 +1,7 @@
 import { Worker } from 'bullmq'
 import type { OrderJobPayload, OrderJobType } from '@/lib/queue/types'
 import { processOrderJob } from '@/lib/queue/processors'
+import { updateJobLog } from '@/lib/queue/job-log'
 
 const redisUrl = process.env.REDIS_URL
 
@@ -10,8 +11,18 @@ export function startOrderWorker() {
   const worker = new Worker<OrderJobPayload>(
     'orders',
     async (job) => {
+      const { jobLogId, ...payload } = job.data
       console.info(`[order-worker] ${job.name} — ${job.id}`)
-      return processOrderJob(job.name as OrderJobType, job.data)
+      if (jobLogId) await updateJobLog(jobLogId, 'processing')
+      try {
+        const result = await processOrderJob(job.name as OrderJobType, payload)
+        if (jobLogId) await updateJobLog(jobLogId, 'completed', result)
+        return result
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Erro desconhecido'
+        if (jobLogId) await updateJobLog(jobLogId, 'failed', undefined, msg)
+        throw e
+      }
     },
     { connection: { url: redisUrl, maxRetriesPerRequest: null }, concurrency: 3 },
   )

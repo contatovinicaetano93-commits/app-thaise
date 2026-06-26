@@ -1,10 +1,10 @@
-# Case de resultado — Plataforma Thaise
+# Case de resultado — Estlar Hub
 
 > Passo 100 do plano: documentar o primeiro ciclo operacional real.
 
 ## Contexto
 
-A **Plataforma Thaise** digitaliza o hub operacional de fornecedores curados, clientes e empreendimentos imobiliários com jornada **A→F**, scoring **QCPS** e fluxo **SIPOC**.
+A **Estlar Hub** digitaliza o hub operacional de fornecedores curados, clientes e empreendimentos imobiliários com jornada **A→F**, scoring **QCPS** e fluxo **SIPOC**.
 
 | Item | Valor |
 |------|-------|

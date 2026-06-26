@@ -178,6 +178,16 @@ export interface Order {
   project?: Project
 }
 
+export interface Webhook {
+  id: string
+  url: string
+  events: string[]
+  secret: string
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -190,6 +200,12 @@ export interface Database {
       profiles: { Row: Profile; Insert: Omit<Profile, 'created_at'>; Update: Partial<Profile> }
       job_logs: { Row: JobLog; Insert: Omit<JobLog, 'id' | 'created_at'>; Update: Partial<JobLog> }
       agent_insights: { Row: AgentInsight; Insert: Omit<AgentInsight, 'id' | 'created_at'>; Update: Partial<AgentInsight> }
+      weekly_reports: { Row: WeeklyReport; Insert: Omit<WeeklyReport, 'id' | 'generated_at' | 'approved_at' | 'sent_at'>; Update: Partial<WeeklyReport> }
+      welcome_kits: { Row: WelcomeKit; Insert: Omit<WelcomeKit, 'id' | 'generated_at'>; Update: Partial<WelcomeKit> }
+      project_diary_entries: { Row: ProjectDiaryEntry; Insert: Omit<ProjectDiaryEntry, 'id' | 'created_at' | 'updated_at'>; Update: Partial<ProjectDiaryEntry> }
+      scope_amendments: { Row: ScopeAmendment; Insert: Omit<ScopeAmendment, 'id' | 'created_at' | 'approved_at'>; Update: Partial<ScopeAmendment> }
+      quotations: { Row: Quotation; Insert: Omit<Quotation, 'id' | 'created_at' | 'supplier'>; Update: Partial<Omit<Quotation, 'supplier'>> }
+      webhooks: { Row: Webhook; Insert: Omit<Webhook, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Webhook> }
     }
   }
 }

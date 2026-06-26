@@ -1,4 +1,23 @@
-# Changelog — Plataforma Thaise
+## 2026-06-23 — Sprint segurança e hardening
+
+### Segurança
+- `createServiceClient()` sem fallback para anon key
+- IDOR corrigido em `/api/activity` e `/api/orders/[id]/history` com `assertEntityAccess`
+- Rotas de agents e resumo/risco restritas a gestor
+- Middleware: 401 em APIs sem sessão; profile ausente → `/onboarding`
+- `AuthProvider`: não assume gestor durante loading
+- Migration `migration_rls_tighten.sql` — RLS em webhooks, job_logs, agent_insights, processed_jobs
+
+### Consistência
+- Middleware com guard central para `/api/*`
+- `database.ts`: tabela `quotations` alinhada ao schema
+- Busca: produtos visíveis para cliente via RLS
+- `CRON_SECRET` documentado em DEPLOY.md
+
+### Ops
+- BullMQ: `job_logs` atualizado pelo worker com `jobLogId`
+- Rate limit dedicado no intake (5 req/min por IP)
+- CI: `npm run lint` no pipeline
 
 ## 2026-06-26 — Overnight release
 

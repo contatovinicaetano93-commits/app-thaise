@@ -90,5 +90,7 @@ export function filterProductsByRole<T extends { supplier_id?: string }>(
   if (role === 'fornecedor' && profile.supplier_id) {
     return rows.filter(r => r.supplier_id === profile.supplier_id)
   }
+  // Cliente: RLS já filtra produtos visíveis
+  if (role === 'cliente') return rows
   return []
 }

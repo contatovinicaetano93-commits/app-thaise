@@ -71,7 +71,7 @@ export async function logOrderStatus(input: {
 }
 
 export async function listActivity(entityType: EntityType, entityId: string, limit = 30) {
-  const db = createServiceClient()
+  const db = await (await import('@/lib/supabase/server')).createSupabaseServer()
   const { data } = await db
     .from('activity_events')
     .select('*')
@@ -83,7 +83,7 @@ export async function listActivity(entityType: EntityType, entityId: string, lim
 }
 
 export async function listOrderHistory(orderId: string) {
-  const db = createServiceClient()
+  const db = await (await import('@/lib/supabase/server')).createSupabaseServer()
   const { data } = await db
     .from('order_status_log')
     .select('*')

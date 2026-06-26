@@ -1,39 +1,7 @@
 import type { OrderJobPayload, OrderJobType } from '@/lib/queue/types'
 import { ORDER_QUEUE_NAME } from '@/lib/queue/types'
 import { jobKey, isJobProcessed } from '@/lib/queue/idempotency'
-
-async function logJob(
-  jobType: string,
-  payload: OrderJobPayload,
-  status: 'pending' | 'processing' | 'completed' | 'failed',
-  result?: Record<string, unknown>,
-  error?: string,
-  jobLogId?: string,
-) {
-  try {
-    const { createServiceClient } = await import('@/lib/supabase-server')
-    const db = createServiceClient()
-    if (jobLogId && (status === 'completed' || status === 'failed')) {
-      await db.from('job_logs').update({
-        status,
-        result: result ?? null,
-        error: error ?? null,
-        completed_at: new Date().toISOString(),
-      } as never).eq('id', jobLogId)
-      return
-    }
-    await db.from('job_logs').insert({
-      job_type: jobType,
-      payload: payload as unknown as Record<string, unknown>,
-      status,
-      result: result ?? null,
-      error: error ?? null,
-      completed_at: status === 'completed' || status === 'failed' ? new Date().toISOString() : null,
-    } as never)
-  } catch (e) {
-    console.error('[job_logs]', e)
-  }
-}
+import { createJobLog, updateJobLog } from '@/lib/queue/job-log'
 
 async function processInline(jobType: OrderJobType, payload: OrderJobPayload) {
   const key = jobKey(jobType, payload.orderId)
@@ -41,15 +9,17 @@ async function processInline(jobType: OrderJobType, payload: OrderJobPayload) {
     return { action: 'skipped', reason: 'already_processed', orderId: payload.orderId }
   }
 
-  await logJob(jobType, payload, 'processing')
+  const jobLogId = await createJobLog(jobType, payload)
+  if (jobLogId) await updateJobLog(jobLogId, 'processing')
+
   try {
     const { processOrderJob } = await import('@/lib/queue/processors')
     const result = await processOrderJob(jobType, payload)
-    await logJob(jobType, payload, 'completed', result)
+    if (jobLogId) await updateJobLog(jobLogId, 'completed', result)
     return result
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Erro desconhecido'
-    await logJob(jobType, payload, 'failed', undefined, msg)
+    if (jobLogId) await updateJobLog(jobLogId, 'failed', undefined, msg)
     throw e
   }
 }
@@ -64,16 +34,16 @@ export async function retryFailedJob(jobLogId: string) {
 
   const jobType = data.job_type as OrderJobType
   const payload = data.payload
-  await logJob(jobType, payload, 'processing', undefined, undefined, jobLogId)
+  await updateJobLog(jobLogId, 'processing')
 
   try {
     const { processOrderJob } = await import('@/lib/queue/processors')
     const result = await processOrderJob(jobType, payload)
-    await logJob(jobType, payload, 'completed', result, undefined, jobLogId)
+    await updateJobLog(jobLogId, 'completed', result)
     return result
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Erro desconhecido'
-    await logJob(jobType, payload, 'failed', undefined, msg, jobLogId)
+    await updateJobLog(jobLogId, 'failed', undefined, msg)
     throw e
   }
 }
@@ -85,7 +55,8 @@ export async function enqueueOrderJob(jobType: OrderJobType, payload: OrderJobPa
     return processInline(jobType, payload)
   }
 
-  await logJob(jobType, payload, 'pending')
+  const jobLogId = await createJobLog(jobType, payload)
+  const queuePayload: OrderJobPayload = { ...payload, jobLogId }
 
   const { Queue } = await import('bullmq')
 
@@ -93,7 +64,7 @@ export async function enqueueOrderJob(jobType: OrderJobType, payload: OrderJobPa
     connection: { url: redisUrl, maxRetriesPerRequest: null },
   })
 
-  await queue.add(jobType, payload, {
+  await queue.add(jobType, queuePayload, {
     jobId: jobKey(jobType, payload.orderId),
     attempts: 3,
     backoff: { type: 'exponential', delay: 2000 },

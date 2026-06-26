@@ -1,4 +1,4 @@
-# Deploy — Plataforma Thaise
+# Deploy — Estlar Hub
 
 Guia para colocar o app em produção (Vercel + Supabase).
 
@@ -7,11 +7,20 @@ Guia para colocar o app em produção (Vercel + Supabase).
 ## 1. Supabase
 
 1. Crie um projeto em [supabase.com](https://supabase.com)
-2. **SQL Editor** → execute na ordem:
-   - Banco novo: `supabase/schema.sql`
-   - `supabase/migration_resilience_memory.sql`
-   - `supabase/migration_scale_webhooks.sql`
-   - Banco existente (legado): `migration_qcps_projects.sql` + `migration_phase2.sql`
+2. **SQL Editor** → execute **nesta ordem exata** (banco novo):
+   1. `supabase/schema.sql` — tabelas base
+   2. `supabase/migration_realtime.sql` — publicações Realtime
+   3. `supabase/migration_rls_by_role.sql` — ⚠️ **obrigatório** — políticas RLS por role (gestor/fornecedor/cliente)
+   4. `supabase/migration_storage_checklist.sql` — bucket storage para checklist
+   5. `supabase/migration_pipeline.sql` — tabelas do pipeline comercial (opportunities)
+   6. `supabase/migration_estlar_eos.sql` — Estlar EOS: weekly_reports, welcome_kits, diário de obra, cotações, aditivos
+   7. `supabase/migration_indexes_scale.sql` — índices de performance
+   8. `supabase/migration_scale_webhooks.sql` — tabela webhooks
+   9. `supabase/migration_resilience_memory.sql` — processed_jobs (idempotência)
+   10. `supabase/migration_rls_tighten.sql` — RLS restritivo em webhooks, job_logs, agent_insights
+   11. `supabase/migration_qcps_projects.sql` + `supabase/migration_phase2.sql` — se banco legado
+
+   > ⚠️ Pular `migration_rls_by_role.sql` deixa todas as tabelas abertas para qualquer usuário autenticado. Pular `migration_estlar_eos.sql` ou `migration_pipeline.sql` causa erros 500 silenciosos nas features EOS e Pipeline.
 3. **Authentication** → habilite Email
 4. Crie usuários em **Authentication → Users** com metadata:
 
@@ -39,6 +48,9 @@ Roles válidas: `gestor` | `fornecedor` | `cliente`
 | `SUPABASE_SERVICE_ROLE_KEY` | Sim | Jobs em background e agente AI |
 | `REDIS_URL` | Não* | Fila BullMQ — use Upstash `rediss://...` |
 | `OPENAI_API_KEY` | Não | Insights em linguagem natural no agente |
+| `CRON_SECRET` | Sim* | Protege rotas `/api/cron/*` (gerar com `openssl rand -hex 32`) |
+
+\* Sem `CRON_SECRET`, os crons semanais (relatório 360, welcome kit) retornam 401 na Vercel.
 
 \* Sem Redis, jobs rodam inline — funciona para MVP. Ver [VERCEL-REDIS.md](VERCEL-REDIS.md).
 

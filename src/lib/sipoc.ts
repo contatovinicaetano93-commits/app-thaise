@@ -1,5 +1,5 @@
 /**
- * SIPOC — mapeamento do domínio Plataforma Thaise
+ * SIPOC — mapeamento do domínio Estlar Hub
  *
  * S → Suppliers (Fornecedores curados)
  * I → Inputs (Produtos, dados de projeto, requisitos do cliente)

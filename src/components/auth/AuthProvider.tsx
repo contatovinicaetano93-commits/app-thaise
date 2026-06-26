@@ -14,9 +14,9 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState>({
   profile: null,
-  role: 'gestor',
+  role: 'cliente',
   loading: true,
-  isGestor: true,
+  isGestor: false,
   refresh: async () => {},
 })
 
@@ -39,14 +39,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { refresh() }, [refresh])
 
-  const role = profile?.role ?? 'gestor'
+  const role = profile?.role ?? 'cliente'
 
   return (
     <AuthContext.Provider value={{
       profile,
       role,
       loading,
-      isGestor: canManage(role),
+      isGestor: profile ? canManage(profile.role) : false,
       refresh,
     }}>
       {children}

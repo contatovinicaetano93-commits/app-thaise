@@ -68,7 +68,7 @@ const SCOPE_SCORE: Record<IntakeScope, number> = {
 }
 
 export function scoreIntake(data: IntakeData): { score: number; status: IntakeStatus; reason: string } {
-  let score = SCOPE_SCORE[data.scope] + INTERVENTION_SCORE[data.intervention]
+  const score = SCOPE_SCORE[data.scope] + INTERVENTION_SCORE[data.intervention]
     + BUDGET_SCORE[data.budget] + URGENCY_SCORE[data.urgency]
 
   if (data.urgency === 'urgente' && data.budget === 'ate_150k') {

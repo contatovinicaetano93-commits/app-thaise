@@ -5,6 +5,7 @@ export interface OrderJobPayload {
   supplierId: string
   clientId: string
   projectId?: string | null
+  jobLogId?: string
 }
 
 export const ORDER_QUEUE_NAME = 'orders'

@@ -1,4 +1,4 @@
-# Fluxo SIPOC — Plataforma Thaise
+# Fluxo SIPOC — Estlar Hub
 
 | Papel | Entidade | Descrição |
 |-------|----------|-----------|
