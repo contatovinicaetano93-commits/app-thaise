@@ -6,7 +6,7 @@ import { LogOut } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 type LogoutButtonProps = {
-  variant?: 'icon' | 'full' | 'bar' | 'prominent'
+  variant?: 'icon' | 'full' | 'bar' | 'prominent' | 'floating'
   className?: string
 }
 
@@ -42,6 +42,22 @@ export function LogoutButton({ variant = 'full', className = '' }: LogoutButtonP
         aria-label="Sair"
       >
         <LogOut size={16} />
+      </button>
+    )
+  }
+
+  if (variant === 'floating') {
+    return (
+      <button
+        type="button"
+        onClick={logout}
+        disabled={loading}
+        className={`inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2.5 text-sm font-medium text-slate-200 shadow-lg transition-colors hover:border-red-400/40 hover:bg-red-500/15 hover:text-red-300 disabled:opacity-50 ${className}`}
+        style={{ background: 'var(--estlar-obsidian)' }}
+        aria-label="Sair"
+      >
+        <LogOut size={16} />
+        <span className="hidden sm:inline">{loading ? 'Saindo…' : 'Sair'}</span>
       </button>
     )
   }

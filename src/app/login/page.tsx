@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { PasswordInput } from '@/components/ui/PasswordInput'
+import { PublicFloatingUI } from '@/components/layout/PublicFloatingUI'
 import { BRAND } from '@/lib/brand'
 import { toast } from 'sonner'
 
@@ -64,6 +65,7 @@ export default function LoginPage() {
   }
 
   return (
+    <>
     <div className="min-h-screen flex">
       {/* Painel editorial — Obsidiana */}
       <div
@@ -167,5 +169,7 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+    <PublicFloatingUI />
+    </>
   )
 }

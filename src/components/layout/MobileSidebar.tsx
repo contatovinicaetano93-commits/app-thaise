@@ -4,7 +4,6 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Menu, X } from 'lucide-react'
-import { LogoutButton } from '@/components/layout/LogoutButton'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { ROLE_LABELS } from '@/lib/auth/roles'
 import { navBySection } from '@/components/layout/nav-config'
@@ -108,7 +107,6 @@ export function MobileSidebar() {
                   <span className="inline-block mt-2 text-[10px] font-semibold uppercase bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full">
                     {ROLE_LABELS[role]}
                   </span>
-                  <LogoutButton variant="prominent" className="mt-3" />
                 </div>
               </div>
             )}

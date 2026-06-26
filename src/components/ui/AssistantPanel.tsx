@@ -33,7 +33,7 @@ export function AssistantPanel({ open: controlledOpen, onOpenChange }: Assistant
     return (
       <button
         onClick={() => { setOpen(true); ask() }}
-        className="fixed bottom-6 right-6 z-40 w-12 h-12 bg-violet-600 hover:bg-violet-700 text-white rounded-full shadow-lg flex items-center justify-center"
+        className="fixed bottom-6 right-6 z-[9998] w-12 h-12 bg-violet-600 hover:bg-violet-700 text-white rounded-full shadow-lg flex items-center justify-center"
         title="Assistente — o que faço agora?"
       >
         <MessageCircle size={20} />
@@ -42,7 +42,7 @@ export function AssistantPanel({ open: controlledOpen, onOpenChange }: Assistant
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 w-80 bg-white rounded-2xl border border-gray-100 shadow-xl p-4">
+    <div className="fixed bottom-6 right-6 z-[9998] w-80 bg-white rounded-2xl border border-gray-100 shadow-xl p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
           <Sparkles size={16} className="text-violet-600" />

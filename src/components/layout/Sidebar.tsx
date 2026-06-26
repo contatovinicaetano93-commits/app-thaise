@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LogoutButton } from '@/components/layout/LogoutButton'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { ROLE_LABELS } from '@/lib/auth/roles'
 import { navBySection } from '@/components/layout/nav-config'
@@ -98,7 +97,6 @@ export function Sidebar() {
             <span className="inline-block mt-2 text-[10px] font-semibold uppercase tracking-wide bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full">
               {ROLE_LABELS[role]}
             </span>
-            <LogoutButton variant="prominent" className="mt-3" />
           </div>
         )}
         <p className="text-[10px] text-slate-600 px-1">v1.1 · Fase 2</p>
