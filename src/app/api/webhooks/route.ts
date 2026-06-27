@@ -33,7 +33,7 @@ export async function POST(req: Request) {
       events: events ?? ['order.approved', 'order.delivered', 'project.phase_advanced'],
       secret,
       active: true,
-    } as never).select().single()
+    }).select().single()
 
     if (error) return err(error.message, 500)
     return ok(data, undefined, 201)
