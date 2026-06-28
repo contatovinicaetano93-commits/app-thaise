@@ -43,6 +43,10 @@ const tables = [
   ['a_first', 'webhook_deliveries', 'id'],
 ]
 
+const columnChecks = [
+  ['gtm_lgpd', 'opportunities', 'intake_consent_at'],
+]
+
 console.log('\n📦 Verificando migrations no Supabase...\n')
 
 let ok = true
@@ -54,6 +58,18 @@ for (const [migration, table, column] of tables) {
     console.log(`✅ ${table} (${migration})`)
   } else {
     console.log(`❌ ${table} (${migration}) — HTTP ${res.status}`)
+    ok = false
+  }
+}
+
+for (const [migration, table, column] of columnChecks) {
+  const res = await fetch(`${url}/rest/v1/${table}?select=${column}&limit=0`, {
+    headers: { apikey: key, Authorization: `Bearer ${key}` },
+  })
+  if (res.ok || res.status === 200) {
+    console.log(`✅ ${table}.${column} (${migration})`)
+  } else {
+    console.log(`❌ ${table}.${column} (${migration}) — HTTP ${res.status}`)
     ok = false
   }
 }

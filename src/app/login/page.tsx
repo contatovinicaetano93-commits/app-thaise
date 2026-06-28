@@ -8,6 +8,7 @@ import { PasswordInput } from '@/components/ui/PasswordInput'
 import { PublicFloatingUI } from '@/components/layout/PublicFloatingUI'
 import { BRAND } from '@/lib/brand'
 import { toast } from 'sonner'
+import { PublicLegalFooter } from '@/components/legal/PublicLegalFooter'
 
 export default function LoginPage() {
   return (
@@ -187,9 +188,7 @@ function LoginForm() {
             </button>
           </form>
 
-          <p className="text-xs text-[var(--estlar-titanium)] text-center mt-8 tracking-wide">
-            {BRAND.name} · Área privada © {new Date().getFullYear()}
-          </p>
+          <PublicLegalFooter className="mt-8" />
         </div>
       </div>
     </div>

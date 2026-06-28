@@ -5,7 +5,7 @@ import { canAccessRoute, type UserRole } from '@/lib/auth/roles'
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase/env'
 import { rateLimitAsync } from '@/lib/rate-limit'
 
-const PUBLIC_PATHS = ['/login', '/onboarding', '/intake']
+const PUBLIC_PATHS = ['/login', '/onboarding', '/intake', '/privacidade', '/termos']
 
 const PUBLIC_API_PREFIXES = [
   '/api/auth/',

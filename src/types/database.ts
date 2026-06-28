@@ -63,6 +63,9 @@ export interface Opportunity {
   fee_fixed?: number | null
   fee_variable_pct?: number | null
   signal_paid?: boolean | null
+  intake_consent_at?: string | null
+  intake_consent_version?: string | null
+  intake_consent_ip?: string | null
   created_at: string
   updated_at: string
   closed_at?: string | null

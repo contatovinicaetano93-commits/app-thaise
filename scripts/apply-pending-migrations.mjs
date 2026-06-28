@@ -56,6 +56,7 @@ const MIGRATIONS = [
   { name: 'pipeline', file: 'supabase/migration_pipeline.sql', table: 'opportunities' },
   { name: 'estlar_eos', file: 'supabase/migration_estlar_eos.sql', table: 'weekly_reports' },
   { name: 'a_first', file: 'supabase/migration_a_first.sql', table: 'webhook_deliveries' },
+  { name: 'gtm_lgpd', file: 'supabase/migration_gtm_lgpd.sql', always: true },
 ]
 
 async function tableExists(table) {

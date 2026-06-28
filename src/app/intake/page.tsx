@@ -17,6 +17,8 @@ import {
   type IntakeStatus,
 } from '@/lib/intake'
 import { toast } from 'sonner'
+import { PublicLegalFooter } from '@/components/legal/PublicLegalFooter'
+import { PRIVACY_POLICY_VERSION } from '@/lib/legal/constants'
 
 const schema = z.object({
   name: z.string().min(2, 'Nome obrigatório'),
@@ -28,6 +30,9 @@ const schema = z.object({
   intervention: z.enum(['projeto_curadoria', 'reforma_parcial', 'construcao_zero', 'turnkey']),
   budget: z.enum(['ate_150k', '150k_500k', 'acima_500k', 'acima_1m']),
   urgency: z.enum(['sem_pressa', '6_meses', 'urgente']),
+  consentAccepted: z
+    .boolean()
+    .refine(v => v === true, { message: 'Aceite a Política de Privacidade para continuar' }),
 })
 
 type FormData = z.infer<typeof schema>
@@ -36,7 +41,14 @@ export default function IntakePage() {
   const [submitted, setSubmitted] = useState<{ status: IntakeStatus; reason: string; score: number } | null>(null)
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { source: 'instagram', scope: 'residencial', intervention: 'turnkey', budget: 'acima_500k', urgency: 'sem_pressa' },
+    defaultValues: {
+      source: 'instagram',
+      scope: 'residencial',
+      intervention: 'turnkey',
+      budget: 'acima_500k',
+      urgency: 'sem_pressa',
+      consentAccepted: undefined,
+    },
   })
 
   async function onSubmit(data: FormData) {
@@ -188,14 +200,34 @@ export default function IntakePage() {
               {...register('source')}
             />
 
+            <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-[var(--border)] px-4 py-3 bg-[color-mix(in_srgb,var(--estlar-sand)_25%,white)]">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--estlar-wine)]"
+                {...register('consentAccepted')}
+              />
+              <span className="text-sm text-gray-600 leading-relaxed">
+                Li e aceito a{' '}
+                <Link href="/privacidade" target="_blank" className="font-medium underline-offset-2 hover:underline" style={{ color: 'var(--estlar-wine)' }}>
+                  Política de Privacidade
+                </Link>{' '}
+                e os{' '}
+                <Link href="/termos" target="_blank" className="font-medium underline-offset-2 hover:underline" style={{ color: 'var(--estlar-wine)' }}>
+                  Termos de Uso
+                </Link>
+                . Autorizo o tratamento dos meus dados para qualificação comercial (LGPD, v. {PRIVACY_POLICY_VERSION}).
+              </span>
+            </label>
+            {errors.consentAccepted && (
+              <p className="text-xs text-red-600 -mt-2">{errors.consentAccepted.message}</p>
+            )}
+
             <Button type="submit" loading={isSubmitting} className="w-full !rounded-xl !py-3">
               Enviar mapeamento
             </Button>
           </form>
 
-          <p className="text-xs text-[var(--estlar-titanium)] text-center mt-8 tracking-wide">
-            {BRAND.name} · {BRAND.subtitle} © {new Date().getFullYear()}
-          </p>
+          <PublicLegalFooter className="mt-8" />
         </div>
       </div>
     </div>

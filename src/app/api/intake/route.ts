@@ -7,6 +7,7 @@ import { scoreIntake } from '@/lib/intake'
 import { briefingTypeFromScope } from '@/lib/briefing'
 import { auditAndInvalidate } from '@/lib/memory/audit'
 import { notifyUser } from '@/lib/webhooks/dispatch'
+import { PRIVACY_POLICY_VERSION } from '@/lib/legal/constants'
 
 const intakeSchema = z.object({
   name: z.string().min(2),
@@ -18,6 +19,7 @@ const intakeSchema = z.object({
   intervention: z.enum(['projeto_curadoria', 'reforma_parcial', 'construcao_zero', 'turnkey']),
   budget: z.enum(['ate_150k', '150k_500k', 'acima_500k', 'acima_1m']),
   urgency: z.enum(['sem_pressa', '6_meses', 'urgente']),
+  consentAccepted: z.boolean().refine(v => v === true, { message: 'Consentimento obrigatório' }),
 })
 
 export async function POST(req: NextRequest) {
@@ -51,6 +53,9 @@ export async function POST(req: NextRequest) {
         intake_status: status,
         briefing_type: briefingTypeFromScope(payload.scope),
         notes: `Intake automático — ${reason}`,
+        intake_consent_at: new Date().toISOString(),
+        intake_consent_version: PRIVACY_POLICY_VERSION,
+        intake_consent_ip: ip,
       } as never)
       .select()
       .single()
