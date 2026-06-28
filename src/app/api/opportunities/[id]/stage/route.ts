@@ -5,6 +5,8 @@ import { createSupabaseServer } from '@/lib/supabase/server'
 import { requireGestor } from '@/lib/auth/api-context'
 import { auditAndInvalidate } from '@/lib/memory/audit'
 import { ACTIVE_PIPELINE_STAGES, STAGE_LABELS, type OpportunityStage } from '@/lib/pipeline'
+import { validateStageTransition } from '@/lib/pipeline/stage-gates'
+import type { Opportunity } from '@/types/database'
 
 const schema = z.object({
   stage: z.enum([
@@ -26,12 +28,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const { data: existing } = await db
       .from('opportunities')
-      .select('stage, name')
+      .select('stage, name, briefing_data, briefing_type, fee_model')
       .eq('id', id)
-      .single() as { data: { stage: OpportunityStage; name: string } | null }
+      .single() as { data: Pick<Opportunity, 'stage' | 'name' | 'briefing_data' | 'briefing_type' | 'fee_model'> | null }
 
     if (!existing) return err('Oportunidade não encontrada', 404)
     if (existing.stage === 'ganho') return err('Oportunidade já convertida', 422)
+
+    const gateErr = validateStageTransition(existing, stage)
+    if (gateErr) return err(gateErr, 422)
 
     const updates: Record<string, unknown> = { stage }
     if (stage === 'perdido') {

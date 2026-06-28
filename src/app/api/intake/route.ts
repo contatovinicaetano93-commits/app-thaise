@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
 import { createServiceClient } from '@/lib/supabase-server'
-import { rateLimit } from '@/lib/rate-limit'
+import { rateLimitAsync } from '@/lib/rate-limit'
 import { scoreIntake } from '@/lib/intake'
 import { briefingTypeFromScope } from '@/lib/briefing'
 import { auditAndInvalidate } from '@/lib/memory/audit'
@@ -23,7 +23,7 @@ const intakeSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'local'
-    const { ok: allowed } = rateLimit(`intake:${ip}`, 5, 60_000)
+    const { ok: allowed } = await rateLimitAsync(`intake:${ip}`, 5, 60_000)
     if (!allowed) return err('Muitas tentativas — tente novamente em 1 minuto', 429)
 
     const body = await req.json()

@@ -93,9 +93,15 @@ export default function ProductsPage() {
           icon={Package}
           iconClass="text-amber-600"
           title={search ? 'Nenhum resultado' : 'Catálogo vazio'}
-          description={search ? 'Tente outro termo.' : 'Adicione produtos vinculados aos seus fornecedores.'}
-          actionLabel={search ? undefined : 'Novo Produto'}
-          onAction={search ? undefined : () => { setEditing(undefined); setModalOpen(true) }}
+          description={
+            search
+              ? 'Tente outro termo.'
+              : role === 'fornecedor'
+                ? 'Cadastre produtos do seu fornecedor para receber pedidos.'
+                : 'Adicione produtos vinculados aos fornecedores.'
+          }
+          actionLabel={search || role === 'cliente' ? undefined : 'Novo Produto'}
+          onAction={search || role === 'cliente' ? undefined : () => { setEditing(undefined); setModalOpen(true) }}
         />
       ) : (
         <div className="space-y-2">

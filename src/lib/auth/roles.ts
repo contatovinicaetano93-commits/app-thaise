@@ -9,6 +9,7 @@ export interface Profile {
   role: UserRole
   supplier_id?: string | null
   client_id?: string | null
+  onboarding_completed_at?: string | null
   created_at: string
 }
 

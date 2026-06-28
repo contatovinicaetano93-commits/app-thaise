@@ -18,6 +18,7 @@ import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { FirstProjectWizard } from '@/components/projects/FirstProjectWizard'
 import { MonthlyReportPanel } from '@/components/reports/MonthlyReportPanel'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { IncompleteProfileBanner } from '@/components/auth/IncompleteProfileBanner'
 import { useMonthlyReport } from '@/lib/hooks/use-monthly-report'
 import { useLiveRefresh } from '@/lib/hooks'
 import { toast } from 'sonner'
@@ -114,6 +115,12 @@ export default function DashboardPage() {
   const panels = DASHBOARD_PANELS.filter(p => {
     if (p.id === 'next-step') return Boolean(nextStep)
     if (p.id === 'monthly-report') return isGestor
+    if (!isGestor) {
+      if (['kpi-suppliers', 'kpi-clients', 'chart-revenue', 'chart-orders', 'top-suppliers'].includes(p.id)) {
+        return false
+      }
+    }
+    if (role === 'cliente' && p.id === 'kpi-revenue') return false
     return true
   })
 
@@ -127,6 +134,7 @@ export default function DashboardPage() {
         }}
       />
       <AlertsBanner />
+      <IncompleteProfileBanner />
 
       <PageFeedHeader
         title="Visão Geral"

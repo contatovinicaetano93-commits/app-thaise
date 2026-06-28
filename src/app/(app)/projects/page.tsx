@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Search, Building2, MapPin } from 'lucide-react'
 import { SimulationPanel } from '@/components/projects/SimulationPanel'
 import { Modal } from '@/components/ui/Modal'
@@ -37,6 +38,8 @@ const STATUS_COLOR: Record<string, string> = {
 
 export default function ProjectsPage() {
   const { isGestor, role } = useAuth()
+  const searchParams = useSearchParams()
+  const openFromQuery = searchParams.get('open')
   const [projects, setProjects] = useState<Project[]>([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -47,6 +50,7 @@ export default function ProjectsPage() {
   const [deleting, setDeleting] = useState<Project | undefined>()
   const [advancing, setAdvancing] = useState<string | null>(null)
   const [scoring, setScoring] = useState<string | null>(null)
+  const [forceOpenId, setForceOpenId] = useState<string | null>(null)
   const debouncedSearch = useDebounce(search)
 
   const load = useCallback(async () => {
@@ -62,6 +66,10 @@ export default function ProjectsPage() {
 
   useEffect(() => { load() }, [load])
   useLiveRefresh(load, ['projects'])
+
+  useEffect(() => {
+    if (openFromQuery) setForceOpenId(openFromQuery)
+  }, [openFromQuery])
 
   async function handleAdvance(id: string) {
     setAdvancing(id)
@@ -229,7 +237,7 @@ export default function ProjectsPage() {
                 key={project.id}
                 panelId={`project-${project.id}`}
                 title={project.name}
-                defaultOpen={false}
+                defaultOpen={forceOpenId === project.id}
                 summary={[
                   role === 'cliente' ? CLIENT_PHASE_LABELS[project.phase].label : `Fase ${project.phase}`,
                   project.client?.name,

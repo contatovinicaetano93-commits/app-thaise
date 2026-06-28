@@ -40,6 +40,7 @@ const tables = [
   ['estlar_eos', 'operational_config', 'key'],
   ['rls_tighten', 'job_logs', 'id'],
   ['rls_tighten', 'agent_insights', 'id'],
+  ['a_first', 'webhook_deliveries', 'id'],
 ]
 
 console.log('\n📦 Verificando migrations no Supabase...\n')

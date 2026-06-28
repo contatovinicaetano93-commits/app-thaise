@@ -28,7 +28,7 @@ const STATUS_COLOR: Record<string, string> = {
 }
 
 export default function OrdersPage() {
-  const { isGestor } = useAuth()
+  const { isGestor, role } = useAuth()
   const [orders, setOrders] = useState<Order[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -115,9 +115,17 @@ export default function OrdersPage() {
           icon={ShoppingCart}
           iconClass="text-rose-600"
           title={search ? 'Nenhum resultado' : 'Nenhum pedido ainda'}
-          description={search ? 'Tente outro termo.' : 'Crie um pedido vinculando cliente, produto e fornecedor.'}
-          actionLabel={search ? undefined : 'Novo Pedido'}
-          onAction={search ? undefined : () => setModalOpen(true)}
+          description={
+            search
+              ? 'Tente outro termo.'
+              : isGestor
+                ? 'Crie um pedido vinculando cliente, produto e fornecedor.'
+                : role === 'fornecedor'
+                  ? 'Quando o gestor aprovar pedidos, eles aparecerão aqui.'
+                  : 'Seus pedidos aparecerão aqui quando forem criados pelo gestor.'
+          }
+          actionLabel={search || !isGestor ? undefined : 'Novo Pedido'}
+          onAction={search || !isGestor ? undefined : () => setModalOpen(true)}
         />
       ) : (
         <div className="space-y-2">
@@ -133,11 +141,17 @@ export default function OrdersPage() {
                   {STATUS_LABEL[order.status]}
                 </span>
               }
-              menuItems={Object.entries(STATUS_LABEL).map(([v, l]) => ({
+              menuItems={isGestor ? Object.entries(STATUS_LABEL).map(([v, l]) => ({
                 label: `Marcar como ${l}`,
                 onClick: () => updateStatus(order.id, v),
                 disabled: order.status === v,
-              }))}
+              })) : role === 'fornecedor' ? Object.entries(STATUS_LABEL)
+                .filter(([v]) => v !== 'pending' && v !== 'cancelled')
+                .map(([v, l]) => ({
+                  label: `Marcar como ${l}`,
+                  onClick: () => updateStatus(order.id, v),
+                  disabled: order.status === v,
+                })) : undefined}
             >
               <div className="flex items-center gap-2 mb-1">
                 <SipocBadge />

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createMiddlewareClient } from '@/lib/supabase/middleware'
 import { canAccessRoute, type UserRole } from '@/lib/auth/roles'
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase/env'
-import { rateLimit } from '@/lib/rate-limit'
+import { rateLimitAsync } from '@/lib/rate-limit'
 
 const PUBLIC_PATHS = ['/login', '/onboarding', '/intake']
 
@@ -25,7 +25,7 @@ export async function middleware(req: NextRequest) {
 
   if (pathname.startsWith('/api/') && !isPublicApi(pathname)) {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0] ?? 'local'
-    const { ok: allowed, remaining } = rateLimit(ip, 120)
+    const { ok: allowed, remaining } = await rateLimitAsync(`api:${ip}`, 120)
     if (!allowed) {
       return NextResponse.json({ ok: false, error: 'Muitas requisições — tente novamente em 1 minuto' }, { status: 429 })
     }
@@ -64,14 +64,20 @@ export async function middleware(req: NextRequest) {
   if (user && !isPublic && !pathname.startsWith('/api/')) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, onboarding_completed_at')
       .eq('id', user.id)
       .single()
 
-    // Se perfil sem role ainda não foi configurado, deixa passar com role padrão
-    // (evita loop infinito onboarding → dashboard → onboarding)
-    const role = (profile?.role ?? 'gestor') as UserRole
-    if (!canAccessRoute(role, pathname)) {
+    if (!profile?.role && !pathname.startsWith('/onboarding')) {
+      return NextResponse.redirect(new URL('/onboarding', req.url))
+    }
+
+    if (profile?.role && !profile.onboarding_completed_at && !pathname.startsWith('/onboarding')) {
+      return NextResponse.redirect(new URL('/onboarding', req.url))
+    }
+
+    const role = profile?.role as UserRole | undefined
+    if (role && !canAccessRoute(role, pathname)) {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }
   }

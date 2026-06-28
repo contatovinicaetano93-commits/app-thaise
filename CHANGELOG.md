@@ -1,3 +1,26 @@
+## 2026-06-27 — A First: funil guiado, segurança e resiliência
+
+### Segurança
+- Storage checklist: leitura restrita (gestor + dono do projeto)
+- `assertEntityAccess` em simulation e welcome-kit
+- Middleware: onboarding obrigatório; sem default gestor
+
+### Resiliência
+- Rate limit via Redis (fallback in-memory)
+- Webhooks: retry 3x + log em `webhook_deliveries`
+- Intake rate limit async
+
+### Funil comercial guiado
+- Next-step: pipeline, intake review, steps por role
+- Stage gates no Kanban (briefing, fee, avanço sequencial)
+- Convert: validação sinal + deep link ao projeto
+
+### UX por role
+- Dashboard filtrado (fornecedor/cliente)
+- Onboarding server-side + passo pipeline
+- Banner conta incompleta
+- Pedidos/produtos: empty states e ações por role
+
 ## 2026-06-23 — Sprint segurança e hardening
 
 ### Segurança

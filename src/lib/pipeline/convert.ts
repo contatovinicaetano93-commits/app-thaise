@@ -148,7 +148,7 @@ export async function convertOpportunity(
       g.id,
       'Novo empreendimento — Obra Fechada fechada',
       notifyBody,
-      `/projects`,
+      `/projects?open=${projectRow.id}`,
     )
   }
 

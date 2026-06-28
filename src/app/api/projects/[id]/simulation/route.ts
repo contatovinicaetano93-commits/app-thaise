@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, handleError } from '@/lib/api-response'
 import { requireProfile } from '@/lib/auth/api-context'
+import { assertEntityAccess } from '@/lib/auth/entity-access'
 import { simular, SIMULATION_TEMPLATES } from '@/lib/simulation'
 import { logActivity } from '@/lib/memory/events'
 
@@ -14,8 +15,12 @@ const schema = z.object({
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { error: authErr } = await requireProfile()
+    const { profile, error: authErr } = await requireProfile()
     if (authErr) return authErr
+
+    const { id } = await params
+    const accessErr = await assertEntityAccess(profile!, 'project', id)
+    if (accessErr) return accessErr
 
     return ok({
       templates: SIMULATION_TEMPLATES,
@@ -32,6 +37,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (authErr) return authErr
 
     const { id } = await params
+    const accessErr = await assertEntityAccess(profile!, 'project', id)
+    if (accessErr) return accessErr
+
     const body = await req.json()
     const input = schema.parse(body)
 

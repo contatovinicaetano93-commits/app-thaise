@@ -62,14 +62,18 @@ export default function PipelinePage() {
 
   async function handleConvert() {
     if (!converting) return
+    if (!converting.signal_paid) {
+      toast.error('Marque "Sinal financeiro validado" na oportunidade antes de converter')
+      return
+    }
     setConvertLoading(true)
     try {
       const result = await opportunitiesApi.convert(converting.id, projectName)
       toast.success('Obra Fechada convertida — Cliente e Empreendimento Fase A criados!')
       setConverting(undefined)
       load()
-      router.push(`/projects`)
-      void result
+      const projectId = result?.project?.id
+      router.push(projectId ? `/projects?open=${projectId}` : '/projects')
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Erro na conversão')
     } finally {
@@ -172,6 +176,18 @@ export default function PipelinePage() {
       >
         {converting && (
           <>
+            {!converting.signal_paid && (
+              <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                ⚠️ Valide o sinal financeiro antes de converter. Edite a oportunidade e marque o checkbox, ou{' '}
+                <button
+                  type="button"
+                  className="underline font-medium"
+                  onClick={() => { setConverting(undefined); openEdit(converting) }}
+                >
+                  abra o formulário
+                </button>.
+              </div>
+            )}
             <p className="text-sm text-gray-600 mb-4">
               <strong>{converting.name}</strong> será convertido em cliente oficial e um empreendimento
               na <strong>Fase A</strong> será aberto para execução via fornecedores terceirizados curados.

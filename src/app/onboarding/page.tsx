@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Truck, Users, Package, ShoppingCart, Check, ArrowRight } from 'lucide-react'
+import { Truck, Users, Package, ShoppingCart, Check, ArrowRight, Kanban } from 'lucide-react'
 
 const GESTOR_STEPS = [
   { icon: Package, color: 'bg-stone-100 text-stone-800', title: 'Bem-vinda ao Hub Estlar', desc: 'Inteligência para curadoria de ativos, empreendimentos e consolidação patrimonial.', cta: 'Começar' },
+  { icon: Kanban, color: 'bg-violet-100 text-violet-600', title: 'Pipeline comercial', desc: 'Leads do intake → briefing → proposta → Obra Fechada → empreendimento Fase A.', cta: 'Entendido', action: '/pipeline', actionLabel: 'Ver pipeline →' },
   { icon: Truck, color: 'bg-indigo-100 text-indigo-600', title: 'Homologue fornecedores', desc: 'Fornecedores pendentes passam por curadoria antes de entrar no catálogo.', cta: 'Entendido', action: '/pending-suppliers', actionLabel: 'Ver fila →' },
   { icon: Users, color: 'bg-emerald-100 text-emerald-600', title: 'Clientes e empreendimentos', desc: 'Cada empreendimento exige cliente — jornada A→F com checklist.', cta: 'Entendido', action: '/projects', actionLabel: 'Empreendimentos →' },
-  { icon: ShoppingCart, color: 'bg-rose-100 text-rose-600', title: 'Pronto!', desc: 'Use o assistente ✨ e o dashboard para saber o próximo passo.', cta: 'Ir para o Dashboard' },
+  { icon: ShoppingCart, color: 'bg-rose-100 text-rose-600', title: 'Pronto!', desc: 'Use o assistente ✨ e o card "Próximo passo" no dashboard.', cta: 'Ir para o Dashboard' },
 ]
 
 const FORNECEDOR_STEPS = [
@@ -41,10 +42,16 @@ export default function OnboardingPage() {
   const Icon = current.icon
   const isLast = step === STEPS.length - 1
 
+  function finish() {
+    fetch('/api/auth/onboarding', { method: 'POST', credentials: 'include' })
+      .catch(() => {})
+    localStorage.setItem('onboarding_done', '1')
+    router.push('/dashboard')
+  }
+
   function next() {
     if (isLast) {
-      localStorage.setItem('onboarding_done', '1')
-      router.push('/dashboard')
+      finish()
       return
     }
     setStep(s => s + 1)
