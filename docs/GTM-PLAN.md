@@ -2,7 +2,7 @@
 
 **Meta:** MVP comercial pronto para o **1º cliente real** até **quarta-feira**.  
 **Produção:** https://app-thaise.vercel.app  
-**Última atualização:** 2026-06-23
+**Última atualização:** 2026-06-28
 
 ---
 
@@ -73,9 +73,10 @@ npm run smoke:prod
 ## Dia 3 — Quarta (go-live)
 
 ### Dev
-- [ ] Cleanup usuários/dados demo em produção (se aplicável)
-- [ ] Smoke final + health check
-- [ ] Documentar runbook do 1º cliente em `docs/DADOS-REAIS.md`
+- [x] Cleanup dados demo em produção (preserva contas smoke @plataforma.com)
+- [x] Smoke final expandido (LGPD, páginas legais, reset, relatório 360 cliente)
+- [x] Runbook 1º cliente em `docs/DADOS-REAIS.md`
+- [x] Script `cleanup-demo.mjs` corrigido e ampliado
 
 ### Thaise
 - [ ] Converter 1º lead real no pipeline (intake → briefing → convert)
@@ -113,3 +114,4 @@ npm run smoke:prod
 |------|---------|
 | 2026-06-23 | Plano central criado; Dia 1 LGPD implementado |
 | 2026-06-23 | Dia 2: reset senha, relatório 360 cliente, fixes realtime/periodLabel |
+| 2026-06-28 | Dia 3: cleanup demo prod, smoke GTM, runbook 1º cliente |
