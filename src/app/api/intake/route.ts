@@ -37,6 +37,8 @@ export async function POST(req: NextRequest) {
       urgency: payload.urgency,
     }
     const { score, status, reason } = scoreIntake(intake_data)
+    const rejected = status === 'rejected'
+    const now = new Date().toISOString()
 
     const db = createServiceClient()
     const { data, error } = await db
@@ -47,13 +49,15 @@ export async function POST(req: NextRequest) {
         phone: payload.phone,
         company: payload.company,
         source: payload.source,
-        stage: status === 'approved' ? 'briefing' : 'primeiro_contato',
+        stage: rejected ? 'perdido' : status === 'approved' ? 'briefing' : 'primeiro_contato',
         intake_data,
         intake_score: score,
         intake_status: status,
         briefing_type: briefingTypeFromScope(payload.scope),
         notes: `Intake automático — ${reason}`,
-        intake_consent_at: new Date().toISOString(),
+        lost_reason: rejected ? reason : null,
+        closed_at: rejected ? now : null,
+        intake_consent_at: now,
         intake_consent_version: PRIVACY_POLICY_VERSION,
         intake_consent_ip: ip,
       } as never)
@@ -66,23 +70,25 @@ export async function POST(req: NextRequest) {
     await auditAndInvalidate({
       entityType: 'opportunity',
       entityId: row.id,
-      eventType: 'opportunity.intake',
-      title: 'Intake público recebido',
+      eventType: rejected ? 'opportunity.intake_rejected' : 'opportunity.intake',
+      title: rejected ? 'Intake arquivado (não qualificado)' : 'Intake público recebido',
       detail: `${row.name} — score ${score} (${status})`,
       cachePrefix: 'opportunities',
     })
 
-    const { data: gestores } = await db.from('profiles').select('id').eq('role', 'gestor') as {
-      data: Array<{ id: string }> | null
-    }
+    if (!rejected) {
+      const { data: gestores } = await db.from('profiles').select('id').eq('role', 'gestor') as {
+        data: Array<{ id: string }> | null
+      }
 
-    for (const g of gestores ?? []) {
-      await notifyUser(
-        g.id,
-        status === 'approved' ? 'Novo lead qualificado' : 'Novo intake para revisão',
-        `${payload.name} — ${reason}`,
-        '/pipeline',
-      )
+      for (const g of gestores ?? []) {
+        await notifyUser(
+          g.id,
+          status === 'approved' ? 'Novo lead qualificado' : 'Novo intake para revisão',
+          `${payload.name} — ${reason}`,
+          status === 'approved' ? '/pipeline' : '/pipeline?filter=intake',
+        )
+      }
     }
 
     return ok({ opportunity: data, score, status, reason }, undefined, 201)

@@ -10,6 +10,7 @@ import {
   formatBudget,
   type OpportunityStage,
 } from '@/lib/pipeline'
+import { CONVERT_ELIGIBLE_STAGE } from '@/lib/pipeline/stage-gates'
 import { toast } from 'sonner'
 import type { Opportunity } from '@/types/database'
 import { intakeStatusLabel, intakeStatusColor } from '@/lib/intake'
@@ -144,6 +145,10 @@ export function PipelineKanban({ opportunities, onRefresh, onEdit, onMarkLost, o
     if (!opp) return
 
     if (stage === WON_STAGE) {
+      if (opp.stage !== CONVERT_ELIGIBLE_STAGE) {
+        toast.error(`Mova até ${STAGE_LABELS[CONVERT_ELIGIBLE_STAGE]} antes de fechar a Obra Fechada`)
+        return
+      }
       onRequestConvert(opp)
       return
     }
@@ -178,7 +183,7 @@ export function PipelineKanban({ opportunities, onRefresh, onEdit, onMarkLost, o
       <KanbanColumn
         stageId={WON_STAGE}
         label="Ganho — Obra Fechada"
-        desc="Converte em Cliente + Empreendimento Fase A"
+        desc="Exige Contrato + sinal validado — converte em Cliente + Empreendimento Fase A"
         items={[]}
         onDrop={handleDrop}
         onEdit={onEdit}

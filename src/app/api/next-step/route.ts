@@ -39,6 +39,7 @@ export async function GET() {
       { count: openOrders },
       { count: intakeReview },
       { count: pipelineActive },
+      { count: sentWeeklyReports },
     ] = await Promise.all([
       db.from('suppliers').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
       db.from('suppliers').select('id', { count: 'exact', head: true }).eq('status', 'active'),
@@ -51,6 +52,9 @@ export async function GET() {
         : Promise.resolve({ count: 0 }),
       isGestor
         ? db.from('opportunities').select('id', { count: 'exact', head: true }).not('stage', 'in', '(ganho,perdido)')
+        : Promise.resolve({ count: 0 }),
+      isCliente
+        ? db.from('weekly_reports').select('id', { count: 'exact', head: true }).eq('status', 'sent')
         : Promise.resolve({ count: 0 }),
     ])
 
@@ -140,13 +144,23 @@ export async function GET() {
         href: '/products',
         reason: 'Monte seu catálogo para receber pedidos',
       })
-    } else if (isCliente && (projects ?? 0) > 0) {
-      steps.push({
-        sipoc: 'C',
-        label: 'Ver empreendimentos',
-        href: '/projects',
-        reason: 'Acompanhe a fase A→F do seu projeto',
-      })
+    } else if (isCliente) {
+      if ((sentWeeklyReports ?? 0) > 0) {
+        steps.push({
+          sipoc: 'C',
+          label: 'Relatório 360',
+          href: '/reports/weekly',
+          reason: `${sentWeeklyReports} atualização(ões) semanal(is) disponível(is)`,
+        })
+      }
+      if ((projects ?? 0) > 0) {
+        steps.push({
+          sipoc: 'C',
+          label: 'Ver empreendimentos',
+          href: '/projects',
+          reason: 'Acompanhe a fase A→F do seu projeto',
+        })
+      }
     }
 
     if (isGestor && (openOrders ?? 0) === 0 && (projects ?? 0) > 0) {

@@ -3,6 +3,7 @@ import { auditAndInvalidate } from '@/lib/memory/audit'
 import { notifyUser } from '@/lib/webhooks/dispatch'
 import { generateWelcomeKitContent } from '@/lib/estlar/welcome-kit'
 import { checkProjectCap } from '@/lib/estlar/cap'
+import { validateConvertReadiness } from '@/lib/pipeline/stage-gates'
 import type { Opportunity } from '@/types/database'
 
 export interface ConvertResult {
@@ -30,12 +31,9 @@ export async function convertOpportunity(
   if (opportunity.stage === 'ganho' && opportunity.client_id && opportunity.project_id) {
     throw new Error('Oportunidade já convertida')
   }
-  if (opportunity.stage === 'perdido') {
-    throw new Error('Oportunidade marcada como perdida')
-  }
-  if (!opportunity.signal_paid) {
-    throw new Error('Valide o sinal financeiro antes de converter (marque na oportunidade)')
-  }
+
+  const convertErr = validateConvertReadiness(opportunity)
+  if (convertErr) throw new Error(convertErr)
 
   const capStatus = await checkProjectCap()
   if (capStatus.atCap) {

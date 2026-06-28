@@ -30,9 +30,11 @@
 ### 2. Qualificação comercial (gestor)
 
 1. **Pipeline** → abrir oportunidade
-2. Revisar intake; ajustar stage (briefing → viabilidade → proposta → contrato)
-3. Preencher **briefing** e proposta quando aplicável
-4. Marcar **sinal pago** antes de converter (gate comercial)
+2. Avançar estágios **um a um** até **Contrato & Fechamento** (briefing e fee obrigatórios nos gates)
+3. Marcar **sinal financeiro validado**
+4. Arrastar para **Ganho — Obra Fechada** (só funciona em `contrato` + sinal)
+
+> Leads rejeitados no intake são arquivados automaticamente (`perdido`) e não entram no funil ativo.
 
 ### 3. Converter em cliente + empreendimento
 

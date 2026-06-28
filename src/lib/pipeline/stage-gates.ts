@@ -37,3 +37,21 @@ export function validateStageTransition(
 
   return null
 }
+
+/** Estágio mínimo para converter oportunidade em cliente + empreendimento. */
+export const CONVERT_ELIGIBLE_STAGE: OpportunityStage = 'contrato'
+
+/** Valida se a oportunidade pode ser convertida (Obra Fechada). */
+export function validateConvertReadiness(
+  opp: Pick<Opportunity, 'stage' | 'signal_paid'>,
+): string | null {
+  if (opp.stage === 'ganho') return 'Oportunidade já convertida'
+  if (opp.stage === 'perdido') return 'Oportunidade marcada como perdida'
+  if (opp.stage !== CONVERT_ELIGIBLE_STAGE) {
+    return 'Avance até Contrato & Fechamento antes de converter'
+  }
+  if (!opp.signal_paid) {
+    return 'Valide o sinal financeiro antes de converter (marque na oportunidade)'
+  }
+  return null
+}

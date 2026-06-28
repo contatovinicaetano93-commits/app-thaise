@@ -21,7 +21,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return ok(result, undefined, 201)
   } catch (e) {
     if (e instanceof Error) {
-      if (e.message.includes('já convertida') || e.message.includes('perdida') || e.message.includes('cadastrado')) {
+      if (
+        e.message.includes('já convertida') ||
+        e.message.includes('perdida') ||
+        e.message.includes('cadastrado') ||
+        e.message.includes('Contrato') ||
+        e.message.includes('sinal financeiro')
+      ) {
         return err(e.message, 422)
       }
       return err(e.message, 500)

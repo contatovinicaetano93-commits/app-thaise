@@ -15,7 +15,8 @@ import { IntakeReviewPanel } from '@/components/pipeline/IntakeReviewPanel'
 import { ActivityTimeline } from '@/components/ui/ActivityTimeline'
 import { opportunitiesApi, clientsApi } from '@/lib/api'
 import { useLiveRefresh } from '@/lib/hooks'
-import { formatBudget } from '@/lib/pipeline'
+import { formatBudget, STAGE_LABELS } from '@/lib/pipeline'
+import { CONVERT_ELIGIBLE_STAGE, validateConvertReadiness } from '@/lib/pipeline/stage-gates'
 import { toast } from 'sonner'
 import type { Opportunity } from '@/types/database'
 
@@ -81,8 +82,9 @@ function PipelinePageContent() {
 
   async function handleConvert() {
     if (!converting) return
-    if (!converting.signal_paid) {
-      toast.error('Marque "Sinal financeiro validado" na oportunidade antes de converter')
+    const blockErr = validateConvertReadiness(converting)
+    if (blockErr) {
+      toast.error(blockErr)
       return
     }
     setConvertLoading(true)
@@ -277,11 +279,19 @@ function PipelinePageContent() {
         title="Fechar Obra Fechada"
         size="sm"
       >
-        {converting && (
+        {converting && (() => {
+          const convertBlock = validateConvertReadiness(converting)
+          return (
           <>
-            {!converting.signal_paid && (
+            {convertBlock && (
               <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                ⚠️ Valide o sinal financeiro antes de converter. Edite a oportunidade e marque o checkbox, ou{' '}
+                ⚠️ {convertBlock}
+                {converting.stage !== CONVERT_ELIGIBLE_STAGE && (
+                  <>
+                    {' '}Estágio atual: {STAGE_LABELS[converting.stage]}.
+                  </>
+                )}
+                {' '}Edite a oportunidade ou{' '}
                 <button
                   type="button"
                   className="underline font-medium"
@@ -307,7 +317,8 @@ function PipelinePageContent() {
               </Button>
             </div>
           </>
-        )}
+          )
+        })()}
       </Modal>
 
       <Modal
