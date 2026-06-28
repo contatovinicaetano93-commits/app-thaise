@@ -38,6 +38,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return err('Acesso negado a este pedido', 403)
     }
 
+    if (profile!.role === 'cliente' && profile!.client_id !== prev.client_id) {
+      return err('Acesso negado a este pedido', 403)
+    }
+
     const { data, error } = await db
       .from('orders')
       .update({ status } as never)

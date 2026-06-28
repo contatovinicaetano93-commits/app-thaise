@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -39,6 +39,8 @@ export function InviteUserForm({ onSuccess }: Props) {
   const searchParams = useSearchParams()
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [clients, setClients] = useState<Client[]>([])
+  const [emailPrefilledFromClient, setEmailPrefilledFromClient] = useState(false)
+  const emailEditedByUser = useRef(false)
 
   const defaultRole = (searchParams.get('role') === 'cliente' ? 'cliente' : 'fornecedor') as 'fornecedor' | 'cliente'
 
@@ -69,9 +71,10 @@ export function InviteUserForm({ onSuccess }: Props) {
     if (clientId) {
       setValue('client_id', clientId)
       const client = clients.find(c => c.id === clientId)
-      if (client) {
+      if (client && !emailEditedByUser.current) {
         setValue('email', client.email)
         setValue('full_name', client.name)
+        setEmailPrefilledFromClient(true)
       }
     }
   }, [searchParams, setValue, clients])
@@ -117,8 +120,18 @@ export function InviteUserForm({ onSuccess }: Props) {
         type="email"
         placeholder="maria@empresa.com"
         error={errors.email?.message}
-        {...register('email')}
+        {...register('email', {
+          onChange: () => {
+            emailEditedByUser.current = true
+            setEmailPrefilledFromClient(false)
+          },
+        })}
       />
+      {emailPrefilledFromClient && (
+        <p className="text-xs text-violet-700 bg-violet-50 rounded-lg px-3 py-2 -mt-2">
+          Preenchido a partir do cadastro do cliente — edite se a pessoa de login for diferente.
+        </p>
+      )}
 
       <Input
         label="Senha inicial"

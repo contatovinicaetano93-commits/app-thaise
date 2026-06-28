@@ -44,6 +44,7 @@ function PipelinePageContent() {
     projectId: string
     clientName: string
     email: string
+    portalInvited?: boolean
   } | undefined>()
   const [convertLoading, setConvertLoading] = useState(false)
   const [inviteLoading, setInviteLoading] = useState(false)
@@ -126,7 +127,7 @@ function PipelinePageContent() {
   const visibleOpportunities = intakeFilter ? intakeQueue : opportunities
 
   async function handleInvitePortal() {
-    if (!convertSuccess) return
+    if (!convertSuccess || convertSuccess.portalInvited) return
     setInviteLoading(true)
     try {
       const result = await clientsApi.invitePortal(convertSuccess.clientId)
@@ -136,6 +137,7 @@ function PipelinePageContent() {
           ? `Login criado e e-mail enviado para ${convertSuccess.email}`
           : `Login criado — configure RESEND_API_KEY para envio automático (senha: ${result.temporaryPassword})`,
       )
+      setConvertSuccess(prev => prev ? { ...prev, portalInvited: true } : undefined)
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Erro ao convidar cliente')
     } finally {
@@ -325,9 +327,15 @@ function PipelinePageContent() {
               <li>Homologue fornecedores e crie pedidos</li>
             </ol>
             <div className="flex flex-col gap-2">
-              <Button onClick={handleInvitePortal} loading={inviteLoading}>
-                Criar login e enviar e-mail
-              </Button>
+              {convertSuccess.portalInvited ? (
+                <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
+                  Login do portal criado. Use os botões abaixo para continuar ou feche este painel.
+                </p>
+              ) : (
+                <Button onClick={handleInvitePortal} loading={inviteLoading}>
+                  Criar login e enviar e-mail
+                </Button>
+              )}
               <Button variant="secondary" onClick={() => {
                 router.push(`/users?role=cliente&client_id=${convertSuccess.clientId}`)
                 setConvertSuccess(undefined)

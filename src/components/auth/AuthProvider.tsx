@@ -39,14 +39,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { refresh() }, [refresh])
 
-  const role = profile?.role ?? 'gestor'
+  const role = profile?.role ?? 'cliente'
 
   return (
     <AuthContext.Provider value={{
       profile,
-      role: loading ? 'gestor' : role,
+      role: loading ? 'cliente' : role,
       loading,
-      isGestor: profile ? canManage(profile.role) : false,
+      isGestor: !loading && profile ? canManage(profile.role) : false,
       refresh,
     }}>
       {children}

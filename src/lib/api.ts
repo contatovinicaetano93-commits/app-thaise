@@ -310,6 +310,8 @@ export const reportsApi = {
   monthly: (): ApiResult<{
     summary: string
     aiPowered: boolean
+    periodLabel?: string
+    period?: { from: string; to: string }
     metrics: {
       orders: number
       revenue: number

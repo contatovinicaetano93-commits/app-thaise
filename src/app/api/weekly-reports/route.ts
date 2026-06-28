@@ -2,23 +2,32 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
 import { createSupabaseServer } from '@/lib/supabase/server'
-import { requireGestor } from '@/lib/auth/api-context'
+import { requireProfile, requireGestor } from '@/lib/auth/api-context'
 import { notifyUser } from '@/lib/webhooks/dispatch'
 
 export async function GET(req: NextRequest) {
   try {
-    const { error: authErr } = await requireGestor()
+    const { profile, error: authErr } = await requireProfile()
     if (authErr) return authErr
 
     const status = req.nextUrl.searchParams.get('status')
     const db = await createSupabaseServer()
+
+    if (profile!.role === 'fornecedor') {
+      return err('Acesso restrito', 403)
+    }
+
     let query = db
       .from('weekly_reports')
       .select('*')
       .order('week_start', { ascending: false })
       .limit(50)
 
-    if (status) query = query.eq('status', status)
+    if (profile!.role === 'cliente') {
+      query = query.eq('status', 'sent')
+    } else if (status) {
+      query = query.eq('status', status)
+    }
 
     const { data, error } = await query
     if (error) return err(error.message, 500)
@@ -76,7 +85,7 @@ export async function PATCH(req: NextRequest) {
             (p as { id: string }).id,
             `Relatório 360 — ${report.project?.name ?? 'Projeto'}`,
             report.week_label ?? 'Atualização semanal disponível',
-            '/projects',
+            '/reports/weekly',
           )
         }
       }

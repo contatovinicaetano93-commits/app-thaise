@@ -77,18 +77,25 @@ export function SupplierForm({ supplier, onSuccess, onCancel }: Props) {
           placeholder="Selecione..."
           {...register('category')}
         />
-        <Select
-          label="Status"
-          options={supplier ? [
-            { value: 'pending', label: 'Pendente' },
-            { value: 'active', label: 'Ativo' },
-            { value: 'inactive', label: 'Inativo' },
-          ] : [
-            { value: 'pending', label: 'Pendente — aguarda homologação' },
-          ]}
-          disabled={!supplier}
-          {...register('status')}
-        />
+        {supplier ? (
+          <Select
+            label="Status"
+            options={[
+              { value: 'pending', label: 'Pendente' },
+              { value: 'active', label: 'Ativo' },
+              { value: 'inactive', label: 'Inativo' },
+            ]}
+            {...register('status')}
+          />
+        ) : (
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-1">Status</p>
+            <p className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+              Pendente — aguarda homologação
+            </p>
+            <input type="hidden" {...register('status')} />
+          </div>
+        )}
         {!supplier && (
           <p className="col-span-2 text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
             Novos fornecedores entram como <strong>Pendente</strong>. Homologue em Homologação antes de usar em pedidos.

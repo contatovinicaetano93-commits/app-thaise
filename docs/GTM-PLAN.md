@@ -59,11 +59,12 @@ npm run smoke:prod
 ## Dia 2 — Terça (auth + cliente)
 
 ### Dev
-- [ ] Página `/auth/reset-password` + `redirectTo` no login
-- [ ] Relatório 360 read-only para role `cliente`
-- [ ] Fixes Sentry prioritários (realtime callback, `period.month`)
+- [x] Página `/auth/reset-password` + `/auth/callback` + `redirectTo` no login
+- [x] Relatório 360 read-only para role `cliente`
+- [x] Fixes Sentry prioritários (realtime callback, `periodLabel` no relatório mensal)
 
 ### Thaise
+- [ ] Supabase Auth → Redirect URLs: `/auth/callback` e `/auth/reset-password`
 - [ ] Testar fluxo convite → login → reset senha
 - [ ] Validar copy do e-mail de convite
 
@@ -111,3 +112,4 @@ npm run smoke:prod
 | Data | Entrega |
 |------|---------|
 | 2026-06-23 | Plano central criado; Dia 1 LGPD implementado |
+| 2026-06-23 | Dia 2: reset senha, relatório 360 cliente, fixes realtime/periodLabel |

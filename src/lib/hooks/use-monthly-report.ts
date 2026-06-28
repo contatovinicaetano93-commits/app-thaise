@@ -43,7 +43,10 @@ export function useMonthlyReport(options?: { autoFetch?: boolean }) {
         summary: report.summary,
         aiPowered: report.aiPowered,
         metrics: report.metrics,
-        periodLabel: new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
+        periodLabel: report.periodLabel
+          ?? (report.period?.from
+            ? new Date(report.period.from).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+            : new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })),
       })
     } catch (e) {
       setData(null)

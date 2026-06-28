@@ -51,6 +51,7 @@ export async function GET() {
 
     return ok({
       period: { from: monthStart, to: now.toISOString() },
+      periodLabel,
       metrics,
       summary,
       aiPowered: isLlmConfigured(),

@@ -5,7 +5,7 @@ import { canAccessRoute, type UserRole } from '@/lib/auth/roles'
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase/env'
 import { rateLimitAsync } from '@/lib/rate-limit'
 
-const PUBLIC_PATHS = ['/login', '/onboarding', '/intake', '/privacidade', '/termos']
+const PUBLIC_PATHS = ['/login', '/onboarding', '/intake', '/privacidade', '/termos', '/auth/reset-password', '/auth/callback', '/sentry-example-page']
 
 const PUBLIC_API_PREFIXES = [
   '/api/auth/',
@@ -14,6 +14,7 @@ const PUBLIC_API_PREFIXES = [
   '/api/intake',
   '/api/cron/',
   '/api/openapi',
+  '/api/sentry-example-api',
 ]
 
 function isPublicApi(pathname: string) {

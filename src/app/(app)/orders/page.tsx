@@ -49,9 +49,10 @@ export default function OrdersPage() {
 
   async function updateStatus(id: string, status: string) {
     try {
-      await ordersApi.updateStatus(id, status)
-      setOrders(prev => prev.map(o => o.id === id ? { ...o, status: status as Order['status'] } : o))
-      toast.success(`Status: ${ORDER_STATUS_LABEL[status as OrderStatus]}`)
+      const updated = await ordersApi.updateStatus(id, status)
+      const nextStatus = updated.status as OrderStatus
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, ...updated } : o))
+      toast.success(`Status: ${ORDER_STATUS_LABEL[nextStatus]}`)
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Erro ao atualizar status')
     }

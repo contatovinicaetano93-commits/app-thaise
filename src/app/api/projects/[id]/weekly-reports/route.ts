@@ -1,21 +1,31 @@
 import { NextRequest } from 'next/server'
 import { ok, err, handleError } from '@/lib/api-response'
 import { createSupabaseServer } from '@/lib/supabase/server'
-import { requireGestor } from '@/lib/auth/api-context'
+import { requireProfile, requireGestor } from '@/lib/auth/api-context'
+import { assertEntityAccess } from '@/lib/auth/entity-access'
 import { upsertWeeklyReportDraft, generateWeeklyReportDraft, formatWeeklyReportEmail } from '@/lib/estlar/weekly-report'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { error: authErr } = await requireGestor()
+    const { profile, error: authErr } = await requireProfile()
     if (authErr) return authErr
     const { id } = await params
+    const accessErr = await assertEntityAccess(profile!, 'project', id)
+    if (accessErr) return accessErr
+
     const db = await createSupabaseServer()
-    const { data, error } = await db
+    let query = db
       .from('weekly_reports')
       .select('*')
       .eq('project_id', id)
       .order('week_start', { ascending: false })
       .limit(12)
+
+    if (profile!.role === 'cliente') {
+      query = query.eq('status', 'sent')
+    }
+
+    const { data, error } = await query
     if (error) return err(error.message, 500)
     return ok(data ?? [])
   } catch (e) {
