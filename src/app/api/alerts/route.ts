@@ -58,7 +58,7 @@ export async function GET() {
         type: 'intake_review',
         severity: 'info',
         message: `${intakeReview} intake(s) aguardando revisão`,
-        href: '/pipeline',
+        href: '/pipeline?filter=intake',
       })
     }
 

@@ -59,7 +59,7 @@ export async function GET() {
         steps.push({
           sipoc: 'I',
           label: 'Revisar leads do intake',
-          href: '/pipeline',
+          href: '/pipeline?filter=intake',
           reason: `${intakeReview} lead(s) aguardando revisão`,
         })
       }
@@ -111,6 +111,12 @@ export async function GET() {
           reason: 'Inicie a jornada A→F (ou converta do pipeline)',
         })
       }
+      steps.push({
+        sipoc: 'O',
+        label: 'Convidar usuários',
+        href: '/users',
+        reason: 'Crie logins de cliente e fornecedor para os portais',
+      })
     }
 
     if ((openOrders ?? 0) > 0) {

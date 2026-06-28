@@ -79,13 +79,21 @@ export function SupplierForm({ supplier, onSuccess, onCancel }: Props) {
         />
         <Select
           label="Status"
-          options={[
+          options={supplier ? [
             { value: 'pending', label: 'Pendente' },
             { value: 'active', label: 'Ativo' },
             { value: 'inactive', label: 'Inativo' },
+          ] : [
+            { value: 'pending', label: 'Pendente — aguarda homologação' },
           ]}
+          disabled={!supplier}
           {...register('status')}
         />
+        {!supplier && (
+          <p className="col-span-2 text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+            Novos fornecedores entram como <strong>Pendente</strong>. Homologue em Homologação antes de usar em pedidos.
+          </p>
+        )}
         <Input label="Nome do contato *" placeholder="João Silva" error={errors.contact_name?.message} {...register('contact_name')} />
         <Input label="Telefone *" placeholder="(11) 99999-9999" error={errors.contact_phone?.message} {...register('contact_phone')} />
         <div className="col-span-2">

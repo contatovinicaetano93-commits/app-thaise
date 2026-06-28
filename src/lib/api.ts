@@ -102,6 +102,13 @@ export const clientsApi = {
 
   exportCsv: (): Promise<void> =>
     downloadCsv('/api/clients/export', `clientes-${new Date().toISOString().slice(0, 10)}.csv`),
+
+  invitePortal: (id: string, data?: { password?: string; full_name?: string }): ApiResult<{
+    user: AppUser
+    email?: { sent: boolean; provider: string }
+    temporaryPassword?: string
+  }> =>
+    request(`/api/clients/${id}/invite-portal`, { method: 'POST', body: JSON.stringify(data ?? {}) }),
 }
 
 // --- Pipeline / Oportunidades ---
@@ -131,6 +138,12 @@ export const opportunitiesApi = {
       body: JSON.stringify({ project_name: projectName }),
     }),
 
+  reviewIntake: (id: string, action: 'approve' | 'reject', reason?: string): ApiResult<Opportunity> =>
+    request(`/api/opportunities/${id}/intake-review`, {
+      method: 'POST',
+      body: JSON.stringify({ action, reason }),
+    }),
+
   remove: (id: string): ApiResult<void> =>
     request(`/api/opportunities/${id}`, { method: 'DELETE' }),
 }
@@ -145,6 +158,9 @@ export const productsApi = {
 
   update: (id: string, data: Partial<Product>): ApiResult<Product> =>
     request(`/api/products/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  remove: (id: string): ApiResult<void> =>
+    request(`/api/products/${id}`, { method: 'DELETE' }),
 
   exportCsv: (): Promise<void> =>
     downloadCsv('/api/products/export', `produtos-${new Date().toISOString().slice(0, 10)}.csv`),
@@ -339,7 +355,8 @@ export const usersApi = {
     role: 'fornecedor' | 'cliente'
     supplier_id?: string | null
     client_id?: string | null
-  }): ApiResult<AppUser> =>
+    send_email?: boolean
+  }): ApiResult<AppUser & { inviteEmail?: { sent: boolean; provider: string; magicLink?: string | null } }> =>
     request('/api/users/invite', { method: 'POST', body: JSON.stringify(data) }),
 }
 

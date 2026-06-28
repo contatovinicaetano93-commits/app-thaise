@@ -10,6 +10,7 @@ const inviteSchema = z.object({
   role: z.enum(['fornecedor', 'cliente']),
   supplier_id: z.string().uuid().optional().nullable(),
   client_id: z.string().uuid().optional().nullable(),
+  send_email: z.boolean().optional(),
 }).superRefine((data, ctx) => {
   if (data.role === 'fornecedor' && !data.supplier_id) {
     ctx.addIssue({ code: 'custom', message: 'Fornecedor obrigatório', path: ['supplier_id'] })
@@ -32,9 +33,15 @@ export async function POST(req: Request) {
       role: body.role,
       supplierId: body.supplier_id,
       clientId: body.client_id,
+      sendEmail: body.send_email !== false,
     })
 
-    return ok(user, { invited_by: profile!.id }, 201)
+    return ok(user, {
+      invited_by: profile!.id,
+      email_sent: user.inviteEmail?.sent ?? false,
+      email_provider: user.inviteEmail?.provider,
+      email_error: user.inviteEmail?.error ?? null,
+    }, 201)
   } catch (e) {
     if (e instanceof Error && !('issues' in (e as object))) {
       return err(e.message, 422)

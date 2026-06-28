@@ -8,6 +8,7 @@ export interface EmailResult {
   sent: boolean
   provider: 'stub' | 'resend'
   sent_at: string
+  error?: string
 }
 
 /**
@@ -32,12 +33,21 @@ export async function sendEmail(message: EmailMessage): Promise<EmailResult> {
         }),
       })
       if (res.ok) return { sent: true, provider: 'resend', sent_at: sentAt }
-      console.error('[email] Resend error', await res.text())
+      const errText = await res.text()
+      console.error('[email] Resend error', errText)
+      let errMsg = errText.slice(0, 200)
+      try {
+        const parsed = JSON.parse(errText) as { message?: string }
+        if (parsed.message) errMsg = parsed.message
+      } catch { /* raw text */ }
+      return { sent: false, provider: 'resend', sent_at: sentAt, error: errMsg }
     } catch (e) {
+      const errMsg = e instanceof Error ? e.message : 'Erro de rede'
       console.error('[email] Resend failed', e)
+      return { sent: false, provider: 'resend', sent_at: sentAt, error: errMsg }
     }
   }
 
   console.info('[email-stub]', { ...message, sent_at: sentAt })
-  return { sent: false, provider: 'stub', sent_at: sentAt }
+  return { sent: false, provider: 'stub', sent_at: sentAt, error: 'RESEND_API_KEY não configurada' }
 }

@@ -19,8 +19,8 @@ function initials(name?: string | null, email?: string) {
 export function MobileSidebar() {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
-  const { role, profile } = useAuth()
-  const sections = navBySection(role)
+  const { role, profile, loading } = useAuth()
+  const sections = loading ? [] : navBySection(role)
 
   return (
     <>

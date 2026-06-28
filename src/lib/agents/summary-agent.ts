@@ -1,3 +1,4 @@
+import { chatCompletion } from '@/lib/llm'
 import { createServiceClient } from '@/lib/supabase-server'
 import { phaseProgress } from '@/lib/checklists'
 import { PHASES } from '@/lib/phases'
@@ -46,28 +47,11 @@ export async function summarizeProject(projectId: string) {
 
   let insight = lines.join('\n')
 
-  const apiKey = process.env.OPENAI_API_KEY
-  if (apiKey) {
-    try {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: 'Resuma em 3 frases objetivas para o cliente final, em português.' },
-            { role: 'user', content: lines.join('\n') },
-          ],
-          max_tokens: 200,
-        }),
-      })
-      const json = await res.json()
-      const ai = json.choices?.[0]?.message?.content
-      if (ai) insight = ai
-    } catch {
-      // mantém resumo determinístico
-    }
-  }
+  const ai = await chatCompletion([
+    { role: 'system', content: 'Resuma em 3 frases objetivas para o cliente final, em português.' },
+    { role: 'user', content: lines.join('\n') },
+  ], { maxTokens: 200 })
+  if (ai) insight = ai
 
   await db.from('agent_insights').insert({
     entity_type: 'project',

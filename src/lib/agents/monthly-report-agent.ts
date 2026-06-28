@@ -1,3 +1,5 @@
+import { chatCompletion } from '@/lib/llm'
+
 export interface MonthlyMetrics {
   orders: number
   revenue: number
@@ -21,37 +23,19 @@ function buildDeterministicSummary(periodLabel: string, m: MonthlyMetrics): stri
 
 export async function generateMonthlySummary(periodLabel: string, metrics: MonthlyMetrics): Promise<string> {
   const fallback = buildDeterministicSummary(periodLabel, metrics)
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) return fallback
 
-  try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content:
-              'Você é analista do Hub Estlar (curadoria de ativos, empreendimentos e consolidação patrimonial). ' +
-              'Escreva um parágrafo executivo em português (3–4 frases), objetivo e acionável para a gestora.',
-          },
-          {
-            role: 'user',
-            content: JSON.stringify({ periodo: periodLabel, metricas: metrics }),
-          },
-        ],
-        max_tokens: 280,
-        temperature: 0.4,
-      }),
-    })
+  const ai = await chatCompletion([
+    {
+      role: 'system',
+      content:
+        'Você é analista do Hub Estlar (curadoria de ativos, empreendimentos e consolidação patrimonial). ' +
+        'Escreva um parágrafo executivo em português (3–4 frases), objetivo e acionável para a gestora.',
+    },
+    {
+      role: 'user',
+      content: JSON.stringify({ periodo: periodLabel, metricas: metrics }),
+    },
+  ], { maxTokens: 280, temperature: 0.4 })
 
-    if (!res.ok) return fallback
-    const json = await res.json()
-    const ai = json.choices?.[0]?.message?.content?.trim()
-    return ai || fallback
-  } catch {
-    return fallback
-  }
+  return ai || fallback
 }

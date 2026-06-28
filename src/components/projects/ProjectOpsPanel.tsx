@@ -106,7 +106,9 @@ export function ProjectOpsPanel({ projectId, projectName, readOnly }: Props) {
 
   return (
     <div className="space-y-5 mt-4 pt-4 border-t border-gray-100">
-      <h3 className="text-sm font-semibold text-gray-800">Operações Estlar — {projectName}</h3>
+      <h3 className="text-sm font-semibold text-gray-800">
+        {readOnly ? 'Seu empreendimento' : `Operações Estlar — ${projectName}`}
+      </h3>
 
       {welcomeKit && (
         <details className="bg-stone-50 rounded-lg p-3">

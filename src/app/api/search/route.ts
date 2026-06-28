@@ -18,13 +18,15 @@ export async function GET(req: NextRequest) {
       db.from('suppliers').select('id, name, category').or(`name.ilike.${pattern},category.ilike.${pattern}`).limit(5),
       db.from('clients').select('id, name, company').or(`name.ilike.${pattern},company.ilike.${pattern}`).limit(5),
       db.from('projects').select('id, name, phase').or(`name.ilike.${pattern},location.ilike.${pattern}`).limit(5),
-      db.from('orders').select('id, status, client:clients(name), supplier:suppliers(name)').limit(20),
+      db.from('orders').select('id, status, supplier_id, client_id, client:clients(name), supplier:suppliers(name)').limit(20),
       db.from('products').select('id, name, category, supplier_id').or(`name.ilike.${pattern},category.ilike.${pattern}`).limit(10),
     ])
 
     let orderRows = (orders.data ?? []) as Array<{
       id: string
       status: string
+      supplier_id?: string
+      client_id?: string
       client?: { name: string }
       supplier?: { name: string }
     }>
@@ -35,7 +37,10 @@ export async function GET(req: NextRequest) {
     ).slice(0, 5)
 
     if (profile!.role === 'fornecedor' && profile!.supplier_id) {
-      orderRows = orderRows.filter(() => true)
+      orderRows = orderRows.filter(o => o.supplier_id === profile!.supplier_id)
+    }
+    if (profile!.role === 'cliente' && profile!.client_id) {
+      orderRows = orderRows.filter(o => (o as { client_id?: string }).client_id === profile!.client_id)
     }
 
     const productRows = filterProductsByRole(

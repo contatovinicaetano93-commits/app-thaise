@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { requireProfile } from '@/lib/auth/api-context'
+import { validateOrderTransition, type OrderStatus } from '@/lib/orders/status-transitions'
 import { enqueueOrderJob } from '@/lib/queue'
 import { logActivity, logOrderStatus } from '@/lib/memory/events'
 
@@ -26,10 +27,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     if (!prev) return err('Pedido não encontrado', 404)
 
+    const transitionErr = validateOrderTransition(
+      profile!.role,
+      prev.status as OrderStatus,
+      status as OrderStatus,
+    )
+    if (transitionErr) return err(transitionErr, 403)
+
     if (profile!.role === 'fornecedor' && profile!.supplier_id !== prev.supplier_id) {
-      return err('Acesso negado a este pedido', 403)
-    }
-    if (profile!.role === 'cliente' && profile!.client_id !== prev.client_id) {
       return err('Acesso negado a este pedido', 403)
     }
 

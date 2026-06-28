@@ -1,8 +1,9 @@
 /**
  * Agente de Scoring QCPS
- * Regras determinísticas + insight opcional via OpenAI
+ * Regras determinísticas + insight opcional via Anthropic/OpenAI
  */
 
+import { chatCompletion } from '@/lib/llm'
 import { createServiceClient } from '@/lib/supabase-server'
 import type { QcpsScores } from '@/lib/qcps'
 import { qcpsAverage, homologationTierFromQcps } from '@/lib/qcps'
@@ -57,38 +58,18 @@ async function generateInsight(
   const avg = qcpsAverage(scores)
   const base = `${name}: QCPS médio ${avg}/10 (Q${scores.score_q} C${scores.score_c} P${scores.score_p} S${scores.score_s}). ${context}`
 
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) return base
+  const ai = await chatCompletion([
+    {
+      role: 'system',
+      content: 'Você é um analista de operações imobiliárias. Responda em 2 frases objetivas em português.',
+    },
+    {
+      role: 'user',
+      content: `Analise o ${entityType} "${name}" com scores QCPS: Q=${scores.score_q}, C=${scores.score_c}, P=${scores.score_p}, S=${scores.score_s}. Contexto: ${context}`,
+    },
+  ], { maxTokens: 200 })
 
-  try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        max_tokens: 200,
-        messages: [
-          {
-            role: 'system',
-            content: 'Você é um analista de operações imobiliárias. Responda em 2 frases objetivas em português.',
-          },
-          {
-            role: 'user',
-            content: `Analise o ${entityType} "${name}" com scores QCPS: Q=${scores.score_q}, C=${scores.score_c}, P=${scores.score_p}, S=${scores.score_s}. Contexto: ${context}`,
-          },
-        ],
-      }),
-    })
-
-    if (!res.ok) return base
-    const json = await res.json()
-    return json.choices?.[0]?.message?.content?.trim() ?? base
-  } catch {
-    return base
-  }
+  return ai ?? base
 }
 
 async function saveInsight(

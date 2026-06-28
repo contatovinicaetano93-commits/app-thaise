@@ -15,10 +15,7 @@ import { SipocBadge } from '@/components/ui/SipocBadge'
 import { toast } from 'sonner'
 import type { Order } from '@/types/database'
 
-const STATUS_LABEL: Record<string, string> = {
-  pending: 'Pendente', approved: 'Aprovado', processing: 'Em produção',
-  delivered: 'Entregue', cancelled: 'Cancelado',
-}
+import { allowedOrderTransitions, ORDER_STATUS_LABEL, type OrderStatus } from '@/lib/orders/status-transitions'
 const STATUS_COLOR: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-700',
   approved: 'bg-indigo-100 text-indigo-700',
@@ -54,9 +51,21 @@ export default function OrdersPage() {
     try {
       await ordersApi.updateStatus(id, status)
       setOrders(prev => prev.map(o => o.id === id ? { ...o, status: status as Order['status'] } : o))
-    } catch {
-      toast.error('Erro ao atualizar status')
+      toast.success(`Status: ${ORDER_STATUS_LABEL[status as OrderStatus]}`)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao atualizar status')
     }
+  }
+
+  function statusMenuItems(order: Order) {
+    if (role === 'cliente') return undefined
+    const current = order.status as OrderStatus
+    const allowed = allowedOrderTransitions(role, current)
+    if (allowed.length === 0) return undefined
+    return allowed.map(next => ({
+      label: `Marcar como ${ORDER_STATUS_LABEL[next]}`,
+      onClick: () => updateStatus(order.id, next),
+    }))
   }
 
   const filtered = orders.filter(o =>
@@ -135,23 +144,13 @@ export default function OrdersPage() {
               panelId={`order-${order.id}`}
               title={order.client?.name ?? 'Pedido'}
               defaultOpen={false}
-              summary={`${order.supplier?.name ?? '—'} · ${(order.total_price ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} · ${STATUS_LABEL[order.status]}`}
+              summary={`${order.supplier?.name ?? '—'} · ${(order.total_price ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} · ${ORDER_STATUS_LABEL[order.status as OrderStatus]}`}
               headerExtra={
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[order.status]}`}>
-                  {STATUS_LABEL[order.status]}
+                  {ORDER_STATUS_LABEL[order.status as OrderStatus]}
                 </span>
               }
-              menuItems={isGestor ? Object.entries(STATUS_LABEL).map(([v, l]) => ({
-                label: `Marcar como ${l}`,
-                onClick: () => updateStatus(order.id, v),
-                disabled: order.status === v,
-              })) : role === 'fornecedor' ? Object.entries(STATUS_LABEL)
-                .filter(([v]) => v !== 'pending' && v !== 'cancelled')
-                .map(([v, l]) => ({
-                  label: `Marcar como ${l}`,
-                  onClick: () => updateStatus(order.id, v),
-                  disabled: order.status === v,
-                })) : undefined}
+              menuItems={statusMenuItems(order)}
             >
               <div className="flex items-center gap-2 mb-1">
                 <SipocBadge />

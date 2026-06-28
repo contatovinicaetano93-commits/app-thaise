@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createMiddlewareClient } from '@/lib/supabase/middleware'
+import { clearSupabaseAuthCookies, hasSupabaseAuthCookie } from '@/lib/supabase/auth-cookies'
 import { canAccessRoute, type UserRole } from '@/lib/auth/roles'
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase/env'
 import { rateLimitAsync } from '@/lib/rate-limit'
@@ -49,6 +50,24 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith('/_next/') ||
     pathname === '/favicon.ico'
 
+  const staleSession = !user && hasSupabaseAuthCookie(req) && !isPublic
+
+  if (staleSession) {
+    if (pathname.startsWith('/api/')) {
+      const res = NextResponse.json(
+        { ok: false, error: 'Sessão expirada — faça login novamente' },
+        { status: 401 },
+      )
+      clearSupabaseAuthCookies(res, req)
+      return res
+    }
+    const loginUrl = new URL('/login', req.url)
+    loginUrl.searchParams.set('session', 'expired')
+    const res = NextResponse.redirect(loginUrl)
+    clearSupabaseAuthCookies(res, req)
+    return res
+  }
+
   if (!user && pathname.startsWith('/api/') && !isPublicApi(pathname)) {
     return NextResponse.json({ ok: false, error: 'Não autenticado' }, { status: 401 })
   }
@@ -72,7 +91,7 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL('/onboarding', req.url))
     }
 
-    if (profile?.role && !profile.onboarding_completed_at && !pathname.startsWith('/onboarding')) {
+    if (profile?.role && !profile.onboarding_completed_at && profile.role === 'gestor' && !pathname.startsWith('/onboarding')) {
       return NextResponse.redirect(new URL('/onboarding', req.url))
     }
 

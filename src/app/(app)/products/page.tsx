@@ -41,14 +41,14 @@ export default function ProductsPage() {
   useLiveRefresh(load, ['products'])
 
   async function handleDelete() {
-    if (!deleting) return
+    if (!deleting || !isGestor) return
     try {
-      await fetch(`/api/products/${deleting.id}`, { method: 'DELETE', credentials: 'include' })
+      await productsApi.remove(deleting.id)
       toast.success('Produto removido')
       setDeleting(undefined)
       load()
-    } catch {
-      toast.error('Erro ao excluir')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao excluir')
     }
   }
 
@@ -117,10 +117,12 @@ export default function ProductsPage() {
                   {product.active ? 'Ativo' : 'Inativo'}
                 </span>
               }
-              menuItems={[
+              menuItems={isGestor ? [
                 { label: 'Editar', onClick: () => { setEditing(product); setModalOpen(true) } },
                 { label: 'Excluir', onClick: () => setDeleting(product), danger: true },
-              ]}
+              ] : role === 'fornecedor' ? [
+                { label: 'Editar', onClick: () => { setEditing(product); setModalOpen(true) } },
+              ] : undefined}
             >
               <p className="text-xs text-gray-400 mb-3">{product.category}</p>
               <div className="pt-3 border-t border-gray-50">

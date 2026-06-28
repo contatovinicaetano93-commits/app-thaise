@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { PasswordInput } from '@/components/ui/PasswordInput'
 import { PublicFloatingUI } from '@/components/layout/PublicFloatingUI'
@@ -9,10 +10,24 @@ import { BRAND } from '@/lib/brand'
 import { toast } from 'sonner'
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  )
+}
+
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const sessionExpired = searchParams.get('session') === 'expired'
   const [loading, setLoading] = useState(false)
   const [resetting, setResetting] = useState(false)
   const [form, setForm] = useState({ email: '', password: '' })
+
+  useEffect(() => {
+    if (sessionExpired) toast.error('Sessão expirada — entre novamente com e-mail e senha')
+  }, [sessionExpired])
 
   async function handleForgotPassword() {
     if (!form.email) {
@@ -117,9 +132,18 @@ export default function LoginPage() {
           </div>
 
           <h1 className="text-2xl font-light text-gray-900 tracking-wide mb-1">Acesso ao Hub</h1>
-          <p className="text-sm text-[var(--estlar-titanium)] mb-8">
-            Área restrita · Gestão de ativos
+          <p className="text-sm text-[var(--estlar-titanium)] mb-2">
+            Área privada · Gestores, clientes e fornecedores
           </p>
+          <p className="text-xs text-gray-500 mb-8 leading-relaxed">
+            Clientes e fornecedores recebem login e senha da Estlar. Não há cadastro público — use as credenciais enviadas.
+          </p>
+
+          {sessionExpired && (
+            <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              Sua sessão expirou. Faça login novamente.
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

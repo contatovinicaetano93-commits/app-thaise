@@ -1,5 +1,7 @@
 import { createServiceClient } from '@/lib/supabase-server'
 import { getSupabaseUrl } from '@/lib/supabase/env'
+import { sendPortalInviteEmail } from '@/lib/auth/invite-email'
+import type { EmailResult } from '@/lib/notify/email'
 import type { UserRole } from '@/lib/auth/roles'
 
 export interface InviteUserInput {
@@ -9,6 +11,7 @@ export interface InviteUserInput {
   role: Extract<UserRole, 'fornecedor' | 'cliente'>
   supplierId?: string | null
   clientId?: string | null
+  sendEmail?: boolean
 }
 
 export interface InvitedUser {
@@ -19,6 +22,7 @@ export interface InvitedUser {
   supplier_id: string | null
   client_id: string | null
   created_at: string
+  inviteEmail?: EmailResult & { magicLink?: string | null }
 }
 
 export async function inviteAppUser(input: InviteUserInput): Promise<InvitedUser> {
@@ -78,6 +82,7 @@ export async function inviteAppUser(input: InviteUserInput): Promise<InvitedUser
       full_name: input.fullName,
       supplier_id: input.role === 'fornecedor' ? input.supplierId : null,
       client_id: input.role === 'cliente' ? input.clientId : null,
+      onboarding_completed_at: new Date().toISOString(),
     }),
   })
 
@@ -89,7 +94,17 @@ export async function inviteAppUser(input: InviteUserInput): Promise<InvitedUser
     throw new Error('Erro ao vincular perfil do usuário')
   }
 
-  return profile as InvitedUser
+  let inviteEmail: (EmailResult & { magicLink?: string | null }) | undefined
+  if (input.sendEmail !== false) {
+    inviteEmail = await sendPortalInviteEmail({
+      email: input.email,
+      fullName: input.fullName,
+      role: input.role,
+      password: input.password,
+    })
+  }
+
+  return { ...(profile as InvitedUser), inviteEmail }
 }
 
 export async function listAppUsers(): Promise<InvitedUser[]> {

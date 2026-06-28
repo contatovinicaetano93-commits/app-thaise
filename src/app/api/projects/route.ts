@@ -4,6 +4,7 @@ import { ok, err, handleError } from '@/lib/api-response'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { requireProfile, filterProjectsByRole } from '@/lib/auth/api-context'
 import { assertProjectHasClient } from '@/lib/gates'
+import { checkProjectCap } from '@/lib/estlar/cap'
 import { auditAndInvalidate } from '@/lib/memory/audit'
 import { cacheGet, cacheSet } from '@/lib/cache'
 import { parsePagination, paginationMeta } from '@/lib/pagination'
@@ -66,6 +67,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const payload = schema.parse(body)
     await assertProjectHasClient(payload.client_id)
+
+    const capStatus = await checkProjectCap()
+    if (capStatus.atCap) {
+      return err(`${capStatus.cap.label} atingido (${capStatus.active}/${capStatus.cap.max})`, 422)
+    }
 
     const db = await createSupabaseServer()
 

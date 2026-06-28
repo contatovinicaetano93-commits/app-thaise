@@ -1,6 +1,7 @@
 import { ok, handleError } from '@/lib/api-response'
 import { requireGestor } from '@/lib/auth/api-context'
 import { generateMonthlySummary } from '@/lib/agents/monthly-report-agent'
+import { isLlmConfigured } from '@/lib/llm'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { qcpsAverage } from '@/lib/qcps'
 
@@ -52,7 +53,7 @@ export async function GET() {
       period: { from: monthStart, to: now.toISOString() },
       metrics,
       summary,
-      aiPowered: Boolean(process.env.OPENAI_API_KEY),
+      aiPowered: isLlmConfigured(),
     })
   } catch (e) {
     return handleError(e)

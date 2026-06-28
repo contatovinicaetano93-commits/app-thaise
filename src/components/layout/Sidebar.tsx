@@ -16,8 +16,8 @@ function initials(name?: string | null, email?: string) {
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { role, profile } = useAuth()
-  const sections = navBySection(role)
+  const { role, profile, loading } = useAuth()
+  const sections = loading ? [] : navBySection(role)
 
   return (
     <aside
@@ -39,7 +39,13 @@ export function Sidebar() {
 
       {/* Nav com seções colapsáveis */}
       <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
-        {sections.map(({ section, label, items }) => (
+        {loading ? (
+          <div className="space-y-2 px-2">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-9 rounded-lg bg-white/5 animate-pulse" />
+            ))}
+          </div>
+        ) : sections.map(({ section, label, items }) => (
           <NavSection
             key={section}
             section={section}

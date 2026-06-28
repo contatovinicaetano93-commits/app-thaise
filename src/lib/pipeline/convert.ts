@@ -2,6 +2,7 @@ import { createServiceClient } from '@/lib/supabase-server'
 import { auditAndInvalidate } from '@/lib/memory/audit'
 import { notifyUser } from '@/lib/webhooks/dispatch'
 import { generateWelcomeKitContent } from '@/lib/estlar/welcome-kit'
+import { checkProjectCap } from '@/lib/estlar/cap'
 import type { Opportunity } from '@/types/database'
 
 export interface ConvertResult {
@@ -34,6 +35,11 @@ export async function convertOpportunity(
   }
   if (!opportunity.signal_paid) {
     throw new Error('Valide o sinal financeiro antes de converter (marque na oportunidade)')
+  }
+
+  const capStatus = await checkProjectCap()
+  if (capStatus.atCap) {
+    throw new Error(`${capStatus.cap.label} atingido (${capStatus.active}/${capStatus.cap.max} empreendimentos ativos no trimestre)`)
   }
 
   const { data: client, error: clientErr } = await db

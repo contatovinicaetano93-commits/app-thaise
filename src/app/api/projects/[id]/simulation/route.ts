@@ -1,15 +1,15 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
-import { ok, handleError } from '@/lib/api-response'
+import { ok, err, handleError } from '@/lib/api-response'
 import { requireProfile } from '@/lib/auth/api-context'
 import { assertEntityAccess } from '@/lib/auth/entity-access'
 import { simular, SIMULATION_TEMPLATES } from '@/lib/simulation'
 import { logActivity } from '@/lib/memory/events'
 
 const schema = z.object({
-  investimentoInicial: z.number().min(0),
-  fluxosAnuais: z.array(z.number()),
-  taxaDesconto: z.number().min(0).max(1),
+  investimentoInicial: z.number().min(0).optional(),
+  fluxosAnuais: z.array(z.number()).optional(),
+  taxaDesconto: z.number().min(0).max(1).optional(),
   template: z.enum(['residencial', 'comercial']).optional(),
 })
 
@@ -43,14 +43,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const body = await req.json()
     const input = schema.parse(body)
 
-    const simInput = input.template
-      ? { ...SIMULATION_TEMPLATES[input.template], ...input, template: undefined }
-      : input
+    const tpl = input.template ? SIMULATION_TEMPLATES[input.template] : null
+    const investimentoInicial = input.investimentoInicial ?? tpl?.investimentoInicial
+    const fluxosAnuais = input.fluxosAnuais ?? tpl?.fluxosAnuais
+    const taxaDesconto = input.taxaDesconto ?? tpl?.taxaDesconto
+
+    if (investimentoInicial === undefined || !fluxosAnuais?.length || taxaDesconto === undefined) {
+      return err('Informe template ou investimentoInicial, fluxosAnuais e taxaDesconto', 422)
+    }
 
     const result = simular({
-      investimentoInicial: simInput.investimentoInicial,
-      fluxosAnuais: simInput.fluxosAnuais,
-      taxaDesconto: simInput.taxaDesconto,
+      investimentoInicial,
+      fluxosAnuais: [...fluxosAnuais],
+      taxaDesconto,
     })
 
     await logActivity({

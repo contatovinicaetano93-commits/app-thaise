@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { clientsApi, suppliersApi, usersApi } from '@/lib/api'
 import { toast } from 'sonner'
 import type { Client, Supplier } from '@/types/database'
+import type { AppUser } from '@/lib/api'
 import { ROLE_LABELS, type UserRole } from '@/lib/auth/roles'
 
 const schema = z.object({
@@ -65,20 +66,32 @@ export function InviteUserForm({ onSuccess }: Props) {
     const supplierId = searchParams.get('supplier_id')
     const clientId = searchParams.get('client_id')
     if (supplierId) setValue('supplier_id', supplierId)
-    if (clientId) setValue('client_id', clientId)
-  }, [searchParams, setValue])
+    if (clientId) {
+      setValue('client_id', clientId)
+      const client = clients.find(c => c.id === clientId)
+      if (client) {
+        setValue('email', client.email)
+        setValue('full_name', client.name)
+      }
+    }
+  }, [searchParams, setValue, clients])
 
   async function onSubmit(data: FormData) {
     try {
-      await usersApi.invite({
+      const user = await usersApi.invite({
         email: data.email,
         password: data.password,
         full_name: data.full_name,
         role: data.role,
         supplier_id: data.role === 'fornecedor' ? data.supplier_id : null,
         client_id: data.role === 'cliente' ? data.client_id : null,
-      })
-      toast.success('Login criado! Envie e-mail e senha para a pessoa.')
+        send_email: true,
+      }) as AppUser & { inviteEmail?: { sent: boolean; provider: string } }
+      if (user.inviteEmail?.sent) {
+        toast.success(`Login criado e e-mail enviado para ${data.email}`)
+      } else {
+        toast.success('Login criado — e-mail não enviado (configure RESEND_API_KEY na Vercel)')
+      }
       onSuccess()
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Erro ao convidar')
@@ -139,13 +152,13 @@ export function InviteUserForm({ onSuccess }: Props) {
       )}
 
       <p className="text-xs text-gray-500">
-        A pessoa usará este e-mail e senha em{' '}
-        <span className="font-medium">app-thaise.vercel.app/login</span>.
-        Peça para trocar a senha no primeiro acesso.
+        Um e-mail com login, senha e link de acesso será enviado automaticamente
+        {process.env.NEXT_PUBLIC_APP_URL ? ` (${process.env.NEXT_PUBLIC_APP_URL}/login)` : ''}.
+        Configure <strong>RESEND_API_KEY</strong> na Vercel para envio real.
       </p>
 
       <div className="flex gap-2 pt-2">
-        <Button type="submit" loading={isSubmitting}>Criar login</Button>
+        <Button type="submit" loading={isSubmitting}>Criar login e enviar e-mail</Button>
       </div>
     </form>
   )

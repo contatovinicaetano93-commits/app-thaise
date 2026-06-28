@@ -59,10 +59,20 @@ function UsersPageContent() {
       >
         <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
           <li>Cadastre o <strong>fornecedor</strong> ou <strong>cliente</strong> nas telas respectivas.</li>
-          <li>Clique em <strong>Novo login</strong> e vincule à pessoa certa.</li>
-          <li>Envie o link <strong>app-thaise.vercel.app/login</strong> com e-mail e senha.</li>
-          <li>A pessoa verá só os dados do perfil dela (pedidos, catálogo, etc.).</li>
+          <li>Clique em <strong>Criar login</strong> e vincule à pessoa certa.</li>
+          <li>Envie o link <strong>/login</strong> com e-mail e senha inicial.</li>
+          <li>A pessoa entra direto no portal dela — sem cadastro público.</li>
         </ol>
+        <div className="mt-4 grid sm:grid-cols-2 gap-3 text-xs">
+          <div className="rounded-xl bg-indigo-50 border border-indigo-100 p-3">
+            <p className="font-semibold text-indigo-800">Fornecedor vê</p>
+            <p className="text-indigo-700/90 mt-1">Catálogo · Pedidos aprovados · Notificações</p>
+          </div>
+          <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-3">
+            <p className="font-semibold text-emerald-800">Cliente vê</p>
+            <p className="text-emerald-700/90 mt-1">Empreendimentos · Pedidos · Notificações</p>
+          </div>
+        </div>
       </PanelCard>
 
       <PanelCard

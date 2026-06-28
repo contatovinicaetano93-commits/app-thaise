@@ -9,9 +9,10 @@ import { sendEmail } from '@/lib/notify/email'
 export async function processOrderJob(
   jobType: OrderJobType,
   payload: OrderJobPayload,
+  opts?: { force?: boolean },
 ): Promise<Record<string, unknown>> {
   const key = jobKey(jobType, payload.orderId)
-  if (await isJobProcessed(key)) {
+  if (!opts?.force && await isJobProcessed(key)) {
     return { action: 'skipped', reason: 'already_processed', orderId: payload.orderId }
   }
 

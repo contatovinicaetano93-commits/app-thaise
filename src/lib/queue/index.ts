@@ -1,6 +1,6 @@
 import type { OrderJobPayload, OrderJobType } from '@/lib/queue/types'
 import { ORDER_QUEUE_NAME } from '@/lib/queue/types'
-import { jobKey, isJobProcessed } from '@/lib/queue/idempotency'
+import { jobKey, isJobProcessed, clearJobProcessed } from '@/lib/queue/idempotency'
 import { createJobLog, updateJobLog } from '@/lib/queue/job-log'
 
 async function processInline(jobType: OrderJobType, payload: OrderJobPayload) {
@@ -38,7 +38,8 @@ export async function retryFailedJob(jobLogId: string) {
 
   try {
     const { processOrderJob } = await import('@/lib/queue/processors')
-    const result = await processOrderJob(jobType, payload)
+    await clearJobProcessed(jobKey(jobType, payload.orderId))
+    const result = await processOrderJob(jobType, payload, { force: true })
     await updateJobLog(jobLogId, 'completed', result)
     return result
   } catch (e) {
@@ -49,9 +50,9 @@ export async function retryFailedJob(jobLogId: string) {
 }
 
 export async function enqueueOrderJob(jobType: OrderJobType, payload: OrderJobPayload) {
-  const redisUrl = process.env.REDIS_URL
+  const useQueue = Boolean(process.env.REDIS_URL && process.env.USE_BULLMQ === 'true')
 
-  if (!redisUrl) {
+  if (!useQueue) {
     return processInline(jobType, payload)
   }
 
@@ -61,7 +62,7 @@ export async function enqueueOrderJob(jobType: OrderJobType, payload: OrderJobPa
   const { Queue } = await import('bullmq')
 
   const queue = new Queue(ORDER_QUEUE_NAME, {
-    connection: { url: redisUrl, maxRetriesPerRequest: null },
+    connection: { url: process.env.REDIS_URL!, maxRetriesPerRequest: null },
   })
 
   await queue.add(jobType, queuePayload, {

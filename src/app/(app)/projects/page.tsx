@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Search, Building2, MapPin } from 'lucide-react'
 import { SimulationPanel } from '@/components/projects/SimulationPanel'
@@ -19,6 +19,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { projectsApi, agentsApi } from '@/lib/api'
 import { isPhaseComplete, phaseProgress } from '@/lib/checklists'
 import { ProjectOpsPanel } from '@/components/projects/ProjectOpsPanel'
+import { ProjectRiskBadge } from '@/components/projects/ProjectRiskBadge'
 import { CLIENT_PHASE_LABELS, PHASES } from '@/lib/phases'
 import { PHASE_PROMPTS } from '@/lib/phase-prompts'
 import { useDebounce, useLiveRefresh } from '@/lib/hooks'
@@ -37,6 +38,14 @@ const STATUS_COLOR: Record<string, string> = {
 }
 
 export default function ProjectsPage() {
+  return (
+    <Suspense fallback={<ListSkeleton rows={4} height="h-14" />}>
+      <ProjectsPageContent />
+    </Suspense>
+  )
+}
+
+function ProjectsPageContent() {
   const { isGestor, role } = useAuth()
   const searchParams = useSearchParams()
   const openFromQuery = searchParams.get('open')
@@ -267,6 +276,8 @@ export default function ProjectsPage() {
                   {PHASE_PROMPTS[project.phase].guia}
                 </p>
 
+                <ProjectRiskBadge projectId={project.id} />
+
                 <PhaseStepper
                   current={project.phase}
                   clientView={role === 'cliente'}
@@ -293,9 +304,11 @@ export default function ProjectsPage() {
                   <QcpsBar scores={project} />
                 </div>
 
-                {isGestor && (
+                {isGestor ? (
                   <ProjectOpsPanel projectId={project.id} projectName={project.name} />
-                )}
+                ) : role === 'cliente' ? (
+                  <ProjectOpsPanel projectId={project.id} projectName={project.name} readOnly />
+                ) : null}
 
                 <ActivityTimeline entityType="project" entityId={project.id} />
               </PanelCard>

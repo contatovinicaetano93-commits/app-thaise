@@ -14,6 +14,15 @@ export async function isJobProcessed(key: string): Promise<boolean> {
   }
 }
 
+export async function clearJobProcessed(key: string) {
+  try {
+    const db = createServiceClient()
+    await db.from('processed_jobs').delete().eq('job_key', key)
+  } catch (e) {
+    console.error('[processed_jobs clear]', e)
+  }
+}
+
 export async function markJobProcessed(
   key: string,
   jobType: string,

@@ -63,7 +63,8 @@ export async function POST(req: NextRequest) {
     if (authErr) return authErr
 
     const body = await req.json()
-    const payload = schema.parse(body)
+    const parsed = schema.parse(body)
+    const payload = { ...parsed, status: 'pending' as const }
     const db = await createSupabaseServer()
 
     const { data, error } = await db

@@ -19,6 +19,7 @@ import { FirstProjectWizard } from '@/components/projects/FirstProjectWizard'
 import { MonthlyReportPanel } from '@/components/reports/MonthlyReportPanel'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { IncompleteProfileBanner } from '@/components/auth/IncompleteProfileBanner'
+import { PortalRoleBanner } from '@/components/auth/PortalRoleBanner'
 import { useMonthlyReport } from '@/lib/hooks/use-monthly-report'
 import { useLiveRefresh } from '@/lib/hooks'
 import { toast } from 'sonner'
@@ -70,17 +71,20 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [nextStep, setNextStep] = useState<{ label: string; href: string; reason: string } | null>(null)
+  const [nextSteps, setNextSteps] = useState<Array<{ label: string; href: string; reason: string; sipoc?: string }>>([])
   const [showWizard, setShowWizard] = useState(false)
 
   const refresh = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
     try {
-      const tasks: Promise<unknown>[] = [
-        dashboardApi.get().then(setData),
-        nextStepApi.get().then(r => setNextStep(r.next)),
-      ]
-      if (isGestor) tasks.push(monthly.refresh())
-      await Promise.all(tasks)
+      const [dash, stepRes] = await Promise.all([
+        dashboardApi.get(),
+        nextStepApi.get(),
+      ])
+      setData(dash)
+      setNextStep(stepRes.next)
+      setNextSteps(stepRes.steps ?? [])
+      if (isGestor) monthly.refresh().catch(() => {})
     } catch (e) {
       if (!silent) toast.error(e instanceof Error ? e.message : 'Erro ao carregar dashboard')
     } finally {
@@ -135,6 +139,7 @@ export default function DashboardPage() {
       />
       <AlertsBanner />
       <IncompleteProfileBanner />
+      <PortalRoleBanner />
 
       <PageFeedHeader
         title="Visão Geral"
@@ -177,6 +182,31 @@ export default function DashboardPage() {
         >
           <p className="font-semibold text-gray-900">{nextStep.label}</p>
           <p className="text-sm text-gray-500 mt-1">{nextStep.reason}</p>
+        </PanelCard>
+      )}
+
+      {isGestor && nextSteps.length > 1 && (
+        <PanelCard
+          panelId="journey-steps"
+          title="Jornada guiada"
+          summary={`${nextSteps.length} ações sugeridas`}
+          priority="secondary"
+        >
+          <div className="space-y-2">
+            {nextSteps.slice(0, 5).map((step, i) => (
+              <a
+                key={step.href + step.label}
+                href={step.href}
+                className="flex items-start gap-3 rounded-xl border border-gray-100 bg-white px-3 py-2.5 hover:border-violet-200 transition-colors"
+              >
+                <span className="text-xs font-bold text-violet-600 mt-0.5">{i + 1}</span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900">{step.label}</p>
+                  <p className="text-xs text-gray-500">{step.reason}</p>
+                </div>
+              </a>
+            ))}
+          </div>
         </PanelCard>
       )}
 

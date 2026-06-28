@@ -29,8 +29,14 @@ export default function ClientsPage() {
     try {
       const data = await clientsApi.list()
       setClients(data)
-    } catch {
-      if (!silent) toast.error('Erro ao carregar clientes')
+    } catch (e) {
+      if (!silent) {
+        const msg = e instanceof Error ? e.message : 'Erro ao carregar clientes'
+        toast.error(msg)
+        if (msg.includes('Sessão expirada')) {
+          window.location.href = '/login?session=expired'
+        }
+      }
     } finally {
       if (!silent) setLoading(false)
     }
