@@ -134,11 +134,16 @@ function PipelinePageContent() {
     try {
       const result = await clientsApi.invitePortal(convertSuccess.clientId)
       const sent = result.email?.sent
-      toast.success(
-        sent
-          ? `Login criado e e-mail enviado para ${convertSuccess.email}`
-          : `Login criado — configure RESEND_API_KEY para envio automático (senha: ${result.temporaryPassword})`,
-      )
+      const emailErr = result.email?.error
+      if (sent) {
+        toast.success(`Login criado e e-mail enviado para ${convertSuccess.email}`)
+      } else if (emailErr) {
+        toast.error(`Login criado, mas e-mail falhou: ${emailErr}`)
+      } else {
+        toast.success(
+          `Login criado — e-mail não enviado. Senha: ${result.temporaryPassword} (mande no WhatsApp)`,
+        )
+      }
       setConvertSuccess(prev => prev ? { ...prev, portalInvited: true } : undefined)
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Erro ao convidar cliente')

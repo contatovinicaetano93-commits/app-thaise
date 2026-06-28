@@ -89,11 +89,13 @@ export function InviteUserForm({ onSuccess }: Props) {
         supplier_id: data.role === 'fornecedor' ? data.supplier_id : null,
         client_id: data.role === 'cliente' ? data.client_id : null,
         send_email: true,
-      }) as AppUser & { inviteEmail?: { sent: boolean; provider: string } }
+      }) as AppUser & { inviteEmail?: { sent: boolean; provider: string; error?: string } }
       if (user.inviteEmail?.sent) {
         toast.success(`Login criado e e-mail enviado para ${data.email}`)
+      } else if (user.inviteEmail?.error) {
+        toast.error(`Login criado, mas o e-mail falhou: ${user.inviteEmail.error}`)
       } else {
-        toast.success('Login criado — e-mail não enviado (configure RESEND_API_KEY na Vercel)')
+        toast.success('Login criado — e-mail não enviado (configure RESEND na Vercel e faça redeploy)')
       }
       onSuccess()
     } catch (e) {
@@ -167,7 +169,9 @@ export function InviteUserForm({ onSuccess }: Props) {
       <p className="text-xs text-gray-500">
         Um e-mail com login, senha e link de acesso será enviado automaticamente
         {process.env.NEXT_PUBLIC_APP_URL ? ` (${process.env.NEXT_PUBLIC_APP_URL}/login)` : ''}.
-        Configure <strong>RESEND_API_KEY</strong> na Vercel para envio real.
+        Configure <strong>RESEND_API_KEY</strong> na Vercel. Sem domínio, use{' '}
+        <code className="text-[11px]">EMAIL_FROM=Estlar &lt;onboarding@resend.dev&gt;</code> e teste enviando
+        para <strong>contato.vinicaetano93@gmail.com</strong> (e-mail da conta Resend).
       </p>
 
       <div className="flex gap-2 pt-2">
