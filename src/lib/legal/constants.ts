@@ -4,6 +4,6 @@ export const PRIVACY_POLICY_VERSION = '2026-07-01'
 export const DATA_CONTROLLER = {
   name: 'Estlar Hub de Arquitetura',
   responsible: 'Thaise Resende',
-  email: 'contato@estlar.com.br',
+  email: 'contato.vinicaetano93@gmail.com',
   location: 'Brasil',
 } as const

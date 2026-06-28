@@ -18,7 +18,8 @@ export interface EmailResult {
 export async function sendEmail(message: EmailMessage): Promise<EmailResult> {
   const sentAt = new Date().toISOString()
   const apiKey = process.env.RESEND_API_KEY
-  const from = process.env.EMAIL_FROM ?? 'Estlar <noreply@estlar.com.br>'
+  // Sem domínio verificado: use onboarding@resend.dev (só envia para o e-mail da conta Resend).
+  const from = process.env.EMAIL_FROM ?? 'Estlar <onboarding@resend.dev>'
 
   if (apiKey) {
     try {

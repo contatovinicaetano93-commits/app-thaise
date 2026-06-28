@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { ArrowRight, ChevronRight } from 'lucide-react'
 import { BRAND } from '@/lib/brand'
+import { DATA_CONTROLLER } from '@/lib/legal/constants'
 
 const METHOD_CYCLES = [
   {
@@ -376,8 +377,8 @@ export function LandingPage() {
             </Link>
           </div>
           <div className="mt-16 flex flex-col items-center gap-2 text-sm text-[var(--estlar-titanium)] sm:flex-row sm:justify-center sm:gap-8">
-            <a href="mailto:contato@estlar.com.br" className="transition-colors hover:text-[var(--estlar-linen)]">
-              contato@estlar.com.br
+            <a href={`mailto:${DATA_CONTROLLER.email}`} className="transition-colors hover:text-[var(--estlar-linen)]">
+              {DATA_CONTROLLER.email}
             </a>
             <span className="hidden sm:inline text-white/20">·</span>
             <a href="tel:+5511911538204" className="transition-colors hover:text-[var(--estlar-linen)]">

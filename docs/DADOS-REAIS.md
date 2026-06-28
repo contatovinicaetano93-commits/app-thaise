@@ -98,6 +98,29 @@ Requer SMTP no Supabase Auth + redirect URLs configuradas.
 
 ---
 
+## Resend sem domínio (conta `contato.vinicaetano93@gmail.com`)
+
+Enquanto não houver domínio próprio:
+
+1. Crie conta em [resend.com](https://resend.com) com **contato.vinicaetano93@gmail.com**
+2. **API Keys** → Create → copie `re_...`
+3. Na **Vercel** → Environment Variables:
+
+| Variável | Valor |
+|----------|--------|
+| `RESEND_API_KEY` | `re_...` |
+| `EMAIL_FROM` | `Estlar <onboarding@resend.dev>` |
+| `NEXT_PUBLIC_APP_URL` | `https://app-thaise.vercel.app` |
+
+4. **Redeploy** na Vercel
+
+**Limite:** e-mails só chegam em **contato.vinicaetano93@gmail.com** (e-mail da conta Resend).  
+Para **clientes reais**, use WhatsApp com senha da tela até comprar domínio e trocar `EMAIL_FROM` para `Estlar <noreply@seudominio.com>`.
+
+Teste logada como gestor: convite ou `POST /api/system/email-test` → deve chegar no Gmail.
+
+---
+
 ## Limpar dados demo (pós-testes)
 
 Preserva contas `@plataforma.com` usadas no smoke test.

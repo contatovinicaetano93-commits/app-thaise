@@ -45,6 +45,6 @@ export function generateWelcomeKitContent(params: {
     'Próximo passo: Reunião de Imersão e Estratégia nas próximas 48 horas.',
     '',
     'Thaise Resende | Diretora Criativa e Executiva, Estlar',
-    'contato@estlar.com.br',
+    'contato.vinicaetano93@gmail.com',
   ].join('\n')
 }

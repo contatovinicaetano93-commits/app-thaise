@@ -10,7 +10,7 @@ export async function GET() {
 
     return ok({
       resend_configured: Boolean(process.env.RESEND_API_KEY),
-      email_from: process.env.EMAIL_FROM ?? '(padrão: Estlar <noreply@estlar.com.br>)',
+      email_from: process.env.EMAIL_FROM ?? '(padrão teste: Estlar <onboarding@resend.dev>)',
       app_url: process.env.NEXT_PUBLIC_APP_URL ?? process.env.VERCEL_URL ?? 'http://localhost:3000',
       llm_configured: isLlmConfigured(),
       gestor_email: profile!.email,
