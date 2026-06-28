@@ -20,7 +20,7 @@ export function MobileSidebar() {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
   const { role, profile, loading } = useAuth()
-  const sections = loading ? [] : navBySection(role)
+  const sections = loading || !role ? [] : navBySection(role)
 
   return (
     <>
@@ -84,9 +84,11 @@ export function MobileSidebar() {
                       <p className="text-[11px] text-slate-500 truncate">{profile.email}</p>
                     </div>
                   </div>
-                  <span className="inline-block mt-2 text-[10px] font-semibold uppercase bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full">
-                    {ROLE_LABELS[role]}
-                  </span>
+                  {role && (
+                    <span className="inline-block mt-2 text-[10px] font-semibold uppercase bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full">
+                      {ROLE_LABELS[role]}
+                    </span>
+                  )}
                   <LogoutButton variant="prominent" className="mt-3" />
                 </div>
               </div>

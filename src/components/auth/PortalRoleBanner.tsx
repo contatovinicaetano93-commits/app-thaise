@@ -7,7 +7,7 @@ import { ROLE_LABELS } from '@/lib/auth/roles'
 
 export function PortalRoleBanner() {
   const { role, profile, loading, isGestor } = useAuth()
-  if (loading || isGestor || !profile) return null
+  if (loading || isGestor || !profile || !role) return null
 
   const isFornecedor = role === 'fornecedor'
 

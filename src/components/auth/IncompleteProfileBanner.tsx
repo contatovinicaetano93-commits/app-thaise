@@ -5,7 +5,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 
 export function IncompleteProfileBanner() {
   const { profile, role, loading } = useAuth()
-  if (loading || !profile) return null
+  if (loading || !profile || !role) return null
 
   if (role === 'fornecedor' && !profile.supplier_id) {
     return (

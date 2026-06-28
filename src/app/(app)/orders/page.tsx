@@ -59,7 +59,7 @@ export default function OrdersPage() {
   }
 
   function statusMenuItems(order: Order) {
-    if (role === 'cliente') return undefined
+    if (!role || role === 'cliente') return undefined
     const current = order.status as OrderStatus
     const allowed = allowedOrderTransitions(role, current)
     if (allowed.length === 0) return undefined

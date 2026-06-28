@@ -6,7 +6,8 @@ import { canManage } from '@/lib/auth/roles'
 
 interface AuthState {
   profile: Profile | null
-  role: UserRole
+  /** null while auth is loading — do not use for permissions until settled */
+  role: UserRole | null
   loading: boolean
   isGestor: boolean
   refresh: () => Promise<void>
@@ -14,7 +15,7 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState>({
   profile: null,
-  role: 'cliente',
+  role: null,
   loading: true,
   isGestor: false,
   refresh: async () => {},
@@ -39,12 +40,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { refresh() }, [refresh])
 
-  const role = profile?.role ?? 'cliente'
+  const role = loading ? null : (profile?.role ?? 'cliente')
 
   return (
     <AuthContext.Provider value={{
       profile,
-      role: loading ? 'cliente' : role,
+      role,
       loading,
       isGestor: !loading && profile ? canManage(profile.role) : false,
       refresh,
