@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { Input, Select, Textarea } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { productsApi, suppliersApi } from '@/lib/api'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { toast } from 'sonner'
 import type { Product, Supplier } from '@/types/database'
 
@@ -29,14 +30,18 @@ const CATEGORIES = ['Revestimento', 'Mobiliário', 'Iluminação', 'Hidráulica'
 
 interface Props {
   product?: Product
+  defaultSupplierId?: string
   onSuccess: () => void
   onCancel: () => void
 }
 
-export function ProductForm({ product, onSuccess, onCancel }: Props) {
+export function ProductForm({ product, defaultSupplierId, onSuccess, onCancel }: Props) {
+  const { role, profile } = useAuth()
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
+  const isFornecedor = role === 'fornecedor'
+  const linkedSupplier = suppliers.find(s => s.id === profile?.supplier_id)
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: product ?? { active: true, unit: 'un' },
   })
@@ -44,6 +49,14 @@ export function ProductForm({ product, onSuccess, onCancel }: Props) {
   useEffect(() => {
     suppliersApi.list().then(setSuppliers).catch(() => toast.error('Erro ao carregar fornecedores'))
   }, [])
+
+  useEffect(() => {
+    if (isFornecedor && profile?.supplier_id && !product) {
+      setValue('supplier_id', profile.supplier_id)
+    } else if (!product && defaultSupplierId) {
+      setValue('supplier_id', defaultSupplierId)
+    }
+  }, [isFornecedor, profile?.supplier_id, product, defaultSupplierId, setValue])
 
   async function onSubmit(data: FormData) {
     try {
@@ -62,15 +75,35 @@ export function ProductForm({ product, onSuccess, onCancel }: Props) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {isFornecedor && linkedSupplier?.status !== 'active' && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Seu cadastro ainda aguarda homologação pela Estlar. Produtos só entram no catálogo após aprovação.
+        </div>
+      )}
+      {isFornecedor && linkedSupplier?.status === 'active' && (
+        <div className="rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2 text-sm text-indigo-900">
+          Produtos ficam no seu catálogo. A Estlar vincula obra + produto ao criar pedidos para empreendimentos homologados.
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
-          <Select
-            label="Fornecedor *"
-            options={suppliers.map(s => ({ value: s.id, label: s.name }))}
-            placeholder="Selecione o fornecedor..."
-            error={errors.supplier_id?.message}
-            {...register('supplier_id')}
-          />
+          {isFornecedor ? (
+            <>
+              <input type="hidden" {...register('supplier_id')} />
+              <p className="text-sm font-medium text-gray-700 mb-1">Fornecedor</p>
+              <p className="text-sm text-gray-600 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                {linkedSupplier?.name ?? 'Seu fornecedor vinculado'}
+              </p>
+            </>
+          ) : (
+            <Select
+              label="Fornecedor *"
+              options={suppliers.filter(s => s.status === 'active').map(s => ({ value: s.id, label: s.name }))}
+              placeholder="Selecione o fornecedor homologado..."
+              error={errors.supplier_id?.message}
+              {...register('supplier_id')}
+            />
+          )}
         </div>
         <div className="col-span-2">
           <Input label="Nome do produto *" placeholder="Porcelanato 60x60 Mármore" error={errors.name?.message} {...register('name')} />
@@ -120,7 +153,7 @@ export function ProductForm({ product, onSuccess, onCancel }: Props) {
       </div>
       <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
         <Button type="button" variant="secondary" onClick={onCancel}>Cancelar</Button>
-        <Button type="submit" loading={isSubmitting}>
+        <Button type="submit" loading={isSubmitting} disabled={isFornecedor && linkedSupplier?.status !== 'active'}>
           {product ? 'Salvar alterações' : 'Cadastrar produto'}
         </Button>
       </div>

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Plus, Search, ExternalLink, Phone, Mail } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { SupplierForm } from '@/components/suppliers/SupplierForm'
@@ -15,6 +16,7 @@ import { suppliersApi, agentsApi } from '@/lib/api'
 import { useDebounce, useLiveRefresh } from '@/lib/hooks'
 import { toast } from 'sonner'
 import type { Supplier } from '@/types/database'
+import { inviteUserUrl, productCreateUrl } from '@/lib/flow-links'
 
 const STATUS_LABEL: Record<string, string> = { active: 'Ativo', inactive: 'Inativo', pending: 'Pendente' }
 const STATUS_COLOR: Record<string, string> = {
@@ -24,6 +26,16 @@ const STATUS_COLOR: Record<string, string> = {
 }
 
 export default function SuppliersPage() {
+  return (
+    <Suspense fallback={<ListSkeleton rows={3} height="h-28" />}>
+      <SuppliersPageContent />
+    </Suspense>
+  )
+}
+
+function SuppliersPageContent() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search)
@@ -47,6 +59,13 @@ export default function SuppliersPage() {
 
   useEffect(() => { load() }, [load])
   useLiveRefresh(load, ['suppliers'])
+
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      setEditing(undefined)
+      setModalOpen(true)
+    }
+  }, [searchParams])
 
   async function handleDelete() {
     if (!deleting) return
@@ -85,7 +104,7 @@ export default function SuppliersPage() {
         subtitle={`${suppliers.length} cadastrado${suppliers.length !== 1 ? 's' : ''}`}
         menuItems={[
           { label: 'Novo fornecedor', onClick: () => { setEditing(undefined); setModalOpen(true) } },
-          { label: 'Criar login de fornecedor', href: '/users?role=fornecedor' },
+          { label: 'Homologação', href: '/pending-suppliers' },
         ]}
       />
 
@@ -138,7 +157,15 @@ export default function SuppliersPage() {
                 </>
               }
               menuItems={[
-                { label: 'Criar login', href: `/users?role=fornecedor&supplier_id=${supplier.id}` },
+                ...(supplier.status === 'pending'
+                  ? [{ label: 'Homologar', href: '/pending-suppliers' }]
+                  : supplier.status === 'active'
+                    ? [
+                        { label: 'Ver catálogo', href: `/products?supplier_id=${supplier.id}` },
+                        { label: 'Cadastrar produto', href: productCreateUrl(supplier.id) },
+                        { label: 'Convidar ao portal', href: inviteUserUrl({ role: 'fornecedor', supplierId: supplier.id }) },
+                      ]
+                    : []),
                 { label: 'Recalcular QCPS', onClick: () => handleScore(supplier.id), disabled: scoring === supplier.id },
                 { label: 'Editar', onClick: () => { setEditing(supplier); setModalOpen(true) } },
                 { label: 'Excluir', onClick: () => setDeleting(supplier), danger: true },

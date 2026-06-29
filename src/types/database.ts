@@ -160,6 +160,7 @@ export interface Product {
   lead_time_days?: number
   active: boolean
   created_at: string
+  supplier?: Pick<Supplier, 'id' | 'name'>
 }
 
 export interface Order {

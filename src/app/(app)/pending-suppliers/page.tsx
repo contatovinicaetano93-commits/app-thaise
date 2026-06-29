@@ -1,16 +1,20 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Truck } from 'lucide-react'
 import { pendingSuppliersApi } from '@/lib/api'
 import { ListSkeleton } from '@/components/ui/EmptyState'
 import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { PanelCard } from '@/components/ui/PanelCard'
 import { PanelToolbar } from '@/components/ui/PanelToolbar'
+import { Button } from '@/components/ui/Button'
+import { inviteUserUrl, productCreateUrl } from '@/lib/flow-links'
 import { toast } from 'sonner'
 import type { Supplier } from '@/types/database'
 
 export default function PendingSuppliersPage() {
+  const router = useRouter()
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -24,7 +28,7 @@ export default function PendingSuppliersPage() {
   async function review(id: string, action: 'approve' | 'reject') {
     try {
       await pendingSuppliersApi.review(id, action)
-      toast.success(action === 'approve' ? 'Fornecedor homologado' : 'Fornecedor rejeitado')
+      toast.success(action === 'approve' ? 'Fornecedor homologado — convide ao portal e aguarde catálogo' : 'Fornecedor rejeitado')
       load()
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Erro')
@@ -38,8 +42,11 @@ export default function PendingSuppliersPage() {
       <PageFeedHeader
         title="Homologação"
         icon={Truck}
-        subtitle="SIPOC: fornecedores pendentes aguardam curadoria (S)"
-        menuItems={[{ label: 'Ver fornecedores', href: '/suppliers' }]}
+        subtitle="Gate SIPOC (S): só fornecedores aprovados entram no catálogo curado"
+        menuItems={[
+          { label: 'Cadastrar fornecedor', href: '/suppliers?new=1' },
+          { label: 'Catálogo curado', href: '/products' },
+        ]}
       />
 
       {panels.length > 0 && <PanelToolbar sections={panels} />}
@@ -52,9 +59,14 @@ export default function PendingSuppliersPage() {
           title="Nenhum fornecedor pendente"
           icon={Truck}
           collapsible={false}
-          summary="Todos os fornecedores foram homologados"
+          summary="Todos homologados — veja inputs em Catálogo curado"
         >
-          <p className="text-sm text-gray-500 text-center">Todos os fornecedores foram homologados.</p>
+          <p className="text-sm text-gray-500 text-center mb-3">Nenhum fornecedor aguardando curadoria.</p>
+          <div className="flex justify-center">
+            <Button variant="secondary" onClick={() => router.push('/products')}>
+              Ver catálogo curado
+            </Button>
+          </div>
         </PanelCard>
       ) : (
         <div className="space-y-2">
@@ -73,6 +85,16 @@ export default function PendingSuppliersPage() {
             >
               <p className="text-sm text-gray-500">{s.category} · {s.contact_email}</p>
               <p className="text-xs text-gray-400 mt-1">{s.contact_phone}</p>
+              <div className="flex flex-wrap gap-2 mt-3">
+                <Button onClick={() => review(s.id, 'approve')}>Aprovar</Button>
+                <Button variant="danger" onClick={() => review(s.id, 'reject')}>Rejeitar</Button>
+              </div>
+              <p className="text-xs text-gray-500 mt-3">
+                Após aprovar:{' '}
+                <a href={inviteUserUrl({ role: 'fornecedor', supplierId: s.id })} className="text-violet-600 hover:underline">convidar ao portal</a>
+                {' · '}
+                <a href={productCreateUrl(s.id)} className="text-violet-600 hover:underline">cadastrar produto</a>
+              </p>
             </PanelCard>
           ))}
         </div>

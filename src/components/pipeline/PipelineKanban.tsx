@@ -21,11 +21,17 @@ function OpportunityCard({
   opp,
   onEdit,
   onMarkLost,
+  onRequestConvert,
 }: {
   opp: Opportunity
   onEdit: (o: Opportunity) => void
   onMarkLost: (o: Opportunity) => void
+  onRequestConvert?: (o: Opportunity) => void
 }) {
+  const canClose =
+    opp.stage === CONVERT_ELIGIBLE_STAGE &&
+    opp.signal_paid &&
+    onRequestConvert
   return (
     <div
       draggable
@@ -54,7 +60,18 @@ function OpportunityCard({
           )}
         </div>
       </div>
-      <div className="flex justify-end mt-2 pt-2 border-t border-gray-50">
+      <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-50 gap-2">
+        {canClose ? (
+          <button
+            type="button"
+            onClick={() => onRequestConvert(opp)}
+            className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-900 flex items-center gap-1"
+          >
+            <Trophy size={12} /> Fechar obra
+          </button>
+        ) : (
+          <span />
+        )}
         <button
           type="button"
           onClick={() => onMarkLost(opp)}
@@ -76,6 +93,7 @@ function KanbanColumn({
   onDrop,
   onEdit,
   onMarkLost,
+  onRequestConvert,
 }: {
   stageId: string
   label: string
@@ -85,6 +103,7 @@ function KanbanColumn({
   onDrop: (id: string, stage: string) => void
   onEdit: (o: Opportunity) => void
   onMarkLost: (o: Opportunity) => void
+  onRequestConvert?: (o: Opportunity) => void
 }) {
   const [over, setOver] = useState(false)
   const isWon = variant === 'won'
@@ -119,7 +138,7 @@ function KanbanColumn({
       </div>
       <div className="flex-1 p-2 space-y-2 min-h-[120px] max-h-[calc(100vh-280px)] overflow-y-auto">
         {items.map(opp => (
-          <OpportunityCard key={opp.id} opp={opp} onEdit={onEdit} onMarkLost={onMarkLost} />
+          <OpportunityCard key={opp.id} opp={opp} onEdit={onEdit} onMarkLost={onMarkLost} onRequestConvert={onRequestConvert} />
         ))}
         {isWon && (
           <p className="text-xs text-emerald-700/70 text-center py-6 px-2">
@@ -178,6 +197,7 @@ export function PipelineKanban({ opportunities, onRefresh, onEdit, onMarkLost, o
           onDrop={handleDrop}
           onEdit={onEdit}
           onMarkLost={onMarkLost}
+          onRequestConvert={onRequestConvert}
         />
       ))}
       <KanbanColumn
@@ -188,6 +208,7 @@ export function PipelineKanban({ opportunities, onRefresh, onEdit, onMarkLost, o
         onDrop={handleDrop}
         onEdit={onEdit}
         onMarkLost={onMarkLost}
+        onRequestConvert={onRequestConvert}
         variant="won"
       />
     </div>

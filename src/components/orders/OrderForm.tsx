@@ -24,11 +24,13 @@ type FormData = z.infer<typeof schema>
 
 interface Props {
   defaultProjectId?: string
+  defaultClientId?: string
+  defaultSupplierId?: string
   onSuccess: () => void
   onCancel: () => void
 }
 
-export function OrderForm({ defaultProjectId, onSuccess, onCancel }: Props) {
+export function OrderForm({ defaultProjectId, defaultClientId, defaultSupplierId, onSuccess, onCancel }: Props) {
   const [clients, setClients] = useState<Client[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -38,7 +40,13 @@ export function OrderForm({ defaultProjectId, onSuccess, onCancel }: Props) {
 
   const { register, handleSubmit, setValue, control, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { project_id: defaultProjectId ?? '', quantity: 1, unit_price: 0 },
+    defaultValues: {
+      project_id: defaultProjectId ?? '',
+      client_id: defaultClientId ?? '',
+      supplier_id: defaultSupplierId ?? '',
+      quantity: 1,
+      unit_price: 0,
+    },
   })
 
   const projectId = useWatch({ control, name: 'project_id' })
@@ -49,9 +57,20 @@ export function OrderForm({ defaultProjectId, onSuccess, onCancel }: Props) {
 
   useEffect(() => {
     Promise.all([clientsApi.list(), suppliersApi.list(), projectsApi.list()])
-      .then(([c, s, p]) => { setClients(c); setSuppliers(s); setProjects(p) })
+      .then(([c, s, p]) => {
+        setClients(c)
+        setSuppliers(s)
+        setProjects(p)
+        if (defaultProjectId) {
+          const project = p.find(x => x.id === defaultProjectId)
+          if (project?.client_id) setValue('client_id', project.client_id)
+        } else if (defaultClientId) {
+          setValue('client_id', defaultClientId)
+        }
+        if (defaultSupplierId) setValue('supplier_id', defaultSupplierId)
+      })
       .catch(() => toast.error('Erro ao carregar dados'))
-  }, [])
+  }, [defaultProjectId, defaultClientId, defaultSupplierId, setValue])
 
   useEffect(() => {
     if (!projectId) return

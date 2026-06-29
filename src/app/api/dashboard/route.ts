@@ -12,11 +12,12 @@ export async function GET() {
 
     const db = await createSupabaseServer()
 
-    const [suppliersRes, clientsRes, ordersRes, projectsRes] = await Promise.all([
+    const [suppliersRes, clientsRes, ordersRes, projectsRes, productsRes] = await Promise.all([
       db.from('suppliers').select('id, name, status, score_q, score_c, score_p, score_s, score'),
       db.from('clients').select('id', { count: 'exact', head: true }),
       db.from('orders').select('id, status, total_price, created_at, supplier_id, client:clients(name), supplier:suppliers(name)'),
       db.from('projects').select('id', { count: 'exact', head: true }),
+      db.from('products').select('id, supplier_id, created_at, active'),
     ])
 
     if (suppliersRes.error) return ok(emptyDashboard(suppliersRes.error.message))
@@ -106,6 +107,21 @@ export async function GET() {
     const activeSuppliers = suppliers.filter(s => s.status === 'active').length
     const pendingSuppliers = suppliers.filter(s => s.status === 'pending').length
 
+    const products = (productsRes.data ?? []) as Array<{
+      id: string
+      supplier_id: string
+      created_at: string
+      active: boolean
+    }>
+    const weekAgo = new Date(now)
+    weekAgo.setDate(weekAgo.getDate() - 7)
+    const weekAgoMs = weekAgo.getTime()
+
+    const newThisWeek = products.filter(p => new Date(p.created_at).getTime() >= weekAgoMs)
+    const suppliersThisWeek = new Set(newThisWeek.map(p => p.supplier_id)).size
+    const activeSupplierIds = new Set(suppliers.filter(s => s.status === 'active').map(s => s.id))
+    const catalogProducts = products.filter(p => p.active && activeSupplierIds.has(p.supplier_id))
+
     return ok({
       counts: {
         suppliers: suppliers.length,
@@ -117,6 +133,12 @@ export async function GET() {
         openOrders: openOrders.length,
         monthRevenue,
         monthOrders,
+      },
+      catalogIntake: {
+        newThisWeek: newThisWeek.length,
+        suppliersThisWeek,
+        totalInCatalog: catalogProducts.length,
+        totalSuppliersInCatalog: new Set(catalogProducts.map(p => p.supplier_id)).size,
       },
       monthly,
       recentOrders,
@@ -133,6 +155,12 @@ function emptyDashboard(error?: string) {
       suppliers: 0, activeSuppliers: 0, pendingSuppliers: 0,
       clients: 0, projects: 0, orders: 0, openOrders: 0,
       monthRevenue: 0, monthOrders: 0,
+    },
+    catalogIntake: {
+      newThisWeek: 0,
+      suppliersThisWeek: 0,
+      totalInCatalog: 0,
+      totalSuppliersInCatalog: 0,
     },
     monthly: MONTHS.slice(0, 6).map(m => ({ mes: m, pedidos: 0, receita: 0 })),
     recentOrders: [],

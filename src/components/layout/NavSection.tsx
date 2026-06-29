@@ -18,7 +18,7 @@ export function NavSection({
   onNavigate?: () => void
 }) {
   const hasActive = items.some(i => pathname === i.href || pathname.startsWith(`${i.href}/`))
-  const [open, setOpen] = useState(hasActive || section === 'operacao')
+  const [open, setOpen] = useState(hasActive || section === 'operacao' || section === 'fluxo')
 
   // Reabre a seção quando a rota ativa muda (navegação client-side)
   useEffect(() => {

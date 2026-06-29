@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Truck, Users, Package, ShoppingCart, Check, ArrowRight, Kanban } from 'lucide-react'
+import { isSimpleMode } from '@/lib/app-mode'
 
-const GESTOR_STEPS = [
+const GESTOR_STEPS_FULL = [
   { icon: Package, color: 'bg-stone-100 text-stone-800', title: 'Bem-vinda ao Hub Estlar', desc: 'Inteligência para curadoria de ativos, empreendimentos e consolidação patrimonial.', cta: 'Começar' },
   { icon: Kanban, color: 'bg-violet-100 text-violet-600', title: 'Pipeline comercial', desc: 'Leads do intake → briefing → proposta → Obra Fechada → empreendimento Fase A.', cta: 'Entendido', action: '/pipeline', actionLabel: 'Ver pipeline →' },
   { icon: Truck, color: 'bg-indigo-100 text-indigo-600', title: 'Homologue fornecedores', desc: 'Fornecedores pendentes passam por curadoria antes de entrar no catálogo.', cta: 'Entendido', action: '/pending-suppliers', actionLabel: 'Ver fila →' },
@@ -12,14 +13,40 @@ const GESTOR_STEPS = [
   { icon: ShoppingCart, color: 'bg-rose-100 text-rose-600', title: 'Pronto!', desc: 'Use o assistente ✨ e o card "Próximo passo" no dashboard.', cta: 'Ir para o Dashboard' },
 ]
 
+const GESTOR_STEPS_SIMPLE = [
+  {
+    icon: Package,
+    color: 'bg-stone-100 text-stone-800',
+    title: 'Hub de curadoria interna',
+    desc: 'Você homologa fornecedores, vê os produtos deles no catálogo curado e monta o melhor pedido para cada obra.',
+    cta: 'Entendido',
+  },
+  {
+    icon: Kanban,
+    color: 'bg-violet-100 text-violet-600',
+    title: 'Fluxo em 5 passos',
+    desc: 'Pipeline → Obra → Homologação → Catálogo curado → Pedido → Relatório 360 ao cliente.',
+    cta: 'Entendido',
+    action: '/pipeline',
+    actionLabel: 'Começar pelo pipeline →',
+  },
+  {
+    icon: ShoppingCart,
+    color: 'bg-rose-100 text-rose-600',
+    title: 'Pronto',
+    desc: 'O menu lateral segue esse fluxo. Use "Próximo passo" no dashboard quando precisar.',
+    cta: 'Ir para o Dashboard',
+  },
+]
+
 const FORNECEDOR_STEPS = [
-  { icon: Package, color: 'bg-amber-100 text-amber-600', title: 'Portal Fornecedor', desc: 'Gerencie seu catálogo e acompanhe pedidos aprovados.', cta: 'Começar' },
-  { icon: ShoppingCart, color: 'bg-rose-100 text-rose-600', title: 'Pedidos', desc: 'Você verá apenas os pedidos vinculados ao seu fornecedor.', cta: 'Ver pedidos', action: '/orders' },
+  { icon: Package, color: 'bg-amber-100 text-amber-600', title: 'Portal Fornecedor', desc: 'Cadastre produtos no catálogo. A Estlar monta pedidos das obras — você executa em Meus pedidos.', cta: 'Começar' },
+  { icon: ShoppingCart, color: 'bg-rose-100 text-rose-600', title: 'Pedidos', desc: 'Você verá apenas os pedidos vinculados ao seu fornecedor homologado.', cta: 'Ver pedidos', action: '/orders' },
 ]
 
 const CLIENTE_STEPS = [
-  { icon: Package, color: 'bg-stone-100 text-stone-700', title: 'Refúgio Digital', desc: 'Acompanhe seus ativos e empreendimentos com precisão editorial.', cta: 'Começar' },
-  { icon: Users, color: 'bg-emerald-100 text-emerald-600', title: 'Empreendimentos', desc: 'Veja em qual fase A–F está cada projeto.', cta: 'Ver projetos', action: '/projects' },
+  { icon: Package, color: 'bg-stone-100 text-stone-700', title: 'Portal do Cliente', desc: 'Somente leitura: acompanhe sua obra, pedidos e Relatório 360 enviado pela Estlar.', cta: 'Começar' },
+  { icon: Users, color: 'bg-emerald-100 text-emerald-600', title: 'Minha obra', desc: 'Veja em qual fase A–F está seu empreendimento.', cta: 'Ver obra', action: '/projects' },
 ]
 
 export default function OnboardingPage() {
@@ -37,6 +64,7 @@ export default function OnboardingPage() {
       .catch(() => {})
   }, [])
 
+  const GESTOR_STEPS = isSimpleMode() ? GESTOR_STEPS_SIMPLE : GESTOR_STEPS_FULL
   const STEPS = role === 'fornecedor' ? FORNECEDOR_STEPS : role === 'cliente' ? CLIENTE_STEPS : GESTOR_STEPS
   const current = STEPS[step]
   const Icon = current.icon

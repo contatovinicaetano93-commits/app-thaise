@@ -24,11 +24,12 @@ type FormData = z.infer<typeof schema>
 
 interface Props {
   project?: Project
+  defaultClientId?: string
   onSuccess: () => void
   onCancel: () => void
 }
 
-export function ProjectForm({ project, onSuccess, onCancel }: Props) {
+export function ProjectForm({ project, defaultClientId, onSuccess, onCancel }: Props) {
   const [clients, setClients] = useState<Client[]>([])
   const [qcps, setQcps] = useState({
     score_q: project?.score_q ?? 5,
@@ -37,11 +38,11 @@ export function ProjectForm({ project, onSuccess, onCancel }: Props) {
     score_s: project?.score_s ?? 5,
   })
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       name: project?.name ?? '',
-      client_id: project?.client_id ?? '',
+      client_id: project?.client_id ?? defaultClientId ?? '',
       location: project?.location ?? '',
       description: project?.description ?? '',
       status: project?.status ?? 'active',
@@ -52,6 +53,10 @@ export function ProjectForm({ project, onSuccess, onCancel }: Props) {
   useEffect(() => {
     clientsApi.list().then(setClients).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (!project && defaultClientId) setValue('client_id', defaultClientId)
+  }, [project, defaultClientId, setValue])
 
   async function onSubmit(data: FormData) {
     try {

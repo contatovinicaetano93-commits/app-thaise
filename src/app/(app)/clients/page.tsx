@@ -14,6 +14,7 @@ import { clientsApi } from '@/lib/api'
 import { useDebounce, useLiveRefresh } from '@/lib/hooks'
 import { toast } from 'sonner'
 import type { Client } from '@/types/database'
+import { projectCreateUrl, inviteUserUrl } from '@/lib/flow-links'
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([])
@@ -70,8 +71,7 @@ export default function ClientsPage() {
         subtitle={`${clients.length} cadastrado${clients.length !== 1 ? 's' : ''}`}
         menuItems={[
           { label: 'Novo cliente', onClick: () => { setEditing(undefined); setModalOpen(true) } },
-          { label: 'Criar login de cliente', href: '/users?role=cliente' },
-          { label: 'Exportar CSV', onClick: () => clientsApi.exportCsv().catch(() => toast.error('Erro ao exportar')) },
+          { label: 'Convidar ao portal', href: '/users?role=cliente' },
         ]}
       />
 
@@ -119,7 +119,8 @@ export default function ClientsPage() {
                 </span>
               )}
               menuItems={[
-                { label: 'Criar login', href: `/users?role=cliente&client_id=${client.id}` },
+                { label: 'Criar empreendimento', href: projectCreateUrl(client.id) },
+                { label: 'Convidar ao portal', href: inviteUserUrl({ role: 'cliente', clientId: client.id }) },
                 { label: 'Editar', onClick: () => { setEditing(client); setModalOpen(true) } },
                 { label: 'Excluir', onClick: () => setDeleting(client), danger: true },
               ]}

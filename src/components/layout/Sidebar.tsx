@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { ROLE_LABELS } from '@/lib/auth/roles'
+import { ROLE_CANON } from '@/lib/flow-roles'
 import { navBySection } from '@/components/layout/nav-config'
 import { LogoutButton } from '@/components/layout/LogoutButton'
 import { NavSection } from '@/components/layout/NavSection'
@@ -79,9 +80,14 @@ export function Sidebar() {
               </div>
             </div>
             {role && (
-              <span className="inline-block mt-2 text-[10px] font-semibold uppercase tracking-wide bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full">
-                {ROLE_LABELS[role]}
-              </span>
+              <>
+                <span className="inline-block mt-2 text-[10px] font-semibold uppercase tracking-wide bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full">
+                  {ROLE_LABELS[role]}
+                </span>
+                <p className="text-[10px] text-slate-500 mt-2 leading-snug line-clamp-2">
+                  {ROLE_CANON[role].does}
+                </p>
+              </>
             )}
             <LogoutButton variant="prominent" className="mt-3" />
           </div>

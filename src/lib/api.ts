@@ -48,6 +48,12 @@ export interface DashboardStats {
     monthRevenue: number
     monthOrders: number
   }
+  catalogIntake: {
+    newThisWeek: number
+    suppliersThisWeek: number
+    totalInCatalog: number
+    totalSuppliersInCatalog: number
+  }
   monthly: { mes: string; pedidos: number; receita: number }[]
   recentOrders: { id: string; client: string; supplier: string; value: number; status: string; date: string }[]
   topSuppliers: { id: string; nome: string; score: number; pedidos: number }[]
@@ -105,7 +111,7 @@ export const clientsApi = {
 
   invitePortal: (id: string, data?: { password?: string; full_name?: string }): ApiResult<{
     user: AppUser
-    email?: { sent: boolean; provider: string }
+    email?: { sent: boolean; provider: string; error?: string }
     temporaryPassword?: string
   }> =>
     request(`/api/clients/${id}/invite-portal`, { method: 'POST', body: JSON.stringify(data ?? {}) }),

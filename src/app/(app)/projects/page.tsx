@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Search, Building2, MapPin } from 'lucide-react'
+import { Search, Building2, MapPin, Plus } from 'lucide-react'
 import { SimulationPanel } from '@/components/projects/SimulationPanel'
 import { Modal } from '@/components/ui/Modal'
 import { ProjectForm } from '@/components/projects/ProjectForm'
@@ -26,6 +26,7 @@ import { useDebounce, useLiveRefresh } from '@/lib/hooks'
 import { toast } from 'sonner'
 import type { Project } from '@/types/database'
 import type { PhaseChecklist as PhaseChecklistType } from '@/lib/auth/roles'
+import { inviteUserUrl, orderCreateUrl } from '@/lib/flow-links'
 
 const STATUS_LABEL: Record<string, string> = {
   active: 'Ativo', paused: 'Pausado', completed: 'Concluído', cancelled: 'Cancelado',
@@ -49,6 +50,8 @@ function ProjectsPageContent() {
   const { isGestor, role } = useAuth()
   const searchParams = useSearchParams()
   const openFromQuery = searchParams.get('open')
+  const newFromQuery = searchParams.get('new') === '1'
+  const clientIdFromQuery = searchParams.get('client_id') ?? undefined
   const [projects, setProjects] = useState<Project[]>([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -60,6 +63,7 @@ function ProjectsPageContent() {
   const [advancing, setAdvancing] = useState<string | null>(null)
   const [scoring, setScoring] = useState<string | null>(null)
   const [forceOpenId, setForceOpenId] = useState<string | null>(null)
+  const [newClientId, setNewClientId] = useState<string | undefined>()
   const debouncedSearch = useDebounce(search)
 
   const load = useCallback(async () => {
@@ -79,6 +83,20 @@ function ProjectsPageContent() {
   useEffect(() => {
     if (openFromQuery) setForceOpenId(openFromQuery)
   }, [openFromQuery])
+
+  useEffect(() => {
+    if (newFromQuery && isGestor) {
+      setEditing(undefined)
+      setNewClientId(clientIdFromQuery)
+      setModalOpen(true)
+    }
+  }, [newFromQuery, clientIdFromQuery, isGestor])
+
+  function openNewProject(clientId?: string) {
+    setEditing(undefined)
+    setNewClientId(clientId)
+    setModalOpen(true)
+  }
 
   async function handleAdvance(id: string) {
     setAdvancing(id)
@@ -173,11 +191,20 @@ function ProjectsPageContent() {
         title="Empreendimentos"
         subtitle="Jornada guiada A → F · checklist obrigatório"
         menuItems={isGestor ? [
-          { label: 'Novo empreendimento', onClick: () => { setEditing(undefined); setModalOpen(true) } },
+          { label: 'Novo empreendimento', onClick: () => openNewProject() },
+          { label: 'Pipeline comercial', href: '/pipeline' },
         ] : role === 'cliente' ? [
           { label: 'Ver pedidos', href: '/orders' },
         ] : undefined}
       />
+
+      {isGestor && (
+        <div className="mb-4">
+          <Button onClick={() => openNewProject()}>
+            <Plus size={16} /> Novo empreendimento
+          </Button>
+        </div>
+      )}
 
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="relative flex-1">
@@ -231,8 +258,8 @@ function ProjectsPageContent() {
               ? 'Ajuste os filtros ou tente outro termo.'
               : 'Crie o primeiro e acompanhe as fases A até F.'
           }
-          actionLabel={isGestor && !search && !statusFilter && !phaseFilter ? 'Novo Empreendimento' : undefined}
-          onAction={isGestor && !search && !statusFilter && !phaseFilter ? () => { setEditing(undefined); setModalOpen(true) } : undefined}
+          actionLabel={isGestor && !search && !statusFilter && !phaseFilter ? 'Novo empreendimento' : undefined}
+          onAction={isGestor && !search && !statusFilter && !phaseFilter ? () => openNewProject() : undefined}
         />
       ) : (
         <div className="space-y-2">
@@ -259,6 +286,8 @@ function ProjectsPageContent() {
                   </span>
                 }
                 menuItems={isGestor ? [
+                  { label: 'Criar pedido desta obra', href: orderCreateUrl({ projectId: project.id, clientId: project.client_id ?? undefined }) },
+                  ...(project.client_id ? [{ label: 'Convidar cliente', href: inviteUserUrl({ role: 'cliente', clientId: project.client_id }) }] : []),
                   { label: 'Gerar resumo', onClick: () => handleSummary(project.id) },
                   { label: 'Recalcular QCPS', onClick: () => handleScore(project.id), disabled: scoring === project.id },
                   { label: 'Editar', onClick: () => { setEditing(project); setModalOpen(true) } },
@@ -317,8 +346,13 @@ function ProjectsPageContent() {
         </div>
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar Empreendimento' : 'Novo Empreendimento'} size="lg">
-        <ProjectForm project={editing} onSuccess={() => { setModalOpen(false); load() }} onCancel={() => setModalOpen(false)} />
+      <Modal open={modalOpen} onClose={() => { setModalOpen(false); setNewClientId(undefined) }} title={editing ? 'Editar Empreendimento' : 'Novo Empreendimento'} size="lg">
+        <ProjectForm
+          project={editing}
+          defaultClientId={editing ? undefined : newClientId}
+          onSuccess={() => { setModalOpen(false); setNewClientId(undefined); load() }}
+          onCancel={() => { setModalOpen(false); setNewClientId(undefined) }}
+        />
       </Modal>
 
       <Modal open={!!deleting} onClose={() => setDeleting(undefined)} title="Confirmar exclusão" size="sm">

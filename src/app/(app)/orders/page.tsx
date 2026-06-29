@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Search, ShoppingCart } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { OrderForm } from '@/components/orders/OrderForm'
@@ -25,11 +26,23 @@ const STATUS_COLOR: Record<string, string> = {
 }
 
 export default function OrdersPage() {
+  return (
+    <Suspense fallback={<ListSkeleton rows={4} />}>
+      <OrdersPageContent />
+    </Suspense>
+  )
+}
+
+function OrdersPageContent() {
+  const searchParams = useSearchParams()
   const { isGestor, role } = useAuth()
   const [orders, setOrders] = useState<Order[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
+  const defaultProjectId = searchParams.get('project_id') ?? undefined
+  const defaultClientId = searchParams.get('client_id') ?? undefined
+  const defaultSupplierId = searchParams.get('supplier_id') ?? undefined
   const debouncedSearch = useDebounce(search)
 
   const load = useCallback(async (silent = false) => {
@@ -46,6 +59,10 @@ export default function OrdersPage() {
 
   useEffect(() => { load() }, [load])
   useLiveRefresh(load, ['orders'])
+
+  useEffect(() => {
+    if (searchParams.get('new') === '1' && isGestor) setModalOpen(true)
+  }, [searchParams, isGestor])
 
   async function updateStatus(id: string, status: string) {
     try {
@@ -85,12 +102,16 @@ export default function OrdersPage() {
       <PageFeedHeader
         title="Pedidos"
         subtitle={
-          <>
-            {orders.length} pedido{orders.length !== 1 ? 's' : ''} ·{' '}
-            <span className="text-violet-600 font-medium">
-              {totalAberto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} em aberto
-            </span>
-          </>
+          role === 'cliente' ? (
+            'Acompanhamento — somente leitura'
+          ) : (
+            <>
+              {orders.length} pedido{orders.length !== 1 ? 's' : ''} ·{' '}
+              <span className="text-violet-600 font-medium">
+                {totalAberto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} em aberto
+              </span>
+            </>
+          )
         }
         menuItems={isGestor ? [
           { label: 'Novo pedido', onClick: () => setModalOpen(true) },
@@ -183,6 +204,9 @@ export default function OrdersPage() {
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Novo Pedido" size="lg">
         <OrderForm
+          defaultProjectId={defaultProjectId}
+          defaultClientId={defaultClientId}
+          defaultSupplierId={defaultSupplierId}
           onSuccess={() => { setModalOpen(false); load() }}
           onCancel={() => setModalOpen(false)}
         />

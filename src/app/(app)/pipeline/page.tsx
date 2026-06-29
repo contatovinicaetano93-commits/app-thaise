@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Kanban, Plus, Filter } from 'lucide-react'
+import { Kanban, Plus, Filter, Building2, Trophy, ShoppingCart, UserCheck } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { BriefingPanel } from '@/components/pipeline/BriefingPanel'
@@ -17,6 +17,8 @@ import { opportunitiesApi, clientsApi } from '@/lib/api'
 import { useLiveRefresh } from '@/lib/hooks'
 import { formatBudget, STAGE_LABELS } from '@/lib/pipeline'
 import { CONVERT_ELIGIBLE_STAGE, validateConvertReadiness } from '@/lib/pipeline/stage-gates'
+import { orderCreateUrl, inviteUserUrl } from '@/lib/flow-links'
+import { isSimpleMode } from '@/lib/app-mode'
 import { toast } from 'sonner'
 import type { Opportunity } from '@/types/database'
 
@@ -49,12 +51,17 @@ function PipelinePageContent() {
   } | undefined>()
   const [convertLoading, setConvertLoading] = useState(false)
   const [inviteLoading, setInviteLoading] = useState(false)
+  const [closedDeals, setClosedDeals] = useState<Opportunity[]>([])
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
     try {
-      const data = await opportunitiesApi.list()
+      const [data, all] = await Promise.all([
+        opportunitiesApi.list(),
+        opportunitiesApi.list(true),
+      ])
       setOpportunities(data)
+      setClosedDeals(all.filter(o => o.stage === 'ganho' && o.project_id))
     } catch {
       if (!silent) toast.error('Erro ao carregar pipeline')
     } finally {
@@ -158,8 +165,34 @@ function PipelinePageContent() {
         icon={Kanban}
         title="Pipeline Comercial"
         subtitle={`${opportunities.length} oportunidade${opportunities.length !== 1 ? 's' : ''} ativa${opportunities.length !== 1 ? 's' : ''} · potencial ${formatBudget(totalBudget)}`}
-        menuItems={[{ label: 'Nova oportunidade', onClick: openCreate }]}
+        menuItems={[
+          { label: 'Nova oportunidade', onClick: openCreate },
+          { label: 'Ver empreendimentos', href: '/projects' },
+        ]}
       />
+
+      {!isSimpleMode() && (
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <Button onClick={openCreate}>
+            <Plus size={16} /> Nova oportunidade
+          </Button>
+          <Button variant="secondary" onClick={() => router.push('/projects')}>
+            <Building2 size={16} /> Empreendimentos
+          </Button>
+        </div>
+      )}
+
+      {!isSimpleMode() && (
+      <div className="mb-4 rounded-xl border border-emerald-100 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-900">
+        <p className="font-medium flex items-center gap-1.5">
+          <Trophy size={15} /> Fechar obra (criar empreendimento Fase A)
+        </p>
+        <p className="text-emerald-800/90 mt-1 text-xs leading-relaxed">
+          Com oportunidade em <strong>Contrato & Fechamento</strong>, marque o sinal validado e use{' '}
+          <strong>Fechar obra</strong> no card ou arraste para a coluna <strong>Ganho — Obra Fechada</strong>.
+        </p>
+      </div>
+      )}
 
       {intakeQueue.length > 0 && (
         <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -235,6 +268,57 @@ function PipelinePageContent() {
         />
       )}
 
+      {!intakeFilter && closedDeals.length > 0 && (
+        <div className="mt-8 pt-6 border-t border-gray-100">
+          <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <Trophy size={16} className="text-emerald-600" />
+            Obras fechadas ({closedDeals.length})
+          </h3>
+          <div className="space-y-2">
+            {closedDeals.slice(0, 8).map(opp => (
+              <div
+                key={opp.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-100 bg-white px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="font-medium text-sm text-gray-900">{opp.name}</p>
+                  <p className="text-xs text-gray-500">{opp.company ?? opp.email}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {opp.project_id && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => router.push(`/projects?open=${opp.project_id}`)}
+                    >
+                      <Building2 size={14} /> Abrir empreendimento
+                    </Button>
+                  )}
+                  {opp.project_id && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => router.push(orderCreateUrl({
+                        projectId: opp.project_id!,
+                        clientId: opp.client_id ?? undefined,
+                      }))}
+                    >
+                      <ShoppingCart size={14} /> Criar pedido
+                    </Button>
+                  )}
+                  {opp.client_id && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => router.push(inviteUserUrl({ role: 'cliente', clientId: opp.client_id! }))}
+                    >
+                      Convidar cliente
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar oportunidade' : 'Nova oportunidade'}>
         <OpportunityForm
           opportunity={editing}
@@ -273,6 +357,16 @@ function PipelinePageContent() {
               </label>
             </div>
             <BriefingPanel opportunity={editing} onSaved={load} />
+            {!validateConvertReadiness(editing) && editing.stage === CONVERT_ELIGIBLE_STAGE && (
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                <p className="text-sm text-emerald-900 mb-3">
+                  Pronta para fechar — cria cliente + empreendimento Fase A.
+                </p>
+                <Button onClick={() => { setModalOpen(false); openConvert(editing) }}>
+                  <Trophy size={16} /> Fechar obra e criar empreendimento
+                </Button>
+              </div>
+            )}
             <ActivityTimeline entityType="opportunity" entityId={editing.id} />
           </div>
         )}
@@ -318,7 +412,7 @@ function PipelinePageContent() {
             <div className="flex justify-end gap-3 mt-5">
               <Button variant="secondary" onClick={() => setConverting(undefined)}>Cancelar</Button>
               <Button onClick={handleConvert} loading={convertLoading}>
-                Confirmar fechamento
+                <Trophy size={16} /> Confirmar fechamento
               </Button>
             </div>
           </>
@@ -358,11 +452,26 @@ function PipelinePageContent() {
               }}>
                 Configurar login manualmente
               </Button>
-              <Button variant="secondary" onClick={() => {
+              <Button onClick={() => {
                 router.push(`/projects?open=${convertSuccess.projectId}`)
                 setConvertSuccess(undefined)
               }}>
-                Abrir empreendimento Fase A
+                <Building2 size={16} /> Abrir empreendimento Fase A
+              </Button>
+              <Button variant="secondary" onClick={() => {
+                router.push(orderCreateUrl({
+                  projectId: convertSuccess.projectId,
+                  clientId: convertSuccess.clientId,
+                }))
+                setConvertSuccess(undefined)
+              }}>
+                <ShoppingCart size={16} /> Criar pedido desta obra
+              </Button>
+              <Button variant="secondary" onClick={() => {
+                router.push('/pending-suppliers')
+                setConvertSuccess(undefined)
+              }}>
+                <UserCheck size={16} /> Homologar fornecedor
               </Button>
               <Button variant="secondary" onClick={() => setConvertSuccess(undefined)}>
                 Continuar no pipeline

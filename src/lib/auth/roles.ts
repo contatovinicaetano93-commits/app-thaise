@@ -14,9 +14,9 @@ export interface Profile {
 }
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  gestor: 'Gestor / Curador',
-  fornecedor: 'Fornecedor',
-  cliente: 'Cliente',
+  gestor: 'Gestora Estlar',
+  fornecedor: 'Fornecedor homologado',
+  cliente: 'Cliente investidor',
 }
 
 /** Rotas permitidas por role (prefix match) */
