@@ -1,19 +1,16 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
-import { ClipboardList, Plus, Check, X, Ban } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { Plus, Check, X, Ban } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { SkuRequestForm } from '@/components/sku/SkuRequestForm'
 import { ProductForm } from '@/components/products/ProductForm'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
-import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { Button } from '@/components/ui/Button'
 import { PanelCard } from '@/components/ui/PanelCard'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { skuRequestsApi } from '@/lib/api'
 import { useLiveRefresh } from '@/lib/hooks'
-import { isSimpleMode } from '@/lib/app-mode'
 import { toast } from 'sonner'
 import type { SkuRequest } from '@/types/database'
 
@@ -33,27 +30,19 @@ const STATUS_COLOR: Record<string, string> = {
   cancelled: 'bg-gray-100 text-gray-500',
 }
 
-export default function SkuRequestsPage() {
-  return (
-    <Suspense fallback={<ListSkeleton rows={4} height="h-20" />}>
-      <SkuRequestsPageContent />
-    </Suspense>
-  )
+interface Props {
+  defaultProjectId?: string
+  defaultSupplierId?: string
+  autoOpenCreate?: boolean
 }
 
-function SkuRequestsPageContent() {
-  const router = useRouter()
+export function SkuRequestsPanel({ defaultProjectId, defaultSupplierId, autoOpenCreate }: Props) {
   const { isGestor, role } = useAuth()
-  const simple = isSimpleMode()
-  const searchParams = useSearchParams()
   const [requests, setRequests] = useState<SkuRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [createOpen, setCreateOpen] = useState(false)
   const [fillRequest, setFillRequest] = useState<SkuRequest | undefined>()
   const [acting, setActing] = useState<string | null>(null)
-
-  const defaultProjectId = searchParams.get('project_id') ?? undefined
-  const defaultSupplierId = searchParams.get('supplier_id') ?? undefined
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -66,24 +55,12 @@ function SkuRequestsPageContent() {
     }
   }, [])
 
-  useEffect(() => {
-    if (isGestor && simple) {
-      const q = new URLSearchParams(searchParams.toString())
-      q.set('tab', 'skus')
-      router.replace(`/products?${q.toString()}`)
-    }
-  }, [isGestor, simple, router, searchParams])
-
   useEffect(() => { load() }, [load])
   useLiveRefresh(load, ['products'])
 
   useEffect(() => {
-    if (searchParams.get('new') === '1' && isGestor && !simple) setCreateOpen(true)
-  }, [searchParams, isGestor, simple])
-
-  if (isGestor && simple) {
-    return <ListSkeleton rows={4} height="h-20" />
-  }
+    if (autoOpenCreate && isGestor) setCreateOpen(true)
+  }, [autoOpenCreate, isGestor])
 
   async function handleAction(id: string, action: 'approve' | 'reject' | 'cancel') {
     setActing(id)
@@ -98,33 +75,10 @@ function SkuRequestsPageContent() {
     }
   }
 
-  const openCount = requests.filter(r => r.status === 'open').length
-  const pendingCount = requests.filter(r => r.status === 'submitted').length
+  if (loading) return <ListSkeleton rows={4} height="h-20" />
 
   return (
-    <div>
-      <PageFeedHeader
-        title={isGestor ? 'SKUs pedidos' : 'SKUs solicitados'}
-        subtitle={
-          isGestor
-            ? `${requests.length} pedido(s) · ${pendingCount} aguardando aprovação`
-            : `${openCount} aguardando seu cadastro`
-        }
-        menuItems={isGestor ? [{ label: 'Novo pedido de SKU', onClick: () => setCreateOpen(true) }] : undefined}
-      />
-
-      {isGestor && (
-        <p className="text-sm text-violet-900 bg-violet-50 border border-violet-100 rounded-xl px-4 py-3 mb-4">
-          Peça ao fornecedor homologado que cadastre o SKU. Quando ele enviar, você <strong>aprova</strong> para entrar no catálogo da obra.
-        </p>
-      )}
-
-      {role === 'fornecedor' && (
-        <p className="text-sm text-indigo-900 bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 mb-4">
-          A Estlar solicita os SKUs abaixo. Cadastre preço e detalhes — após envio, aguarda aprovação antes de ir ao catálogo.
-        </p>
-      )}
-
+    <>
       {isGestor && (
         <div className="mb-4">
           <Button onClick={() => setCreateOpen(true)}>
@@ -133,11 +87,9 @@ function SkuRequestsPageContent() {
         </div>
       )}
 
-      {loading ? (
-        <ListSkeleton rows={4} height="h-20" />
-      ) : requests.length === 0 ? (
+      {requests.length === 0 ? (
         <EmptyState
-          icon={ClipboardList}
+          icon={Plus}
           iconClass="text-violet-600"
           title="Nenhum pedido de SKU"
           description={
@@ -156,11 +108,7 @@ function SkuRequestsPageContent() {
               panelId={`sku-${req.id}`}
               title={req.name}
               defaultOpen={req.status === 'submitted' && isGestor}
-              summary={[
-                req.project?.name,
-                req.supplier?.name,
-                STATUS_LABEL[req.status],
-              ].filter(Boolean).join(' · ')}
+              summary={[req.project?.name, req.supplier?.name, STATUS_LABEL[req.status]].filter(Boolean).join(' · ')}
               headerExtra={
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[req.status] ?? 'bg-gray-100'}`}>
                   {STATUS_LABEL[req.status]}
@@ -170,30 +118,10 @@ function SkuRequestsPageContent() {
               <dl className="grid sm:grid-cols-2 gap-2 text-sm mb-3">
                 <div><dt className="text-gray-400 text-xs">Obra</dt><dd className="font-medium">{req.project?.name ?? '—'}</dd></div>
                 <div><dt className="text-gray-400 text-xs">Fornecedor</dt><dd className="font-medium">{req.supplier?.name ?? '—'}</dd></div>
-                <div><dt className="text-gray-400 text-xs">Categoria / unidade</dt><dd>{req.category} · {req.unit}</dd></div>
-                {req.quantity_estimated && (
-                  <div><dt className="text-gray-400 text-xs">Qtd. estimada</dt><dd>{req.quantity_estimated}</dd></div>
-                )}
-                {req.due_date && (
-                  <div><dt className="text-gray-400 text-xs">Prazo</dt><dd>{new Date(req.due_date).toLocaleDateString('pt-BR')}</dd></div>
-                )}
               </dl>
-              {req.notes && <p className="text-xs text-gray-600 bg-gray-50 rounded-lg p-3 mb-3">{req.notes}</p>}
-
-              {req.product && (
-                <div className="rounded-lg border border-gray-100 bg-white p-3 mb-3 text-sm">
-                  <p className="font-medium text-gray-900">{req.product.name}</p>
-                  <p className="text-gray-500 mt-1">
-                    {req.product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/{req.product.unit}
-                  </p>
-                </div>
-              )}
-
               <div className="flex flex-wrap gap-2">
                 {role === 'fornecedor' && req.status === 'open' && (
-                  <Button onClick={() => setFillRequest(req)}>
-                    <Plus size={14} /> Cadastrar SKU
-                  </Button>
+                  <Button onClick={() => setFillRequest(req)}><Plus size={14} /> Cadastrar SKU</Button>
                 )}
                 {isGestor && req.status === 'submitted' && (
                   <>
@@ -207,7 +135,7 @@ function SkuRequestsPageContent() {
                 )}
                 {isGestor && ['open', 'submitted'].includes(req.status) && (
                   <Button variant="secondary" onClick={() => handleAction(req.id, 'cancel')} disabled={acting === req.id}>
-                    <Ban size={14} /> Cancelar pedido
+                    <Ban size={14} /> Cancelar
                   </Button>
                 )}
               </div>
@@ -234,6 +162,6 @@ function SkuRequestsPageContent() {
           />
         )}
       </Modal>
-    </div>
+    </>
   )
 }

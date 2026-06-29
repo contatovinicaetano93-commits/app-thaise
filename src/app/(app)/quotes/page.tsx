@@ -11,8 +11,11 @@ import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { Button } from '@/components/ui/Button'
 import { PanelCard } from '@/components/ui/PanelCard'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { projectQuotesApi, projectsApi } from '@/lib/api'
+import { projectQuotesApi, projectsApi, ordersApi } from '@/lib/api'
 import { useLiveRefresh } from '@/lib/hooks'
+import { isSimpleMode } from '@/lib/app-mode'
+import { PageTabs } from '@/components/ui/PageTabs'
+import { OrdersFeedPanel } from '@/components/orders/OrdersFeedPanel'
 import { toast } from 'sonner'
 import type { ProjectQuote, Project } from '@/types/database'
 
@@ -47,7 +50,10 @@ export default function QuotesPage() {
 function QuotesPageContent() {
   const { isGestor, role } = useAuth()
   const searchParams = useSearchParams()
+  const simple = isSimpleMode()
+  const tab = searchParams.get('tab') ?? 'orcamentos'
   const [quotes, setQuotes] = useState<ProjectQuote[]>([])
+  const [openOrdersCount, setOpenOrdersCount] = useState(0)
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [createOpen, setCreateOpen] = useState(false)
@@ -62,18 +68,22 @@ function QuotesPageContent() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [q, p] = await Promise.all([
+      const [q, p, orders] = await Promise.all([
         projectQuotesApi.list(),
         isGestor ? projectsApi.list() : Promise.resolve([]),
+        isGestor && simple ? ordersApi.list().catch(() => []) : Promise.resolve([]),
       ])
       setQuotes(q)
       setProjects(p)
+      if (Array.isArray(orders)) {
+        setOpenOrdersCount(orders.filter(o => ['pending', 'approved', 'processing'].includes(o.status)).length)
+      }
     } catch {
       toast.error('Erro ao carregar orçamentos')
     } finally {
       setLoading(false)
     }
-  }, [isGestor])
+  }, [isGestor, simple])
 
   useEffect(() => { load() }, [load])
   useLiveRefresh(load, ['projects'])
@@ -147,6 +157,7 @@ function QuotesPageContent() {
   }
 
   const pendingClient = quotes.filter(q => q.status === 'sent').length
+  const ordersHref = simple && isGestor ? '/quotes?tab=pedidos' : '/orders'
 
   return (
     <div>
@@ -160,6 +171,19 @@ function QuotesPageContent() {
         menuItems={isGestor ? [{ label: 'Novo orçamento', onClick: () => setCreateOpen(true) }] : undefined}
       />
 
+      {isGestor && simple && (
+        <PageTabs
+          tabs={[
+            { id: 'orcamentos', label: 'Orçamentos' },
+            { id: 'pedidos', label: 'Pedidos', badge: openOrdersCount },
+          ]}
+        />
+      )}
+
+      {isGestor && simple && tab === 'pedidos' ? (
+        <OrdersFeedPanel embedded />
+      ) : (
+      <>
       {isGestor && (
         <p className="text-sm text-violet-900 bg-violet-50 border border-violet-100 rounded-xl px-4 py-3 mb-4">
           Monte o orçamento com produtos <strong>aprovados</strong> da obra → envie ao cliente → após aprovação, gere os pedidos.
@@ -220,9 +244,9 @@ function QuotesPageContent() {
                 { label: 'Cancelar', onClick: () => projectQuotesApi.update(quote.id, { status: 'cancelled' }).then(load) },
               ] : isGestor && quote.status === 'approved' ? [
                 { label: 'Gerar pedidos', onClick: () => handleFulfill(quote.id) },
-                { label: 'Ver pedidos', href: '/orders' },
+                { label: 'Ver pedidos', href: ordersHref },
               ] : isGestor && quote.status === 'fulfilled' ? [
-                { label: 'Ver pedidos', href: '/orders' },
+                { label: 'Ver pedidos', href: ordersHref },
               ] : undefined}
             >
               {quote.notes && <p className="text-sm text-gray-600 mb-3">{quote.notes}</p>}
@@ -291,17 +315,19 @@ function QuotesPageContent() {
                   </Button>
                 )}
                 {isGestor && quote.status === 'fulfilled' && (
-                  <Link href="/orders" className="text-sm text-indigo-700 font-medium self-center">
+                  <Link href={ordersHref} className="text-sm text-indigo-700 font-medium self-center">
                     Pedidos gerados — ver lista →
                   </Link>
                 )}
                 {isGestor && quote.status === 'approved' && (
-                  <Link href="/orders" className="text-sm text-violet-700 font-medium self-center">Ver pedidos →</Link>
+                  <Link href={ordersHref} className="text-sm text-violet-700 font-medium self-center">Ver pedidos →</Link>
                 )}
               </div>
             </PanelCard>
           ))}
         </div>
+      )}
+      </>
       )}
 
       <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Novo orçamento" size="md">

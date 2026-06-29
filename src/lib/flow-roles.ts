@@ -30,14 +30,17 @@ export const ROLE_CANON: Record<UserRole, {
 }
 
 export function navLabelForRole(baseLabel: string, href: string, role: UserRole): string {
+  if (href === '/products') {
+    return role === 'gestor' ? 'Catálogo' : 'Meu catálogo'
+  }
+  if (href === '/suppliers' && role === 'gestor') {
+    return 'Fornecedores'
+  }
   if (href === '/quotes') {
     return role === 'cliente' ? 'Meus orçamentos' : 'Orçamentos'
   }
   if (href === '/sku-requests') {
-    return role === 'fornecedor' ? 'SKUs solicitados' : 'SKUs pedidos'
-  }
-  if (href === '/products') {
-    return role === 'gestor' ? 'Catálogo curado' : 'Meu catálogo'
+    return 'SKUs solicitados'
   }
   if (href === '/projects') {
     return role === 'cliente' ? 'Minha obra' : 'Obras'

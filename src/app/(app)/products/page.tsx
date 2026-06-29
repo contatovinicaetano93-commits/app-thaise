@@ -16,6 +16,9 @@ import { useLiveRefresh } from '@/lib/hooks'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { orderCreateUrl } from '@/lib/flow-links'
 import { isSimpleMode } from '@/lib/app-mode'
+import { PageTabs } from '@/components/ui/PageTabs'
+import { SkuRequestsPanel } from '@/components/sku/SkuRequestsPanel'
+import { skuRequestsApi } from '@/lib/api'
 import { toast } from 'sonner'
 import type { Product } from '@/types/database'
 
@@ -31,6 +34,8 @@ function ProductsPageContent() {
   const searchParams = useSearchParams()
   const { isGestor, role } = useAuth()
   const simple = isSimpleMode()
+  const tab = searchParams.get('tab') ?? 'catalogo'
+  const [skuOpenCount, setSkuOpenCount] = useState(0)
   const [products, setProducts] = useState<Product[]>([])
   const [search, setSearch] = useState('')
   const [supplierFilter, setSupplierFilter] = useState('')
@@ -43,13 +48,20 @@ function ProductsPageContent() {
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
     try {
-      setProducts(await productsApi.list())
+      const [list, skus] = await Promise.all([
+        productsApi.list(),
+        isGestor && simple ? skuRequestsApi.list().catch(() => []) : Promise.resolve([]),
+      ])
+      setProducts(list)
+      if (Array.isArray(skus)) {
+        setSkuOpenCount(skus.filter(r => ['open', 'submitted'].includes(r.status)).length)
+      }
     } catch {
       if (!silent) toast.error('Erro ao carregar produtos')
     } finally {
       if (!silent) setLoading(false)
     }
-  }, [])
+  }, [isGestor, simple])
 
   useEffect(() => { load() }, [load])
   useLiveRefresh(load, ['products'])
@@ -160,7 +172,7 @@ function ProductsPageContent() {
     )
   }
 
-  const pageTitle = isGestor ? 'Catálogo curado' : 'Meus produtos'
+  const pageTitle = isGestor ? (simple ? 'Catálogo' : 'Catálogo curado') : 'Meus produtos'
   const pageSubtitle = isGestor
     ? `${products.filter(p => (p.catalog_status ?? 'approved') === 'approved').length} aprovado(s) · ${products.filter(p => p.catalog_status === 'pending').length} aguardando`
     : `${products.length} produto${products.length !== 1 ? 's' : ''}`
@@ -171,7 +183,7 @@ function ProductsPageContent() {
         title={pageTitle}
         subtitle={pageSubtitle}
         menuItems={isGestor ? [
-          { label: 'Pedir SKU', href: '/sku-requests?new=1' },
+          { label: 'Pedir SKU', href: '/products?tab=skus&new=1' },
           ...(!simple ? [{ label: 'Novo pedido', href: '/orders?new=1' }] : []),
           { label: 'Exportar CSV', onClick: () => productsApi.exportCsv().catch(() => toast.error('Erro ao exportar')) },
         ] : role === 'fornecedor' ? [
@@ -179,6 +191,23 @@ function ProductsPageContent() {
         ] : undefined}
       />
 
+      {isGestor && simple && (
+        <PageTabs
+          tabs={[
+            { id: 'catalogo', label: 'Aprovados' },
+            { id: 'skus', label: 'SKUs pedidos', badge: skuOpenCount },
+          ]}
+        />
+      )}
+
+      {isGestor && simple && tab === 'skus' ? (
+        <SkuRequestsPanel
+          defaultProjectId={searchParams.get('project_id') ?? undefined}
+          defaultSupplierId={defaultSupplierId}
+          autoOpenCreate={searchParams.get('new') === '1'}
+        />
+      ) : (
+      <>
       {role === 'fornecedor' && (
         <p className="text-sm text-indigo-900 bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 mb-4">
           Cadastre produtos em <strong>SKUs solicitados</strong>. Após aprovação da Estlar, entram no catálogo da obra.
@@ -231,7 +260,7 @@ function ProductsPageContent() {
                 : 'Sem produtos visíveis.'
           }
           actionLabel={role === 'fornecedor' ? 'Ver SKUs solicitados' : isGestor ? 'Pedir SKU' : undefined}
-          onAction={role === 'fornecedor' ? () => { window.location.href = '/sku-requests' } : isGestor ? () => { window.location.href = '/sku-requests?new=1' } : undefined}
+          onAction={role === 'fornecedor' ? () => { window.location.href = '/sku-requests' } : isGestor ? () => { window.location.href = '/products?tab=skus&new=1' } : undefined}
         />
       ) : isGestor && groupedBySupplier ? (
         <div className="space-y-6">
@@ -257,6 +286,8 @@ function ProductsPageContent() {
         </div>
       ) : (
         <div className="space-y-2">{filtered.map(renderProductCard)}</div>
+      )}
+      </>
       )}
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar Produto' : 'Novo Produto'} size="lg">

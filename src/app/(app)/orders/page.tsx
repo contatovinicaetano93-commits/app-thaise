@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Search, ShoppingCart } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { OrderForm } from '@/components/orders/OrderForm'
@@ -37,6 +37,7 @@ export default function OrdersPage() {
 
 function OrdersPageContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const { isGestor, role } = useAuth()
   const simple = isSimpleMode()
   const [orders, setOrders] = useState<Order[]>([])
@@ -76,8 +77,16 @@ function OrdersPageContent() {
   useLiveRefresh(load, ['orders'])
 
   useEffect(() => {
-    if (searchParams.get('new') === '1' && isGestor) setModalOpen(true)
-  }, [searchParams, isGestor])
+    if (isGestor && simple) {
+      const q = new URLSearchParams(searchParams.toString())
+      q.set('tab', 'pedidos')
+      router.replace(`/quotes?${q.toString()}`)
+    }
+  }, [isGestor, simple, router, searchParams])
+
+  useEffect(() => {
+    if (searchParams.get('new') === '1' && isGestor && !simple) setModalOpen(true)
+  }, [searchParams, isGestor, simple])
 
   async function updateStatus(id: string, status: string) {
     try {
@@ -111,6 +120,10 @@ function OrdersPageContent() {
   const totalAberto = orders
     .filter(o => !['delivered', 'cancelled'].includes(o.status))
     .reduce((acc, o) => acc + (o.total_price ?? 0), 0)
+
+  if (isGestor && simple) {
+    return <ListSkeleton rows={4} />
+  }
 
   return (
     <div>

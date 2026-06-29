@@ -25,10 +25,10 @@ export function productCreateUrl(supplierId?: string) {
 }
 
 export function skuRequestCreateUrl(params?: { projectId?: string; supplierId?: string }) {
-  const q = new URLSearchParams({ new: '1' })
+  const q = new URLSearchParams({ tab: 'skus', new: '1' })
   if (params?.projectId) q.set('project_id', params.projectId)
   if (params?.supplierId) q.set('supplier_id', params.supplierId)
-  return `/sku-requests?${q.toString()}`
+  return `/products?${q.toString()}`
 }
 
 export function quoteCreateUrl(projectId?: string) {

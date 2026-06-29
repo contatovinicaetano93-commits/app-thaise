@@ -9,8 +9,8 @@ import { isSimpleMode } from '@/lib/app-mode'
 const STEPS_V2 = [
   { icon: Users, title: '1. Cliente', desc: 'Registre o cliente da obra.', href: '/clients' },
   { icon: Building2, title: '2. Obra', desc: 'Crie a obra, defina fases e % de progresso.', href: '/projects' },
-  { icon: Truck, title: '3. Homologar fornecedor', desc: 'Aprove fornecedores na fila de homologação.', href: '/pending-suppliers' },
-  { icon: Package, title: '4. Pedir SKU', desc: 'Solicite produtos ao fornecedor homologado.', href: '/sku-requests' },
+  { icon: Truck, title: '3. Homologar fornecedor', desc: 'Aprove fornecedores na fila de homologação.', href: '/suppliers?tab=homologacao' },
+  { icon: Package, title: '4. Pedir SKU', desc: 'Solicite produtos ao fornecedor homologado.', href: '/products?tab=skus&new=1' },
   { icon: Receipt, title: '5. Orçamento', desc: 'Monte o orçamento e envie ao cliente para aprovação.', href: '/quotes' },
 ]
 

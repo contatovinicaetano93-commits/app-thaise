@@ -94,7 +94,7 @@ export async function GET() {
           type: 'sku_submitted',
           severity: 'info',
           message: `${skuSubmitted} SKU(s) aguardando aprovação no catálogo`,
-          href: '/sku-requests?status=submitted',
+          href: '/products?tab=skus&status=submitted',
         })
       }
       if ((portalOff ?? 0) > 0) {
@@ -123,7 +123,7 @@ export async function GET() {
           type: 'pending_supplier',
           severity: 'info',
           message: `${s.name} aguarda homologação`,
-          href: '/pending-suppliers',
+          href: v2 ? '/suppliers?tab=homologacao' : '/pending-suppliers',
         })
       }
     }
@@ -177,7 +177,7 @@ export async function GET() {
           type: 'late_order',
           severity: 'warning',
           message: `Pedido ${o.id.slice(0, 8)}… atrasado (${leadDays}d prazo)`,
-          href: '/orders',
+          href: v2 ? '/quotes?tab=pedidos' : '/orders',
         })
       }
     }

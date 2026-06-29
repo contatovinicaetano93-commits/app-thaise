@@ -12,8 +12,11 @@ import { homologationTierLabel, qcpsAverage } from '@/lib/qcps'
 import { Button } from '@/components/ui/Button'
 import { PanelCard } from '@/components/ui/PanelCard'
 import { PanelToolbar } from '@/components/ui/PanelToolbar'
-import { suppliersApi, agentsApi } from '@/lib/api'
+import { suppliersApi, agentsApi, pendingSuppliersApi } from '@/lib/api'
 import { useDebounce, useLiveRefresh } from '@/lib/hooks'
+import { isSimpleMode } from '@/lib/app-mode'
+import { PageTabs } from '@/components/ui/PageTabs'
+import { PendingSuppliersPanel } from '@/components/suppliers/PendingSuppliersPanel'
 import { toast } from 'sonner'
 import type { Supplier } from '@/types/database'
 import { inviteUserUrl, productCreateUrl } from '@/lib/flow-links'
@@ -36,7 +39,10 @@ export default function SuppliersPage() {
 function SuppliersPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const simple = isSimpleMode()
+  const tab = searchParams.get('tab') ?? 'ativos'
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
+  const [pendingCount, setPendingCount] = useState(0)
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search)
   const [loading, setLoading] = useState(true)
@@ -48,14 +54,18 @@ function SuppliersPageContent() {
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
     try {
-      const data = await suppliersApi.list()
+      const [data, pending] = await Promise.all([
+        suppliersApi.list(),
+        simple ? pendingSuppliersApi.list().catch(() => []) : Promise.resolve([]),
+      ])
       setSuppliers(data)
+      setPendingCount(pending.length)
     } catch {
       if (!silent) toast.error('Erro ao carregar fornecedores')
     } finally {
       if (!silent) setLoading(false)
     }
-  }, [])
+  }, [simple])
 
   useEffect(() => { load() }, [load])
   useLiveRefresh(load, ['suppliers'])
@@ -65,7 +75,10 @@ function SuppliersPageContent() {
       setEditing(undefined)
       setModalOpen(true)
     }
-  }, [searchParams])
+    if (searchParams.get('tab') === 'homologacao' && !simple) {
+      router.replace('/suppliers')
+    }
+  }, [searchParams, simple, router])
 
   async function handleDelete() {
     if (!deleting) return
@@ -101,12 +114,29 @@ function SuppliersPageContent() {
     <div>
       <PageFeedHeader
         title="Fornecedores"
-        subtitle={`${suppliers.length} cadastrado${suppliers.length !== 1 ? 's' : ''}`}
+        subtitle={
+          tab === 'homologacao'
+            ? `${pendingCount} aguardando homologação`
+            : `${suppliers.length} cadastrado${suppliers.length !== 1 ? 's' : ''}`
+        }
         menuItems={[
           { label: 'Novo fornecedor', onClick: () => { setEditing(undefined); setModalOpen(true) } },
-          { label: 'Homologação', href: '/pending-suppliers' },
         ]}
       />
+
+      {simple && (
+        <PageTabs
+          tabs={[
+            { id: 'ativos', label: 'Homologados' },
+            { id: 'homologacao', label: 'Homologação', badge: pendingCount },
+          ]}
+        />
+      )}
+
+      {simple && tab === 'homologacao' ? (
+        <PendingSuppliersPanel />
+      ) : (
+      <>
 
       <div className="relative mb-4">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -158,7 +188,7 @@ function SuppliersPageContent() {
               }
               menuItems={[
                 ...(supplier.status === 'pending'
-                  ? [{ label: 'Homologar', href: '/pending-suppliers' }]
+                  ? [{ label: 'Homologar', href: '/suppliers?tab=homologacao' }]
                   : supplier.status === 'active'
                     ? [
                         { label: 'Ver catálogo', href: `/products?supplier_id=${supplier.id}` },
@@ -187,6 +217,8 @@ function SuppliersPageContent() {
             </PanelCard>
           ))}
         </div>
+      )}
+      </>
       )}
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar Fornecedor' : 'Novo Fornecedor'} size="lg">

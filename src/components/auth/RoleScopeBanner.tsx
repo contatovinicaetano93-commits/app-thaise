@@ -8,7 +8,7 @@ import { isSimpleMode } from '@/lib/app-mode'
 
 const GESTOR_LINKS_V2 = [
   { href: '/projects', label: 'Obras' },
-  { href: '/sku-requests?new=1', label: 'Pedir SKU' },
+  { href: '/products?tab=skus&new=1', label: 'Pedir SKU' },
   { href: '/quotes', label: 'Orçamentos' },
 ] as const
 

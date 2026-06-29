@@ -67,7 +67,7 @@ export async function GET() {
         steps.push({
           sipoc: '1',
           label: 'Homologar fornecedores',
-          href: '/pending-suppliers',
+          href: '/suppliers?tab=homologacao',
           reason: `${pendingSuppliers} fornecedor(es) aguardando curadoria`,
         })
       }
@@ -99,7 +99,7 @@ export async function GET() {
         steps.push({
           sipoc: '5',
           label: 'Aprovar SKUs no catálogo',
-          href: '/sku-requests?status=submitted',
+          href: '/products?tab=skus&status=submitted',
           reason: `${skuSubmitted} produto(s) enviados pelo fornecedor aguardam sua aprovação`,
         })
       }
@@ -140,7 +140,7 @@ export async function GET() {
         steps.push({
           sipoc: '5',
           label: 'Aguardar fornecedor cadastrar SKU',
-          href: '/sku-requests?status=open',
+          href: '/products?tab=skus&status=open',
           reason: `${openSku} pedido(s) de SKU aguardando resposta do fornecedor`,
         })
       }
@@ -177,7 +177,7 @@ export async function GET() {
         steps.push({
           sipoc: '9',
           label: 'Acompanhar pedidos',
-          href: '/orders',
+          href: '/quotes?tab=pedidos',
           reason: `${openOrders} pedido(s) em andamento — fornecedor foi notificado para separar`,
         })
       }

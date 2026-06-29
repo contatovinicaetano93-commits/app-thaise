@@ -8,7 +8,7 @@ import { isSimpleMode } from '@/lib/app-mode'
 const GESTOR_STEPS_FULL = [
   { icon: Package, color: 'bg-stone-100 text-stone-800', title: 'Bem-vinda ao Hub Estlar', desc: 'Inteligência para curadoria de ativos, empreendimentos e consolidação patrimonial.', cta: 'Começar' },
   { icon: Kanban, color: 'bg-violet-100 text-violet-600', title: 'Pipeline comercial', desc: 'Leads do intake → briefing → proposta → Obra Fechada → empreendimento Fase A.', cta: 'Entendido', action: '/pipeline', actionLabel: 'Ver pipeline →' },
-  { icon: Truck, color: 'bg-indigo-100 text-indigo-600', title: 'Homologue fornecedores', desc: 'Fornecedores pendentes passam por curadoria antes de entrar no catálogo.', cta: 'Entendido', action: '/pending-suppliers', actionLabel: 'Ver fila →' },
+  { icon: Truck, color: 'bg-indigo-100 text-indigo-600', title: 'Homologue fornecedores', desc: 'Fornecedores pendentes passam por curadoria antes de entrar no catálogo.', cta: 'Entendido', action: '/suppliers?tab=homologacao', actionLabel: 'Ver fila →' },
   { icon: Users, color: 'bg-emerald-100 text-emerald-600', title: 'Clientes e empreendimentos', desc: 'Cada empreendimento exige cliente — jornada A→F com checklist.', cta: 'Entendido', action: '/projects', actionLabel: 'Empreendimentos →' },
   { icon: ShoppingCart, color: 'bg-rose-100 text-rose-600', title: 'Pronto!', desc: 'Use o assistente ✨ e o card "Próximo passo" no dashboard.', cta: 'Ir para o Dashboard' },
 ]

@@ -8,19 +8,23 @@ export function isSimpleMode(): boolean {
   return process.env.NEXT_PUBLIC_SIMPLE_MODE !== '0'
 }
 
-/** Ordem do fluxo v2 — gestora Estlar (Sprint 1+) */
+/** Ordem do fluxo v2 — gestora Estlar (menu enxuto) */
 export const GESTOR_V2_HREFS: readonly string[] = [
   '/dashboard',
   '/projects',
-  '/sku-requests',
-  '/pending-suppliers',
   '/suppliers',
-  '/clients',
   '/products',
   '/quotes',
-  '/orders',
   '/reports/weekly',
   '/users',
+]
+
+/** Rotas v2 acessíveis por deep link, fora do menu principal */
+export const GESTOR_V2_SECONDARY_HREFS: readonly string[] = [
+  '/clients',
+  '/sku-requests',
+  '/pending-suppliers',
+  '/orders',
   '/notifications',
 ]
 
