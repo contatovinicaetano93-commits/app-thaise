@@ -9,10 +9,11 @@ import { Button } from '@/components/ui/Button'
 import { productsApi, suppliersApi } from '@/lib/api'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { toast } from 'sonner'
-import type { Product, Supplier } from '@/types/database'
+import type { Product, Supplier, SkuRequest } from '@/types/database'
 
 const schema = z.object({
-  supplier_id: z.string().uuid('Selecione um fornecedor'),
+  supplier_id: z.string().uuid(),
+  sku_request_id: z.string().uuid().optional(),
   name: z.string().min(2, 'Nome obrigatório'),
   description: z.string().optional(),
   category: z.string().min(2, 'Categoria obrigatória'),
@@ -31,24 +32,49 @@ const CATEGORIES = ['Revestimento', 'Mobiliário', 'Iluminação', 'Hidráulica'
 interface Props {
   product?: Product
   defaultSupplierId?: string
+  skuRequest?: SkuRequest
   onSuccess: () => void
   onCancel: () => void
 }
 
-export function ProductForm({ product, defaultSupplierId, onSuccess, onCancel }: Props) {
+export function ProductForm({ product, defaultSupplierId, skuRequest, onSuccess, onCancel }: Props) {
   const { role, profile } = useAuth()
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const isFornecedor = role === 'fornecedor'
+  const isSkuFill = Boolean(skuRequest && !product)
   const linkedSupplier = suppliers.find(s => s.id === profile?.supplier_id)
 
   const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: product ?? { active: true, unit: 'un' },
+    defaultValues: product
+      ? {
+          supplier_id: product.supplier_id,
+          name: product.name,
+          category: product.category,
+          price: product.price,
+          unit: product.unit,
+          active: product.active,
+          description: product.description ?? '',
+          min_order: product.min_order,
+          lead_time_days: product.lead_time_days,
+          sku_request_id: product.sku_request_id ?? undefined,
+        }
+      : {
+          active: true,
+          unit: skuRequest?.unit ?? 'un',
+          name: skuRequest?.name ?? '',
+          category: skuRequest?.category ?? 'Outro',
+          supplier_id: skuRequest?.supplier_id ?? profile?.supplier_id ?? '',
+          sku_request_id: skuRequest?.id,
+          price: 0,
+        },
   })
 
   useEffect(() => {
-    suppliersApi.list().then(setSuppliers).catch(() => toast.error('Erro ao carregar fornecedores'))
-  }, [])
+    if (!isFornecedor) {
+      suppliersApi.list().then(setSuppliers).catch(() => toast.error('Erro ao carregar fornecedores'))
+    }
+  }, [isFornecedor])
 
   useEffect(() => {
     if (isFornecedor && profile?.supplier_id && !product) {
@@ -56,7 +82,13 @@ export function ProductForm({ product, defaultSupplierId, onSuccess, onCancel }:
     } else if (!product && defaultSupplierId) {
       setValue('supplier_id', defaultSupplierId)
     }
-  }, [isFornecedor, profile?.supplier_id, product, defaultSupplierId, setValue])
+    if (skuRequest && !product) {
+      setValue('sku_request_id', skuRequest.id)
+      setValue('name', skuRequest.name)
+      setValue('category', skuRequest.category)
+      setValue('unit', skuRequest.unit)
+    }
+  }, [isFornecedor, profile?.supplier_id, product, defaultSupplierId, skuRequest, setValue])
 
   async function onSubmit(data: FormData) {
     try {
@@ -64,8 +96,11 @@ export function ProductForm({ product, defaultSupplierId, onSuccess, onCancel }:
         await productsApi.update(product.id, data)
         toast.success('Produto atualizado!')
       } else {
-        await productsApi.create(data)
-        toast.success('Produto cadastrado!')
+        await productsApi.create({
+          ...data,
+          sku_request_id: data.sku_request_id ?? skuRequest?.id,
+        })
+        toast.success(isSkuFill ? 'SKU enviado — aguardando aprovação da Estlar' : 'Produto cadastrado!')
       }
       onSuccess()
     } catch (e) {
@@ -73,38 +108,34 @@ export function ProductForm({ product, defaultSupplierId, onSuccess, onCancel }:
     }
   }
 
+  if (isFornecedor && !product && !skuRequest) {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-amber-900 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+          Cadastre produtos apenas quando a Estlar pedir um SKU em <strong>SKUs solicitados</strong>.
+        </p>
+        <div className="flex justify-end">
+          <Button type="button" variant="secondary" onClick={onCancel}>Fechar</Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {isSkuFill && (
+        <div className="rounded-lg border border-violet-100 bg-violet-50 px-3 py-2 text-sm text-violet-900">
+          Obra: <strong>{skuRequest!.project?.name}</strong> · Após enviar, a Estlar aprova para o catálogo.
+        </div>
+      )}
       {isFornecedor && linkedSupplier?.status !== 'active' && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          Seu cadastro ainda aguarda homologação pela Estlar. Produtos só entram no catálogo após aprovação.
+          Seu cadastro ainda aguarda homologação pela Estlar.
         </div>
       )}
-      {isFornecedor && linkedSupplier?.status === 'active' && (
-        <div className="rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2 text-sm text-indigo-900">
-          Produtos ficam no seu catálogo. A Estlar vincula obra + produto ao criar pedidos para empreendimentos homologados.
-        </div>
-      )}
+      <input type="hidden" {...register('supplier_id')} />
+      {isSkuFill && <input type="hidden" {...register('sku_request_id')} />}
       <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2">
-          {isFornecedor ? (
-            <>
-              <input type="hidden" {...register('supplier_id')} />
-              <p className="text-sm font-medium text-gray-700 mb-1">Fornecedor</p>
-              <p className="text-sm text-gray-600 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-                {linkedSupplier?.name ?? 'Seu fornecedor vinculado'}
-              </p>
-            </>
-          ) : (
-            <Select
-              label="Fornecedor *"
-              options={suppliers.filter(s => s.status === 'active').map(s => ({ value: s.id, label: s.name }))}
-              placeholder="Selecione o fornecedor homologado..."
-              error={errors.supplier_id?.message}
-              {...register('supplier_id')}
-            />
-          )}
-        </div>
         <div className="col-span-2">
           <Input label="Nome do produto *" placeholder="Porcelanato 60x60 Mármore" error={errors.name?.message} {...register('name')} />
         </div>
@@ -143,10 +174,12 @@ export function ProductForm({ product, defaultSupplierId, onSuccess, onCancel }:
           placeholder="7"
           {...register('lead_time_days', { valueAsNumber: true })}
         />
-        <div className="flex items-center gap-3 pt-5">
-          <input type="checkbox" id="active" className="w-4 h-4 accent-violet-600" {...register('active')} />
-          <label htmlFor="active" className="text-sm font-medium text-gray-700">Produto ativo</label>
-        </div>
+        {!isSkuFill && (
+          <div className="flex items-center gap-3 pt-5">
+            <input type="checkbox" id="active" className="w-4 h-4 accent-violet-600" {...register('active')} />
+            <label htmlFor="active" className="text-sm font-medium text-gray-700">Produto ativo</label>
+          </div>
+        )}
         <div className="col-span-2">
           <Textarea label="Descrição" placeholder="Detalhes, especificações técnicas..." {...register('description')} />
         </div>
@@ -154,7 +187,7 @@ export function ProductForm({ product, defaultSupplierId, onSuccess, onCancel }:
       <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
         <Button type="button" variant="secondary" onClick={onCancel}>Cancelar</Button>
         <Button type="submit" loading={isSubmitting} disabled={isFornecedor && linkedSupplier?.status !== 'active'}>
-          {product ? 'Salvar alterações' : 'Cadastrar produto'}
+          {product ? 'Salvar alterações' : isSkuFill ? 'Enviar SKU para aprovação' : 'Cadastrar produto'}
         </Button>
       </div>
     </form>

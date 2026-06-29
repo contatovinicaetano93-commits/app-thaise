@@ -8,23 +8,25 @@ export function isSimpleMode(): boolean {
   return process.env.NEXT_PUBLIC_SIMPLE_MODE !== '0'
 }
 
-/** Ordem do fluxo diário — gestora Estlar */
-export const GESTOR_SIMPLE_HREFS: readonly string[] = [
+/** Ordem do fluxo v2 — gestora Estlar (Sprint 1+) */
+export const GESTOR_V2_HREFS: readonly string[] = [
   '/dashboard',
-  '/pipeline',
   '/projects',
+  '/sku-requests',
   '/pending-suppliers',
   '/suppliers',
-  '/products',
-  '/orders',
   '/clients',
+  '/products',
+  '/quotes',
+  '/orders',
   '/reports/weekly',
   '/users',
   '/notifications',
 ]
 
-/** Rotas avançadas — ocultas no menu, APIs e URLs continuam funcionando */
-export const GESTOR_ADVANCED_HREFS: readonly string[] = [
+/** Legado — oculto no menu v2 */
+export const GESTOR_LEGACY_HREFS: readonly string[] = [
+  '/pipeline',
   '/insights',
   '/reports',
   '/sipoc',
@@ -32,8 +34,14 @@ export const GESTOR_ADVANCED_HREFS: readonly string[] = [
   '/api-docs',
 ]
 
+/** @deprecated use GESTOR_V2_HREFS */
+export const GESTOR_SIMPLE_HREFS = GESTOR_V2_HREFS
+
+/** @deprecated use GESTOR_LEGACY_HREFS */
+export const GESTOR_ADVANCED_HREFS = GESTOR_LEGACY_HREFS
+
 export const SIMPLE_NAV_SECTION = 'fluxo' as const
-export const SIMPLE_NAV_SECTION_LABEL = 'Fluxo Estlar'
+export const SIMPLE_NAV_SECTION_LABEL = 'Estlar Hub'
 
 /** Painéis do dashboard no modo simples (gestora) */
 export const GESTOR_SIMPLE_DASHBOARD_PANELS = new Set([
@@ -52,8 +60,8 @@ export function filterNavItems<T extends { href: string; roles: UserRole[] }>(
   if (!isSimpleMode()) return filtered
 
   if (role === 'gestor') {
-    filtered = filtered.filter(i => !GESTOR_ADVANCED_HREFS.includes(i.href))
-    const order = GESTOR_SIMPLE_HREFS
+    filtered = filtered.filter(i => !GESTOR_LEGACY_HREFS.includes(i.href))
+    const order = GESTOR_V2_HREFS
     return [...filtered].sort((a, b) => {
       const ia = order.indexOf(a.href)
       const ib = order.indexOf(b.href)
@@ -63,13 +71,13 @@ export function filterNavItems<T extends { href: string; roles: UserRole[] }>(
 
   if (role === 'fornecedor') {
     return filtered.filter(i =>
-      ['/dashboard', '/products', '/orders', '/notifications'].includes(i.href),
+      ['/dashboard', '/sku-requests', '/products', '/orders', '/notifications'].includes(i.href),
     )
   }
 
   if (role === 'cliente') {
     return filtered.filter(i =>
-      ['/dashboard', '/projects', '/orders', '/reports/weekly', '/notifications'].includes(i.href),
+      ['/dashboard', '/projects', '/quotes', '/orders', '/reports/weekly', '/notifications'].includes(i.href),
     )
   }
 

@@ -143,9 +143,84 @@ export interface Project extends QcpsScores {
   status: ProjectStatus
   checklist?: PhaseChecklist
   notes?: string | null
+  progress_pct?: number
+  portal_enabled?: boolean
+  current_phase_id?: string | null
   created_at: string
   updated_at: string
   client?: Client
+  phases?: ProjectPhaseRow[]
+  current_phase?: ProjectPhaseRow | null
+}
+
+export interface ProjectPhaseRow {
+  id: string
+  project_id: string
+  name: string
+  sort_order: number
+  weight_pct: number
+  created_at: string
+  updated_at: string
+}
+
+export type CatalogStatus = 'pending' | 'approved' | 'rejected'
+export type SkuRequestStatus = 'open' | 'submitted' | 'approved' | 'rejected' | 'cancelled'
+export type ProjectQuoteStatus = 'draft' | 'sent' | 'approved' | 'rejected' | 'cancelled'
+
+export interface ProjectQuoteLine {
+  id: string
+  quote_id: string
+  product_id: string
+  supplier_id: string
+  quantity: number
+  unit_price: number
+  line_total: number
+  notes?: string | null
+  sort_order: number
+  created_at: string
+  product?: Pick<Product, 'id' | 'name' | 'unit' | 'category'>
+  supplier?: Pick<Supplier, 'id' | 'name'>
+}
+
+export interface ProjectQuote {
+  id: string
+  project_id: string
+  client_id: string
+  version: number
+  title: string
+  status: ProjectQuoteStatus
+  notes?: string | null
+  total_price: number
+  sent_at?: string | null
+  decided_at?: string | null
+  decided_by?: string | null
+  rejection_note?: string | null
+  created_by?: string | null
+  created_at: string
+  updated_at: string
+  project?: Pick<Project, 'id' | 'name' | 'client_id'>
+  client?: Pick<Client, 'id' | 'name'>
+  lines?: ProjectQuoteLine[]
+}
+
+export interface SkuRequest {
+  id: string
+  project_id: string
+  supplier_id: string
+  name: string
+  category: string
+  unit: string
+  quantity_estimated?: number | null
+  due_date?: string | null
+  notes?: string | null
+  status: SkuRequestStatus
+  product_id?: string | null
+  created_by?: string | null
+  created_at: string
+  updated_at: string
+  project?: Pick<Project, 'id' | 'name' | 'client_id'>
+  supplier?: Pick<Supplier, 'id' | 'name'>
+  product?: Pick<Product, 'id' | 'name' | 'price' | 'unit' | 'catalog_status' | 'active'>
 }
 
 export interface Product {
@@ -159,8 +234,12 @@ export interface Product {
   min_order?: number
   lead_time_days?: number
   active: boolean
+  sku_request_id?: string | null
+  project_id?: string | null
+  catalog_status?: CatalogStatus
   created_at: string
   supplier?: Pick<Supplier, 'id' | 'name'>
+  project?: Pick<Project, 'id' | 'name'>
 }
 
 export interface Order {

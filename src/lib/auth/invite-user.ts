@@ -36,13 +36,31 @@ export async function inviteAppUser(input: InviteUserInput): Promise<InvitedUser
   }
 
   if (input.role === 'fornecedor') {
-    const { data: supplier } = await db.from('suppliers').select('id').eq('id', input.supplierId!).single()
+    const { data: supplier } = await db
+      .from('suppliers')
+      .select('id, status, name')
+      .eq('id', input.supplierId!)
+      .single() as { data: { id: string; status: string; name: string } | null }
     if (!supplier) throw new Error('Fornecedor não encontrado')
+    if (supplier.status !== 'active') {
+      throw new Error('Homologue o fornecedor antes de enviar o convite de acesso')
+    }
   }
 
   if (input.role === 'cliente') {
     const { data: client } = await db.from('clients').select('id').eq('id', input.clientId!).single()
     if (!client) throw new Error('Cliente não encontrado')
+
+    const { count } = await db
+      .from('projects')
+      .select('id', { count: 'exact', head: true })
+      .eq('client_id', input.clientId!)
+      .eq('portal_enabled', true)
+      .eq('status', 'active')
+
+    if (!count) {
+      throw new Error('Libere o portal da obra antes de convidar o cliente (Obras → Liberar portal)')
+    }
   }
 
   const { data: created, error: createErr } = await db.auth.admin.createUser({

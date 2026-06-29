@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, Suspense, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Search, Package, Plus, ShoppingCart } from 'lucide-react'
+import { Search, Package, ShoppingCart } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { ProductForm } from '@/components/products/ProductForm'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
@@ -54,13 +54,11 @@ function ProductsPageContent() {
 
   useEffect(() => {
     if (searchParams.get('new') === '1' && role === 'fornecedor') {
-      setEditing(undefined)
-      setModalOpen(true)
+      window.location.replace('/sku-requests')
+      return
     }
     if (defaultSupplierId) setSupplierFilter(defaultSupplierId)
   }, [searchParams, role, defaultSupplierId])
-
-  const canEditCatalog = isGestor || role === 'fornecedor'
 
   async function handleDelete() {
     if (!deleting || !isGestor) return
@@ -105,31 +103,43 @@ function ProductsPageContent() {
     return [...groups.entries()].sort((a, b) => a[1].name.localeCompare(b[1].name))
   }, [filtered, isGestor])
 
+  function catalogBadge(product: Product) {
+    const st = product.catalog_status ?? 'approved'
+    if (st === 'pending') return { label: 'Aguardando aprovação', className: 'bg-amber-100 text-amber-800' }
+    if (st === 'rejected') return { label: 'Rejeitado', className: 'bg-red-100 text-red-700' }
+    return { label: product.active ? 'Aprovado' : 'Inativo', className: product.active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400' }
+  }
+
   function renderProductCard(product: Product) {
+    const badge = catalogBadge(product)
     return (
       <PanelCard
         key={product.id}
         panelId={`product-${product.id}`}
         title={product.name}
-        defaultOpen={false}
+        defaultOpen={product.catalog_status === 'pending' && isGestor}
         summary={[
           isGestor && product.supplier?.name,
+          product.project?.name,
           product.category,
           `${product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/${product.unit}`,
         ].filter(Boolean).join(' · ')}
         headerExtra={
-          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${product.active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
-            {product.active ? 'Ativo' : 'Inativo'}
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badge.className}`}>
+            {badge.label}
           </span>
         }
         menuItems={isGestor ? [
-          { label: 'Criar pedido', href: orderCreateUrl({ supplierId: product.supplier_id }) },
+          { label: 'Criar pedido', href: orderCreateUrl({ supplierId: product.supplier_id, projectId: product.project_id ?? undefined }) },
           { label: 'Editar', onClick: () => { setEditing(product); setModalOpen(true) } },
           { label: 'Excluir', onClick: () => setDeleting(product), danger: true },
-        ] : role === 'fornecedor' ? [
+        ] : role === 'fornecedor' && product.catalog_status !== 'pending' ? [
           { label: 'Editar', onClick: () => { setEditing(product); setModalOpen(true) } },
         ] : undefined}
       >
+        {isGestor && product.project?.name && (
+          <p className="text-xs font-medium text-violet-700 mb-1">Obra: {product.project.name}</p>
+        )}
         {isGestor && product.supplier?.name && (
           <p className="text-xs font-medium text-indigo-700 mb-2">{product.supplier.name}</p>
         )}
@@ -148,9 +158,9 @@ function ProductsPageContent() {
     )
   }
 
-  const pageTitle = isGestor ? 'Catálogo curado' : 'Meu catálogo'
+  const pageTitle = isGestor ? 'Catálogo curado' : 'Meus produtos'
   const pageSubtitle = isGestor
-    ? `${products.length} produto(s) de ${suppliers.length} fornecedor(es) homologado(s) — inputs para pedidos das obras`
+    ? `${products.filter(p => (p.catalog_status ?? 'approved') === 'approved').length} aprovado(s) · ${products.filter(p => p.catalog_status === 'pending').length} aguardando`
     : `${products.length} produto${products.length !== 1 ? 's' : ''}`
 
   return (
@@ -158,28 +168,25 @@ function ProductsPageContent() {
       <PageFeedHeader
         title={pageTitle}
         subtitle={pageSubtitle}
-        menuItems={canEditCatalog ? [
-          ...(role === 'fornecedor' ? [{ label: 'Cadastrar produto', onClick: () => { setEditing(undefined); setModalOpen(true) } }] : []),
-          ...(isGestor ? [
-            { label: 'Novo pedido', href: '/orders?new=1' },
-            { label: 'Cadastrar produto (gestora)', onClick: () => { setEditing(undefined); setModalOpen(true) } },
-            { label: 'Exportar CSV', onClick: () => productsApi.exportCsv().catch(() => toast.error('Erro ao exportar')) },
-          ] : []),
+        menuItems={isGestor ? [
+          { label: 'Pedir SKU', href: '/sku-requests?new=1' },
+          { label: 'Novo pedido', href: '/orders?new=1' },
+          { label: 'Exportar CSV', onClick: () => productsApi.exportCsv().catch(() => toast.error('Erro ao exportar')) },
+        ] : role === 'fornecedor' ? [
+          { label: 'Ver SKUs solicitados', href: '/sku-requests' },
         ] : undefined}
       />
 
       {role === 'fornecedor' && (
         <p className="text-sm text-indigo-900 bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 mb-4">
-          Cadastre os produtos da sua empresa. A Estlar usa este catálogo ao montar pedidos das obras — você não escolhe a obra; recebe o pedido em <strong>Meus pedidos</strong>.
+          Cadastre produtos em <strong>SKUs solicitados</strong>. Após aprovação da Estlar, entram no catálogo da obra.
         </p>
       )}
 
-      {role === 'fornecedor' && (
-        <div className="mb-4">
-          <Button onClick={() => { setEditing(undefined); setModalOpen(true) }}>
-            <Plus size={16} /> Cadastrar produto
-          </Button>
-        </div>
+      {isGestor && products.some(p => p.catalog_status === 'pending') && (
+        <p className="text-sm text-amber-900 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
+          {products.filter(p => p.catalog_status === 'pending').length} SKU(s) aguardando aprovação — use também a página <strong>SKUs pedidos</strong>.
+        </p>
       )}
 
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
@@ -216,13 +223,13 @@ function ProductsPageContent() {
           title={search || supplierFilter ? 'Nenhum resultado' : 'Catálogo vazio'}
           description={
             isGestor
-              ? 'Homologue fornecedores, convide-os ao portal e aguarde o input de produtos — ou cadastre manualmente.'
+              ? 'Peça SKUs aos fornecedores em SKUs pedidos — produtos aprovados aparecem aqui.'
               : role === 'fornecedor'
-                ? 'Cadastre seus produtos para a Estlar montar pedidos das obras.'
+                ? 'Cadastre SKUs em SKUs solicitados — após aprovação aparecem aqui.'
                 : 'Sem produtos visíveis.'
           }
-          actionLabel={role === 'fornecedor' && !search ? 'Cadastrar produto' : undefined}
-          onAction={role === 'fornecedor' && !search ? () => { setEditing(undefined); setModalOpen(true) } : undefined}
+          actionLabel={role === 'fornecedor' ? 'Ver SKUs solicitados' : isGestor ? 'Pedir SKU' : undefined}
+          onAction={role === 'fornecedor' ? () => { window.location.href = '/sku-requests' } : isGestor ? () => { window.location.href = '/sku-requests?new=1' } : undefined}
         />
       ) : isGestor && groupedBySupplier ? (
         <div className="space-y-6">

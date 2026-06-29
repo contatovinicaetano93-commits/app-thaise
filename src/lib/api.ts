@@ -1,7 +1,7 @@
 // Cliente tipado que o frontend usa para consumir /api/*
 // NUNCA importe supabase diretamente nas páginas — use este arquivo
 
-import type { Supplier, Client, Product, Order, Project, Opportunity, WeeklyReport, WelcomeKit, ProjectDiaryEntry, ScopeAmendment, Quotation } from '@/types/database'
+import type { Supplier, Client, Product, Order, Project, Opportunity, WeeklyReport, WelcomeKit, ProjectDiaryEntry, ScopeAmendment, Quotation, SkuRequest, ProjectQuote } from '@/types/database'
 import type { QcpsScores } from '@/lib/qcps'
 import type { BriefingData, BriefingType } from '@/lib/briefing'
 
@@ -156,10 +156,16 @@ export const opportunitiesApi = {
 
 // --- Products ---
 export const productsApi = {
-  list: (supplierId?: string): ApiResult<Product[]> =>
-    request(`/api/products${supplierId ? `?supplier_id=${supplierId}` : ''}`),
+  list: (opts?: { supplierId?: string; pending?: boolean; projectId?: string }): ApiResult<Product[]> => {
+    const params = new URLSearchParams()
+    if (opts?.supplierId) params.set('supplier_id', opts.supplierId)
+    if (opts?.pending) params.set('pending', '1')
+    if (opts?.projectId) params.set('project_id', opts.projectId)
+    const q = params.toString()
+    return request(`/api/products${q ? `?${q}` : ''}`)
+  },
 
-  create: (data: Omit<Product, 'id' | 'created_at'>): ApiResult<Product> =>
+  create: (data: Omit<Product, 'id' | 'created_at' | 'supplier' | 'project'> & { sku_request_id?: string }): ApiResult<Product> =>
     request('/api/products', { method: 'POST', body: JSON.stringify(data) }),
 
   update: (id: string, data: Partial<Product>): ApiResult<Product> =>
@@ -170,6 +176,65 @@ export const productsApi = {
 
   exportCsv: (): Promise<void> =>
     downloadCsv('/api/products/export', `produtos-${new Date().toISOString().slice(0, 10)}.csv`),
+}
+
+export const skuRequestsApi = {
+  list: (opts?: { projectId?: string; status?: string }): ApiResult<SkuRequest[]> => {
+    const params = new URLSearchParams()
+    if (opts?.projectId) params.set('project_id', opts.projectId)
+    if (opts?.status) params.set('status', opts.status)
+    const q = params.toString()
+    return request(`/api/sku-requests${q ? `?${q}` : ''}`)
+  },
+
+  create: (data: {
+    project_id: string
+    supplier_id: string
+    name: string
+    category?: string
+    unit?: string
+    quantity_estimated?: number | null
+    due_date?: string | null
+    notes?: string | null
+  }): ApiResult<SkuRequest> =>
+    request('/api/sku-requests', { method: 'POST', body: JSON.stringify(data) }),
+
+  action: (id: string, action: 'approve' | 'reject' | 'cancel'): ApiResult<SkuRequest> =>
+    request(`/api/sku-requests/${id}`, { method: 'PATCH', body: JSON.stringify({ action }) }),
+}
+
+export const projectQuotesApi = {
+  list: (opts?: { projectId?: string; status?: string }): ApiResult<ProjectQuote[]> => {
+    const params = new URLSearchParams()
+    if (opts?.projectId) params.set('project_id', opts.projectId)
+    if (opts?.status) params.set('status', opts.status)
+    const q = params.toString()
+    return request(`/api/project-quotes${q ? `?${q}` : ''}`)
+  },
+
+  get: (id: string): ApiResult<ProjectQuote> =>
+    request(`/api/project-quotes/${id}`),
+
+  create: (data: { project_id: string; title?: string; notes?: string | null }): ApiResult<ProjectQuote> =>
+    request('/api/project-quotes', { method: 'POST', body: JSON.stringify(data) }),
+
+  update: (id: string, data: { title?: string; notes?: string | null; status?: 'cancelled' }): ApiResult<ProjectQuote> =>
+    request(`/api/project-quotes/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  saveLines: (
+    id: string,
+    lines: Array<{ product_id: string; supplier_id: string; quantity: number; unit_price: number; notes?: string | null }>,
+  ): ApiResult<ProjectQuote> =>
+    request(`/api/project-quotes/${id}/lines`, { method: 'PUT', body: JSON.stringify({ lines }) }),
+
+  send: (id: string): ApiResult<ProjectQuote> =>
+    request(`/api/project-quotes/${id}/send`, { method: 'POST' }),
+
+  decide: (id: string, decision: 'approve' | 'reject', rejection_note?: string | null): ApiResult<ProjectQuote> =>
+    request(`/api/project-quotes/${id}/decide`, { method: 'POST', body: JSON.stringify({ decision, rejection_note }) }),
+
+  fulfill: (id: string): ApiResult<{ order_ids: string[]; count: number }> =>
+    request(`/api/project-quotes/${id}/fulfill`, { method: 'POST' }),
 }
 
 // --- Orders ---
@@ -238,6 +303,18 @@ export const projectsApi = {
 
   remove: (id: string): ApiResult<void> =>
     request(`/api/projects/${id}`, { method: 'DELETE' }),
+
+  savePhases: (
+    id: string,
+    phases: Array<{ id?: string; name: string; weight_pct: number }>,
+  ): ApiResult<import('@/types/database').ProjectPhaseRow[]> =>
+    request(`/api/projects/${id}/phases`, { method: 'PUT', body: JSON.stringify({ phases }) }),
+
+  updateProgress: (
+    id: string,
+    data: { progress_pct?: number; current_phase_id?: string | null; portal_enabled?: boolean },
+  ): ApiResult<Project> =>
+    request(`/api/projects/${id}/progress`, { method: 'PATCH', body: JSON.stringify(data) }),
 }
 
 // --- Agent (AI Scoring) ---

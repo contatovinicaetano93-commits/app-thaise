@@ -18,12 +18,15 @@ export async function assertActiveSupplier(supplierId: string) {
 
 export async function assertProductForSupplier(productId: string, supplierId: string) {
   const db = createServiceClient()
-  const { data } = await db.from('products').select('id, supplier_id, active').eq('id', productId).single() as {
-    data: { id: string; supplier_id: string; active: boolean } | null
+  const { data } = await db.from('products').select('id, supplier_id, active, catalog_status').eq('id', productId).single() as {
+    data: { id: string; supplier_id: string; active: boolean; catalog_status?: string } | null
   }
   if (!data) throw new Error('Produto não encontrado')
   if (data.supplier_id !== supplierId) throw new Error('Produto não pertence ao fornecedor selecionado')
   if (!data.active) throw new Error('Produto inativo — não pode ser usado em pedidos')
+  if (data.catalog_status && data.catalog_status !== 'approved') {
+    throw new Error('Produto aguardando aprovação da Estlar — não pode ser usado em pedidos')
+  }
 }
 
 export async function assertProjectHasClient(clientId: string | null | undefined) {

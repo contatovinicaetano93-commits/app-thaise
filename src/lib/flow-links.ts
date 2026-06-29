@@ -24,6 +24,19 @@ export function productCreateUrl(supplierId?: string) {
   return `/products?${q.toString()}`
 }
 
+export function skuRequestCreateUrl(params?: { projectId?: string; supplierId?: string }) {
+  const q = new URLSearchParams({ new: '1' })
+  if (params?.projectId) q.set('project_id', params.projectId)
+  if (params?.supplierId) q.set('supplier_id', params.supplierId)
+  return `/sku-requests?${q.toString()}`
+}
+
+export function quoteCreateUrl(projectId?: string) {
+  const q = new URLSearchParams({ new: '1' })
+  if (projectId) q.set('project_id', projectId)
+  return `/quotes?${q.toString()}`
+}
+
 export function inviteUserUrl(params: { role: 'cliente' | 'fornecedor'; clientId?: string; supplierId?: string }) {
   const q = new URLSearchParams({ role: params.role })
   if (params.clientId) q.set('client_id', params.clientId)

@@ -4,6 +4,12 @@ import { clearSupabaseAuthCookies, hasSupabaseAuthCookie } from '@/lib/supabase/
 import { canAccessRoute, type UserRole } from '@/lib/auth/roles'
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase/env'
 import { rateLimitAsync } from '@/lib/rate-limit'
+import {
+  checkPortalAccess,
+  isPortalGateExempt,
+  PORTAL_GATE_PATH,
+  roleNeedsPortalGate,
+} from '@/lib/portal-access'
 
 const PUBLIC_PATHS = ['/login', '/onboarding', '/intake', '/privacidade', '/termos', '/auth/reset-password', '/auth/callback']
 
@@ -83,7 +89,7 @@ export async function middleware(req: NextRequest) {
   if (user && !isPublic && !pathname.startsWith('/api/')) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role, onboarding_completed_at')
+      .select('role, onboarding_completed_at, supplier_id, client_id')
       .eq('id', user.id)
       .single()
 
@@ -98,6 +104,35 @@ export async function middleware(req: NextRequest) {
     const role = profile?.role as UserRole | undefined
     if (role && !canAccessRoute(role, pathname)) {
       return NextResponse.redirect(new URL('/dashboard', req.url))
+    }
+
+    if (
+      role &&
+      roleNeedsPortalGate(role) &&
+      !isPortalGateExempt(pathname) &&
+      pathname !== PORTAL_GATE_PATH
+    ) {
+      const access = await checkPortalAccess(supabase, {
+        role,
+        supplier_id: profile!.supplier_id,
+        client_id: profile!.client_id,
+      })
+      if (!access.allowed) {
+        const gateUrl = new URL(PORTAL_GATE_PATH, req.url)
+        gateUrl.searchParams.set('reason', access.reason)
+        return NextResponse.redirect(gateUrl)
+      }
+    }
+
+    if (role && roleNeedsPortalGate(role) && pathname === PORTAL_GATE_PATH) {
+      const access = await checkPortalAccess(supabase, {
+        role,
+        supplier_id: profile!.supplier_id,
+        client_id: profile!.client_id,
+      })
+      if (access.allowed) {
+        return NextResponse.redirect(new URL('/dashboard', req.url))
+      }
     }
   }
 

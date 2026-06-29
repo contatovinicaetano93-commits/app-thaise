@@ -14,7 +14,7 @@ export function IncompleteProfileBanner() {
         <div>
           <p className="font-medium">Conta incompleta</p>
           <p className="text-amber-800/90 mt-0.5">
-            Seu usuário ainda não está vinculado a um fornecedor. Peça ao gestor para convidar você em Usuários.
+            Aguarde o convite da Estlar após homologação do fornecedor.
           </p>
         </div>
       </div>
@@ -28,7 +28,7 @@ export function IncompleteProfileBanner() {
         <div>
           <p className="font-medium">Conta incompleta</p>
           <p className="text-amber-800/90 mt-0.5">
-            Seu usuário ainda não está vinculado a um cliente. Peça ao gestor para convidar você após o fechamento comercial.
+            Aguarde a Estlar liberar sua obra no portal e enviar o convite de acesso.
           </p>
         </div>
       </div>

@@ -80,8 +80,8 @@ export function OrderForm({ defaultProjectId, defaultClientId, defaultSupplierId
 
   useEffect(() => {
     if (!supplierId) { setProducts([]); return }
-    productsApi.list(supplierId)
-      .then(setProducts)
+    productsApi.list({ supplierId })
+      .then(list => setProducts(list.filter(p => p.active && (p.catalog_status ?? 'approved') === 'approved')))
       .catch(() => toast.error('Erro ao carregar produtos'))
     setValue('product_id', '')
     setValue('unit_price', 0)

@@ -16,6 +16,9 @@ const updateSchema = z.object({
   score_c: z.coerce.number().min(0).max(10).optional(),
   score_p: z.coerce.number().min(0).max(10).optional(),
   score_s: z.coerce.number().min(0).max(10).optional(),
+  progress_pct: z.coerce.number().min(0).max(100).optional(),
+  portal_enabled: z.boolean().optional(),
+  current_phase_id: z.string().uuid().nullable().optional(),
 })
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

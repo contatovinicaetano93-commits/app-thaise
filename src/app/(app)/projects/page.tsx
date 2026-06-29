@@ -19,14 +19,17 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { projectsApi, agentsApi } from '@/lib/api'
 import { isPhaseComplete, phaseProgress } from '@/lib/checklists'
 import { ProjectOpsPanel } from '@/components/projects/ProjectOpsPanel'
+import { ProjectPhasesPanel } from '@/components/projects/ProjectPhasesPanel'
+import { ProjectProgressBar } from '@/components/projects/ProjectProgressBar'
 import { ProjectRiskBadge } from '@/components/projects/ProjectRiskBadge'
 import { CLIENT_PHASE_LABELS, PHASES } from '@/lib/phases'
+import { isSimpleMode } from '@/lib/app-mode'
 import { PHASE_PROMPTS } from '@/lib/phase-prompts'
 import { useDebounce, useLiveRefresh } from '@/lib/hooks'
 import { toast } from 'sonner'
 import type { Project } from '@/types/database'
 import type { PhaseChecklist as PhaseChecklistType } from '@/lib/auth/roles'
-import { inviteUserUrl, orderCreateUrl } from '@/lib/flow-links'
+import { orderCreateUrl, inviteUserUrl, skuRequestCreateUrl, quoteCreateUrl } from '@/lib/flow-links'
 
 const STATUS_LABEL: Record<string, string> = {
   active: 'Ativo', paused: 'Pausado', completed: 'Concluído', cancelled: 'Cancelado',
@@ -185,23 +188,28 @@ function ProjectsPageContent() {
     return matchesSearch && matchesStatus && matchesPhase
   })
 
+  const simple = isSimpleMode()
+
   return (
     <div>
       <PageFeedHeader
-        title="Empreendimentos"
-        subtitle="Jornada guiada A → F · checklist obrigatório"
+        title={role === 'cliente' ? 'Minha obra' : 'Obras'}
+        subtitle={simple
+          ? 'Fases, progresso e portal do cliente'
+          : 'Jornada guiada A → F · checklist obrigatório'}
         menuItems={isGestor ? [
-          { label: 'Novo empreendimento', onClick: () => openNewProject() },
-          { label: 'Pipeline comercial', href: '/pipeline' },
+          { label: 'Nova obra', onClick: () => openNewProject() },
+          { label: 'Convidar usuário', href: '/users' },
         ] : role === 'cliente' ? [
           { label: 'Ver pedidos', href: '/orders' },
+          { label: 'Relatório', href: '/reports/weekly' },
         ] : undefined}
       />
 
       {isGestor && (
         <div className="mb-4">
           <Button onClick={() => openNewProject()}>
-            <Plus size={16} /> Novo empreendimento
+            <Plus size={16} /> Nova obra
           </Button>
         </div>
       )}
@@ -275,10 +283,13 @@ function ProjectsPageContent() {
                 title={project.name}
                 defaultOpen={forceOpenId === project.id}
                 summary={[
-                  role === 'cliente' ? CLIENT_PHASE_LABELS[project.phase].label : `Fase ${project.phase}`,
+                  simple && project.progress_pct != null ? `${project.progress_pct.toFixed(0)}%` : null,
+                  !simple && (role === 'cliente' ? CLIENT_PHASE_LABELS[project.phase].label : `Fase ${project.phase}`),
+                  project.current_phase?.name,
                   project.client?.name,
                   project.location,
                   STATUS_LABEL[project.status],
+                  project.portal_enabled ? 'Portal ativo' : null,
                 ].filter(Boolean).join(' · ')}
                 headerExtra={
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[project.status]}`}>
@@ -286,10 +297,14 @@ function ProjectsPageContent() {
                   </span>
                 }
                 menuItems={isGestor ? [
+                  { label: 'Pedir SKU desta obra', href: skuRequestCreateUrl({ projectId: project.id }) },
+                  { label: 'Novo orçamento', href: quoteCreateUrl(project.id) },
                   { label: 'Criar pedido desta obra', href: orderCreateUrl({ projectId: project.id, clientId: project.client_id ?? undefined }) },
-                  ...(project.client_id ? [{ label: 'Convidar cliente', href: inviteUserUrl({ role: 'cliente', clientId: project.client_id }) }] : []),
-                  { label: 'Gerar resumo', onClick: () => handleSummary(project.id) },
-                  { label: 'Recalcular QCPS', onClick: () => handleScore(project.id), disabled: scoring === project.id },
+                  ...(project.client_id && project.portal_enabled ? [{ label: 'Convidar cliente', href: inviteUserUrl({ role: 'cliente', clientId: project.client_id }) }] : []),
+                  ...(!simple ? [
+                    { label: 'Gerar resumo', onClick: () => handleSummary(project.id) },
+                    { label: 'Recalcular QCPS', onClick: () => handleScore(project.id), disabled: scoring === project.id },
+                  ] : []),
                   { label: 'Editar', onClick: () => { setEditing(project); setModalOpen(true) } },
                   { label: 'Excluir', onClick: () => setDeleting(project), danger: true },
                 ] : role === 'cliente' ? [
@@ -299,8 +314,26 @@ function ProjectsPageContent() {
                 <div className="flex flex-wrap gap-3 text-xs text-gray-500 mb-3">
                   {project.client && <span className="flex items-center gap-1"><Building2 size={12} />{project.client.name}</span>}
                   {project.location && <span className="flex items-center gap-1"><MapPin size={12} />{project.location}</span>}
+                  {isGestor && project.portal_enabled && (
+                    <span className="text-emerald-600 font-medium">Portal liberado</span>
+                  )}
                 </div>
 
+                {(simple || role === 'cliente') && (
+                  <div className="mb-4">
+                    <ProjectProgressBar project={project} compact={role === 'cliente'} />
+                  </div>
+                )}
+
+                {isGestor && (
+                  <ProjectPhasesPanel
+                    project={project}
+                    onUpdate={updated => setProjects(prev => prev.map(p => p.id === updated.id ? updated : p))}
+                  />
+                )}
+
+                {!simple && (
+                <>
                 <p className="text-xs text-violet-600 bg-violet-50 rounded-lg px-3 py-2 mb-3">
                   {PHASE_PROMPTS[project.phase].guia}
                 </p>
@@ -332,14 +365,16 @@ function ProjectsPageContent() {
                 <div className="mt-4 pt-4 border-t border-gray-50">
                   <QcpsBar scores={project} />
                 </div>
+                </>
+                )}
 
-                {isGestor ? (
+                {isGestor && !simple ? (
                   <ProjectOpsPanel projectId={project.id} projectName={project.name} />
-                ) : role === 'cliente' ? (
+                ) : role === 'cliente' && !simple ? (
                   <ProjectOpsPanel projectId={project.id} projectName={project.name} readOnly />
                 ) : null}
 
-                <ActivityTimeline entityType="project" entityId={project.id} />
+                {!simple && <ActivityTimeline entityType="project" entityId={project.id} />}
               </PanelCard>
             )
           })}

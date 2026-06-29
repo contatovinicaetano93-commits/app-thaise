@@ -8,6 +8,8 @@ import { checkProjectCap } from '@/lib/estlar/cap'
 import { auditAndInvalidate } from '@/lib/memory/audit'
 import { cacheGet, cacheSet } from '@/lib/cache'
 import { parsePagination, paginationMeta } from '@/lib/pagination'
+import { seedDefaultPhases, fetchPhasesForProjects } from '@/lib/projects/phases-server'
+import type { Project } from '@/types/database'
 
 const qcpsSchema = z.object({
   score_q: z.coerce.number().min(0).max(10).default(5),
@@ -50,9 +52,16 @@ export async function GET(req: NextRequest) {
     if (error) return err(error.message, 500)
 
     const filtered = filterProjectsByRole(data ?? [], profile!.role, profile!)
-    const meta = paginationMeta(filtered, limit, 'updated_at')
-    await cacheSet(cacheKey, { data: filtered, meta })
-    return ok(filtered, meta)
+    const phaseMap = await fetchPhasesForProjects(db, filtered.map(p => (p as Project).id))
+    const enriched = filtered.map(p => {
+      const project = p as Project
+      const phases = phaseMap.get(project.id) ?? []
+      const current = phases.find(ph => ph.id === project.current_phase_id) ?? phases[0] ?? null
+      return { ...project, phases, current_phase: current }
+    })
+    const meta = paginationMeta(enriched, limit, 'updated_at')
+    await cacheSet(cacheKey, { data: enriched, meta })
+    return ok(enriched, meta)
   } catch (e) {
     return handleError(e)
   }
@@ -84,6 +93,8 @@ export async function POST(req: NextRequest) {
     if (error) return err(error.message, 500)
 
     const project = data as { id: string; name: string }
+    await seedDefaultPhases(db, project.id)
+
     await auditAndInvalidate({
       entityType: 'project',
       entityId: project.id,
