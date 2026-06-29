@@ -19,8 +19,16 @@ Guia para colocar o app em produção (Vercel + Supabase).
    9. `supabase/migration_resilience_memory.sql` — processed_jobs (idempotência)
    10. `supabase/migration_rls_tighten.sql` — RLS restritivo em webhooks, job_logs, agent_insights
    11. `supabase/migration_qcps_projects.sql` + `supabase/migration_phase2.sql` — se banco legado
+   12. **Estlar Hub v2 (obrigatório para o fluxo canônico):**
+       - `supabase/migration_sprint1_v2.sql` — fases da obra, progress_pct, portal_enabled
+       - `supabase/migration_sprint2_sku.sql` — pedidos de SKU, catalog_status
+       - `supabase/migration_sprint3_quotes.sql` — orçamentos com aprovação do cliente
+       - `supabase/migration_sprint4_notify.sql` — log de notificações WhatsApp/e-mail
+       - `supabase/migration_sprint5_polish.sql` — status fulfilled nos orçamentos
 
-   > ⚠️ Pular `migration_rls_by_role.sql` deixa todas as tabelas abertas para qualquer usuário autenticado. Pular `migration_estlar_eos.sql` ou `migration_pipeline.sql` causa erros 500 silenciosos nas features EOS e Pipeline.
+   > ⚠️ Pular `migration_rls_by_role.sql` deixa todas as tabelas abertas para qualquer usuário autenticado. Pular migrations Sprint 1–5 causa erros 500 nas features v2 (obras, SKUs, orçamentos, notificações).
+
+   Verificar após aplicar: `npm run setup:verify-migrations`
 3. **Authentication** → habilite Email
 4. Crie usuários em **Authentication → Users** com metadata:
 

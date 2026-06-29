@@ -20,6 +20,7 @@ const STATUS_LABEL: Record<string, string> = {
   draft: 'Rascunho',
   sent: 'Aguardando cliente',
   approved: 'Aprovado pelo cliente',
+  fulfilled: 'Pedidos gerados',
   rejected: 'Rejeitado',
   cancelled: 'Cancelado',
 }
@@ -28,6 +29,7 @@ const STATUS_COLOR: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-600',
   sent: 'bg-violet-100 text-violet-800',
   approved: 'bg-emerald-100 text-emerald-700',
+  fulfilled: 'bg-indigo-100 text-indigo-700',
   rejected: 'bg-red-100 text-red-700',
   cancelled: 'bg-gray-100 text-gray-400',
 }
@@ -219,6 +221,8 @@ function QuotesPageContent() {
               ] : isGestor && quote.status === 'approved' ? [
                 { label: 'Gerar pedidos', onClick: () => handleFulfill(quote.id) },
                 { label: 'Ver pedidos', href: '/orders' },
+              ] : isGestor && quote.status === 'fulfilled' ? [
+                { label: 'Ver pedidos', href: '/orders' },
               ] : undefined}
             >
               {quote.notes && <p className="text-sm text-gray-600 mb-3">{quote.notes}</p>}
@@ -285,6 +289,11 @@ function QuotesPageContent() {
                   <Button onClick={() => handleFulfill(quote.id)} loading={acting === quote.id}>
                     <ShoppingCart size={14} /> Gerar pedidos
                   </Button>
+                )}
+                {isGestor && quote.status === 'fulfilled' && (
+                  <Link href="/orders" className="text-sm text-indigo-700 font-medium self-center">
+                    Pedidos gerados — ver lista →
+                  </Link>
                 )}
                 {isGestor && quote.status === 'approved' && (
                   <Link href="/orders" className="text-sm text-violet-700 font-medium self-center">Ver pedidos →</Link>

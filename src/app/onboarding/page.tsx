@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Truck, Users, Package, ShoppingCart, Check, ArrowRight, Kanban } from 'lucide-react'
+import { Truck, Users, Package, ShoppingCart, Check, ArrowRight, Building2, Receipt, Kanban } from 'lucide-react'
 import { isSimpleMode } from '@/lib/app-mode'
 
 const GESTOR_STEPS_FULL = [
@@ -17,36 +17,38 @@ const GESTOR_STEPS_SIMPLE = [
   {
     icon: Package,
     color: 'bg-stone-100 text-stone-800',
-    title: 'Hub de curadoria interna',
-    desc: 'Você homologa fornecedores, vê os produtos deles no catálogo curado e monta o melhor pedido para cada obra.',
+    title: 'Hub Estlar — fluxo da obra',
+    desc: 'Obra → homologar fornecedor → pedir SKU → montar orçamento → cliente aprova → gerar pedidos.',
     cta: 'Entendido',
   },
   {
-    icon: Kanban,
+    icon: Building2,
     color: 'bg-violet-100 text-violet-600',
-    title: 'Fluxo em 5 passos',
-    desc: 'Pipeline → Obra → Homologação → Catálogo curado → Pedido → Relatório 360 ao cliente.',
+    title: 'Comece pela obra',
+    desc: 'Cadastre cliente e obra, defina as fases e o % de progresso. Libere o portal antes de enviar orçamento.',
     cta: 'Entendido',
-    action: '/pipeline',
-    actionLabel: 'Começar pelo pipeline →',
+    action: '/projects',
+    actionLabel: 'Ir para Obras →',
   },
   {
-    icon: ShoppingCart,
-    color: 'bg-rose-100 text-rose-600',
-    title: 'Pronto',
-    desc: 'O menu lateral segue esse fluxo. Use "Próximo passo" no dashboard quando precisar.',
+    icon: Receipt,
+    color: 'bg-emerald-100 text-emerald-600',
+    title: 'Próximo passo no dashboard',
+    desc: 'O card "Próximo passo" conduz você em cada etapa — homologação, SKU, orçamento, pedidos.',
     cta: 'Ir para o Dashboard',
   },
 ]
 
 const FORNECEDOR_STEPS = [
-  { icon: Package, color: 'bg-amber-100 text-amber-600', title: 'Portal Fornecedor', desc: 'Cadastre produtos no catálogo. A Estlar monta pedidos das obras — você executa em Meus pedidos.', cta: 'Começar' },
-  { icon: ShoppingCart, color: 'bg-rose-100 text-rose-600', title: 'Pedidos', desc: 'Você verá apenas os pedidos vinculados ao seu fornecedor homologado.', cta: 'Ver pedidos', action: '/orders' },
+  { icon: Package, color: 'bg-amber-100 text-amber-600', title: 'Portal Fornecedor', desc: 'A Estlar pede SKUs — você cadastra produtos. Pedidos aparecem em Meus pedidos.', cta: 'Começar' },
+  { icon: Package, color: 'bg-violet-100 text-violet-600', title: 'SKUs solicitados', desc: 'Quando a Estlar pedir um SKU, cadastre o produto aqui.', cta: 'Ver SKUs', action: '/sku-requests' },
+  { icon: ShoppingCart, color: 'bg-rose-100 text-rose-600', title: 'Pedidos', desc: 'Separe os produtos quando receber notificação de pedido.', cta: 'Ver pedidos', action: '/orders' },
 ]
 
 const CLIENTE_STEPS = [
-  { icon: Package, color: 'bg-stone-100 text-stone-700', title: 'Portal do Cliente', desc: 'Somente leitura: acompanhe sua obra, pedidos e Relatório 360 enviado pela Estlar.', cta: 'Começar' },
-  { icon: Users, color: 'bg-emerald-100 text-emerald-600', title: 'Minha obra', desc: 'Veja em qual fase A–F está seu empreendimento.', cta: 'Ver obra', action: '/projects' },
+  { icon: Package, color: 'bg-stone-100 text-stone-700', title: 'Portal do Cliente', desc: 'Acompanhe sua obra, aprove orçamentos e veja o Relatório 360 da Estlar.', cta: 'Começar' },
+  { icon: Receipt, color: 'bg-violet-100 text-violet-700', title: 'Aprovar orçamentos', desc: 'Quando a Estlar enviar um orçamento, você aprova ou rejeita em Meus orçamentos.', cta: 'Entendido', action: '/quotes', actionLabel: 'Meus orçamentos →' },
+  { icon: Users, color: 'bg-emerald-100 text-emerald-600', title: 'Minha obra', desc: 'Veja o progresso % e as fases customizadas do seu empreendimento.', cta: 'Ver obra', action: '/projects' },
 ]
 
 export default function OnboardingPage() {

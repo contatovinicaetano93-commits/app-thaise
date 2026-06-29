@@ -5,6 +5,8 @@ import { requireGestor } from '@/lib/auth/api-context'
 import { assertActiveSupplier, assertProductForSupplier } from '@/lib/gates'
 import { logActivity, logOrderStatus } from '@/lib/memory/events'
 import { auditAndInvalidate } from '@/lib/memory/audit'
+import { enqueueOrderJob } from '@/lib/queue'
+import { refreshProjectReport } from '@/lib/projects/intelligence'
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -17,7 +19,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     const { data: quote } = await db
       .from('project_quotes')
       .select(`
-        id, project_id, client_id, status, title,
+        id, project_id, client_id, status, title, fulfilled_at,
         lines:project_quote_lines(product_id, supplier_id, quantity, unit_price, notes)
       `)
       .eq('id', id)
@@ -31,9 +33,13 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
       client_id: string
       status: string
       title: string
+      fulfilled_at?: string | null
       lines: Array<{ product_id: string; supplier_id: string; quantity: number; unit_price: number; notes: string | null }>
     }
 
+    if (row.status === 'fulfilled' || row.fulfilled_at) {
+      return err('Este orçamento já gerou pedidos', 422)
+    }
     if (row.status !== 'approved') {
       return err('Só orçamentos aprovados pelo cliente podem gerar pedidos', 422)
     }
@@ -73,7 +79,19 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
         detail: row.title,
         actorId: profile!.id,
       })
+
+      enqueueOrderJob('order.approved', {
+        orderId,
+        supplierId: line.supplier_id,
+        clientId: row.client_id,
+        projectId: row.project_id,
+      }).catch(console.error)
     }
+
+    await db
+      .from('project_quotes')
+      .update({ status: 'fulfilled', fulfilled_at: new Date().toISOString() } as never)
+      .eq('id', id)
 
     await auditAndInvalidate({
       entityType: 'project',
@@ -84,6 +102,8 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
       actorId: profile!.id,
       cachePrefix: 'orders',
     })
+
+    refreshProjectReport(row.project_id).catch(console.error)
 
     return ok({ order_ids: created, count: created.length })
   } catch (e) {

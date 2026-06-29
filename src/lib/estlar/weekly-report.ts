@@ -2,6 +2,27 @@ import { createServiceClient } from '@/lib/supabase-server'
 import { phaseIndex, PHASE_ORDER } from '@/lib/phases'
 import type { ProjectPhase } from '@/lib/phases'
 
+async function loadProjectV2(db: ReturnType<typeof createServiceClient>, projectId: string) {
+  const { data } = await db
+    .from('projects')
+    .select(`
+      name, phase, status, checklist, progress_pct, current_phase_id,
+      current_phase:project_phases(name)
+    `)
+    .eq('id', projectId)
+    .single()
+
+  return data as {
+    name: string
+    phase: ProjectPhase
+    status: string
+    checklist?: Record<string, unknown>
+    progress_pct?: number | null
+    current_phase_id?: string | null
+    current_phase?: { name: string } | null
+  } | null
+}
+
 export interface WeeklyReportDraft {
   weekLabel: string
   weekStart: string
@@ -35,15 +56,8 @@ export async function generateWeeklyReportDraft(projectId: string): Promise<Week
   const weekEnd = new Date(weekStart)
   weekEnd.setDate(weekEnd.getDate() + 7)
 
-  const { data: project } = await db
-    .from('projects')
-    .select('name, phase, status, checklist')
-    .eq('id', projectId)
-    .single()
-
-  if (!project) throw new Error('Empreendimento não encontrado')
-
-  const proj = project as { name: string; phase: ProjectPhase; status: string; checklist?: Record<string, unknown> }
+  const proj = await loadProjectV2(db, projectId)
+  if (!proj) throw new Error('Empreendimento não encontrado')
 
   const { data: events } = await db
     .from('activity_events')
@@ -72,19 +86,34 @@ export async function generateWeeklyReportDraft(projectId: string): Promise<Week
         return ev.detail ? `${ev.title}: ${ev.detail}` : ev.title
       })
 
+  const phaseName = proj.current_phase?.name
+  const progressPct = proj.progress_pct != null ? Number(proj.progress_pct) : null
+
   if (completed.length === 0) {
-    completed.push(`Empreendimento em Fase ${proj.phase} — ${proj.name}`)
+    if (phaseName && progressPct != null) {
+      completed.push(`${proj.name} — ${phaseName} (${progressPct.toFixed(0)}%)`)
+    } else {
+      completed.push(`Empreendimento em Fase ${proj.phase} — ${proj.name}`)
+    }
   }
 
   const phaseIdx = phaseIndex(proj.phase)
-  const schedulePct = Math.round(((phaseIdx + 0.5) / PHASE_ORDER.length) * 100)
+  const schedulePct = progressPct != null
+    ? Math.round(progressPct)
+    : Math.round(((phaseIdx + 0.5) / PHASE_ORDER.length) * 100)
 
   const nextSteps: string[] = []
   if (proj.status === 'active') {
-    nextSteps.push(`Avançar entregas da Fase ${proj.phase}`)
+    if (phaseName) {
+      nextSteps.push(`Continuar fase: ${phaseName}`)
+    } else {
+      nextSteps.push(`Avançar entregas da Fase ${proj.phase}`)
+    }
     if (pending.length > 0) nextSteps.push(`${pending.length} pedido(s) em andamento`)
-    const nextPhase = PHASE_ORDER[phaseIdx + 1]
-    if (nextPhase) nextSteps.push(`Preparar transição para Fase ${nextPhase}`)
+    if (!phaseName) {
+      const nextPhase = PHASE_ORDER[phaseIdx + 1]
+      if (nextPhase) nextSteps.push(`Preparar transição para Fase ${nextPhase}`)
+    }
   }
 
   const { data: diary } = await db

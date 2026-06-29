@@ -57,6 +57,11 @@ const MIGRATIONS = [
   { name: 'estlar_eos', file: 'supabase/migration_estlar_eos.sql', table: 'weekly_reports' },
   { name: 'a_first', file: 'supabase/migration_a_first.sql', table: 'webhook_deliveries' },
   { name: 'gtm_lgpd', file: 'supabase/migration_gtm_lgpd.sql', always: true },
+  { name: 'sprint1_v2', file: 'supabase/migration_sprint1_v2.sql', table: 'project_phases' },
+  { name: 'sprint2_sku', file: 'supabase/migration_sprint2_sku.sql', table: 'sku_requests' },
+  { name: 'sprint3_quotes', file: 'supabase/migration_sprint3_quotes.sql', table: 'project_quotes' },
+  { name: 'sprint4_notify', file: 'supabase/migration_sprint4_notify.sql', table: 'order_notifications' },
+  { name: 'sprint5_polish', file: 'supabase/migration_sprint5_polish.sql', column: { table: 'project_quotes', field: 'fulfilled_at' } },
 ]
 
 async function tableExists(table) {
@@ -128,8 +133,18 @@ console.log('\n📦 Aplicando migrations pendentes...\n')
 let applied = 0
 for (const m of MIGRATIONS) {
   if (!m.always && m.table && (await tableExists(m.table))) {
-    console.log(`⏭️  ${m.name} — já aplicada (${m.table} existe)`)
-    continue
+    if (m.column) {
+      const res = await fetch(`${url}/rest/v1/${m.column.table}?select=${m.column.field}&limit=0`, {
+        headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+      })
+      if (res.ok) {
+        console.log(`⏭️  ${m.name} — já aplicada (${m.column.table}.${m.column.field} existe)`)
+        continue
+      }
+    } else {
+      console.log(`⏭️  ${m.name} — já aplicada (${m.table} existe)`)
+      continue
+    }
   }
 
   const path = resolve(root, m.file)

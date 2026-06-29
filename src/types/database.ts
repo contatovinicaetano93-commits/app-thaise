@@ -165,7 +165,7 @@ export interface ProjectPhaseRow {
 
 export type CatalogStatus = 'pending' | 'approved' | 'rejected'
 export type SkuRequestStatus = 'open' | 'submitted' | 'approved' | 'rejected' | 'cancelled'
-export type ProjectQuoteStatus = 'draft' | 'sent' | 'approved' | 'rejected' | 'cancelled'
+export type ProjectQuoteStatus = 'draft' | 'sent' | 'approved' | 'rejected' | 'cancelled' | 'fulfilled'
 
 export interface ProjectQuoteLine {
   id: string
@@ -194,6 +194,7 @@ export interface ProjectQuote {
   sent_at?: string | null
   decided_at?: string | null
   decided_by?: string | null
+  fulfilled_at?: string | null
   rejection_note?: string | null
   created_by?: string | null
   created_at: string

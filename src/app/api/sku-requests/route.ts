@@ -5,6 +5,7 @@ import { createSupabaseServer } from '@/lib/supabase/server'
 import { requireProfile, requireGestor } from '@/lib/auth/api-context'
 import { assertActiveSupplier } from '@/lib/gates'
 import { auditAndInvalidate } from '@/lib/memory/audit'
+import { notifySupplierUsers } from '@/lib/notify/portal-notify'
 import type { SkuRequest } from '@/types/database'
 
 const createSchema = z.object({
@@ -85,6 +86,14 @@ export async function POST(req: NextRequest) {
       actorId: profile!.id,
       cachePrefix: 'sku_requests',
     })
+
+    const projectName = (row.project as { name?: string } | undefined)?.name ?? 'obra'
+    await notifySupplierUsers(
+      row.supplier_id,
+      'Novo pedido de SKU da Estlar',
+      `${row.name} — ${projectName}`,
+      '/sku-requests?status=open',
+    )
 
     return ok(data, undefined, 201)
   } catch (e) {

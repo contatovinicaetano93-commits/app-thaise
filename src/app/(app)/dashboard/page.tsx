@@ -155,8 +155,8 @@ export default function DashboardPage() {
         title="Visão Geral"
         subtitle={<span className="capitalize">{monthLabel}</span>}
         menuItems={isGestor ? [
-          { label: 'Pipeline', href: '/pipeline' },
-          { label: 'Catálogo curado', href: '/products' },
+          { label: 'Obras', href: '/projects' },
+          { label: 'Orçamentos', href: '/quotes' },
           { label: 'Convidar usuário', href: '/users' },
         ] : role === 'fornecedor' ? [
           { label: 'Meu catálogo', href: '/products' },

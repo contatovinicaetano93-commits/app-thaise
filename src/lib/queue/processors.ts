@@ -4,7 +4,7 @@ import { scoreSupplier } from '@/lib/agents/scoring-agent'
 import { logActivity } from '@/lib/memory/events'
 import { jobKey, isJobProcessed, markJobProcessed } from '@/lib/queue/idempotency'
 import { dispatchWebhooks } from '@/lib/webhooks/dispatch'
-import { sendEmail } from '@/lib/notify/email'
+import { notifySupplierSeparation } from '@/lib/notify/supplier-order'
 
 export async function processOrderJob(
   jobType: OrderJobType,
@@ -19,33 +19,26 @@ export async function processOrderJob(
   const db = createServiceClient()
 
   if (jobType === 'order.approved') {
-    const { data: supplier } = await db
-      .from('suppliers')
-      .select('contact_email, name')
-      .eq('id', payload.supplierId)
-      .single() as { data: { contact_email: string; name: string } | null }
-
-    const emailResult = await sendEmail({
-      to: supplier?.contact_email ?? 'fornecedor@exemplo.com',
-      subject: `Nova OS — Pedido ${payload.orderId.slice(0, 8)}`,
-      body: `Olá ${supplier?.name ?? 'Fornecedor'}, um pedido foi aprovado e aguarda produção.`,
-    })
+    const notice = await notifySupplierSeparation(payload.orderId)
 
     await logActivity({
       entityType: 'order',
       entityId: payload.orderId,
       eventType: 'order.approved',
-      title: 'Pedido aprovado — OS enviada',
-      detail: `Notificação para ${emailResult.sent ? supplier?.contact_email : 'stub'}`,
-      metadata: { email: emailResult },
+      title: 'Pedido — separar produto',
+      detail: [
+        notice.whatsapp.sent ? 'WhatsApp enviado' : notice.whatsapp.wa_link ? 'Link WhatsApp gerado' : 'WhatsApp indisponível',
+        notice.email.sent ? 'E-mail enviado' : 'E-mail em stub',
+        notice.inApp ? 'Notificação in-app' : '',
+      ].filter(Boolean).join(' · '),
+      metadata: notice as unknown as Record<string, unknown>,
     })
 
     const result = {
       action: 'notify_supplier',
       orderId: payload.orderId,
-      supplierEmail: supplier?.contact_email,
-      email: emailResult,
-      message: 'Ordem de serviço enfileirada para o fornecedor',
+      notice,
+      message: 'Fornecedor notificado para separar produto (WhatsApp → e-mail → in-app)',
     }
     await markJobProcessed(key, jobType, payload.orderId, result)
     await dispatchWebhooks('order.approved', result)

@@ -2,14 +2,23 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { X, Building2, Users, Truck, ShoppingCart } from 'lucide-react'
+import { X, Building2, Users, Truck, Receipt, Package } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { isSimpleMode } from '@/lib/app-mode'
 
-const STEPS = [
+const STEPS_V2 = [
+  { icon: Users, title: '1. Cliente', desc: 'Registre o cliente da obra.', href: '/clients' },
+  { icon: Building2, title: '2. Obra', desc: 'Crie a obra, defina fases e % de progresso.', href: '/projects' },
+  { icon: Truck, title: '3. Homologar fornecedor', desc: 'Aprove fornecedores na fila de homologação.', href: '/pending-suppliers' },
+  { icon: Package, title: '4. Pedir SKU', desc: 'Solicite produtos ao fornecedor homologado.', href: '/sku-requests' },
+  { icon: Receipt, title: '5. Orçamento', desc: 'Monte o orçamento e envie ao cliente para aprovação.', href: '/quotes' },
+]
+
+const STEPS_LEGACY = [
   { icon: Truck, title: '1. Fornecedor', desc: 'Cadastre e homologue um fornecedor curado.', href: '/suppliers' },
   { icon: Users, title: '2. Cliente', desc: 'Registre o cliente do empreendimento.', href: '/clients' },
   { icon: Building2, title: '3. Empreendimento', desc: 'Crie o projeto na Fase A com checklist.', href: '/projects' },
-  { icon: ShoppingCart, title: '4. Primeiro pedido', desc: 'Vincule fornecedor, produto e empreendimento.', href: '/orders' },
+  { icon: Receipt, title: '4. Orçamento / Pedido', desc: 'Monte orçamento ou crie pedido direto.', href: '/quotes' },
 ]
 
 interface Props {
@@ -19,6 +28,7 @@ interface Props {
 
 export function FirstProjectWizard({ open, onClose }: Props) {
   const [step, setStep] = useState(0)
+  const STEPS = isSimpleMode() ? STEPS_V2 : STEPS_LEGACY
 
   if (!open) return null
 
@@ -29,7 +39,7 @@ export function FirstProjectWizard({ open, onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
       <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-fade-in">
         <div className="flex items-center justify-between mb-4">
-          <p className="text-xs font-medium text-violet-600 uppercase">Primeiro empreendimento em 5 min</p>
+          <p className="text-xs font-medium text-violet-600 uppercase">Primeira obra — fluxo Estlar</p>
           <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X size={18} />
           </button>

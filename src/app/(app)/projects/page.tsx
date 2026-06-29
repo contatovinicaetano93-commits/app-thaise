@@ -21,6 +21,7 @@ import { isPhaseComplete, phaseProgress } from '@/lib/checklists'
 import { ProjectOpsPanel } from '@/components/projects/ProjectOpsPanel'
 import { ProjectPhasesPanel } from '@/components/projects/ProjectPhasesPanel'
 import { ProjectProgressBar } from '@/components/projects/ProjectProgressBar'
+import { ProjectIntelligencePanel } from '@/components/projects/ProjectIntelligencePanel'
 import { ProjectRiskBadge } from '@/components/projects/ProjectRiskBadge'
 import { CLIENT_PHASE_LABELS, PHASES } from '@/lib/phases'
 import { isSimpleMode } from '@/lib/app-mode'
@@ -322,6 +323,7 @@ function ProjectsPageContent() {
                 {(simple || role === 'cliente') && (
                   <div className="mb-4">
                     <ProjectProgressBar project={project} compact={role === 'cliente'} />
+                    <ProjectIntelligencePanel projectId={project.id} compact={role === 'cliente'} />
                   </div>
                 )}
 

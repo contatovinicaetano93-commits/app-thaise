@@ -4,6 +4,7 @@ import { ok, err, handleError } from '@/lib/api-response'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { requireGestor } from '@/lib/auth/api-context'
 import { auditAndInvalidate } from '@/lib/memory/audit'
+import { refreshProjectReport } from '@/lib/projects/intelligence'
 
 const schema = z.object({
   progress_pct: z.coerce.number().min(0).max(100).optional(),
@@ -50,6 +51,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       actorId: profile!.id,
       cachePrefix: 'projects',
     })
+
+    refreshProjectReport(project.id).catch(console.error)
 
     return ok(data)
   } catch (e) {

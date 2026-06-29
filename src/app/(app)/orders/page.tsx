@@ -13,6 +13,7 @@ import { ordersApi } from '@/lib/api'
 import { useDebounce, useLiveRefresh } from '@/lib/hooks'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { SipocBadge } from '@/components/ui/SipocBadge'
+import { OrderNotificationsBadge } from '@/components/orders/OrderNotificationsBadge'
 import { toast } from 'sonner'
 import type { Order } from '@/types/database'
 
@@ -37,6 +38,15 @@ function OrdersPageContent() {
   const searchParams = useSearchParams()
   const { isGestor, role } = useAuth()
   const [orders, setOrders] = useState<Order[]>([])
+  const [notifications, setNotifications] = useState<Record<string, Array<{
+    order_id: string
+    channel: 'whatsapp' | 'email' | 'in_app'
+    status: 'sent' | 'failed' | 'stub'
+    recipient: string | null
+    error: string | null
+    metadata: Record<string, unknown> | null
+    created_at: string
+  }>>>({})
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
@@ -50,12 +60,15 @@ function OrdersPageContent() {
     try {
       const data = await ordersApi.list()
       setOrders(data)
+      if (isGestor) {
+        ordersApi.notifications().then(setNotifications).catch(() => {})
+      }
     } catch {
       if (!silent) toast.error('Erro ao carregar pedidos')
     } finally {
       if (!silent) setLoading(false)
     }
-  }, [])
+  }, [isGestor])
 
   useEffect(() => { load() }, [load])
   useLiveRefresh(load, ['orders'])
@@ -197,6 +210,9 @@ function OrdersPageContent() {
                   {(order.total_price ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
               </div>
+              {isGestor && (
+                <OrderNotificationsBadge notifications={notifications[order.id]} />
+              )}
             </PanelCard>
           ))}
         </div>

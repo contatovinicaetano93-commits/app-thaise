@@ -41,10 +41,17 @@ const tables = [
   ['rls_tighten', 'job_logs', 'id'],
   ['rls_tighten', 'agent_insights', 'id'],
   ['a_first', 'webhook_deliveries', 'id'],
+  ['sprint1_v2', 'project_phases', 'id'],
+  ['sprint2_sku', 'sku_requests', 'id'],
+  ['sprint3_quotes', 'project_quotes', 'id'],
+  ['sprint4_notify', 'order_notifications', 'id'],
 ]
 
 const columnChecks = [
   ['gtm_lgpd', 'opportunities', 'intake_consent_at'],
+  ['sprint1_v2', 'projects', 'progress_pct'],
+  ['sprint2_sku', 'products', 'catalog_status'],
+  ['sprint5_polish', 'project_quotes', 'fulfilled_at'],
 ]
 
 console.log('\n📦 Verificando migrations no Supabase...\n')

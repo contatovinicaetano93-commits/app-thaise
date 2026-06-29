@@ -5,6 +5,7 @@ import { createSupabaseServer } from '@/lib/supabase/server'
 import { requireProfile } from '@/lib/auth/api-context'
 import { QUOTE_SELECT } from '@/lib/quotes/server'
 import { auditAndInvalidate } from '@/lib/memory/audit'
+import { refreshProjectReport } from '@/lib/projects/intelligence'
 
 const schema = z.object({
   decision: z.enum(['approve', 'reject']),
@@ -56,6 +57,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       actorId: profile!.id,
       cachePrefix: 'project_quotes',
     })
+
+    if (decision === 'approve') {
+      refreshProjectReport(quote.project_id).catch(console.error)
+    }
 
     return ok(data)
   } catch (e) {

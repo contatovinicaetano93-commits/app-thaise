@@ -253,6 +253,17 @@ export const ordersApi = {
 
   history: (id: string): ApiResult<Array<{ id: string; from_status: string | null; to_status: string; created_at: string }>> =>
     request(`/api/orders/${id}/history`),
+
+  notifications: (): ApiResult<Record<string, Array<{
+    order_id: string
+    channel: 'whatsapp' | 'email' | 'in_app'
+    status: 'sent' | 'failed' | 'stub'
+    recipient: string | null
+    error: string | null
+    metadata: Record<string, unknown> | null
+    created_at: string
+  }>>> =>
+    request('/api/orders/notifications'),
 }
 
 // --- Projects ---
@@ -315,6 +326,25 @@ export const projectsApi = {
     data: { progress_pct?: number; current_phase_id?: string | null; portal_enabled?: boolean },
   ): ApiResult<Project> =>
     request(`/api/projects/${id}/progress`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  intelligence: (id: string): ApiResult<ProjectIntelligence> =>
+    request(`/api/projects/${id}/intelligence`),
+}
+
+export interface ProjectIntelligence {
+  project_id: string
+  progress_pct: number
+  current_phase: string | null
+  summary: string
+  highlights: string[]
+  stats: {
+    open_orders: number
+    delivered_orders: number
+    approved_quotes: number
+    pending_skus: number
+    week_events: number
+  }
+  generated_at: string
 }
 
 // --- Agent (AI Scoring) ---
