@@ -12,11 +12,13 @@ import { Button } from '@/components/ui/Button'
 import { ActivityTimeline } from '@/components/ui/ActivityTimeline'
 import { clientsApi } from '@/lib/api'
 import { useDebounce, useLiveRefresh } from '@/lib/hooks'
+import { isSimpleMode } from '@/lib/app-mode'
 import { toast } from 'sonner'
 import type { Client } from '@/types/database'
 import { projectCreateUrl, inviteUserUrl } from '@/lib/flow-links'
 
 export default function ClientsPage() {
+  const simple = isSimpleMode()
   const [clients, setClients] = useState<Client[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -134,7 +136,7 @@ export default function ClientsPage() {
                 <span className="flex items-center gap-1"><Phone size={13} />{client.phone}</span>
                 <span className="flex items-center gap-1"><Mail size={13} />{client.email}</span>
               </div>
-              <ActivityTimeline entityType="client" entityId={client.id} />
+              {!simple && <ActivityTimeline entityType="client" entityId={client.id} />}
             </PanelCard>
           ))}
         </div>

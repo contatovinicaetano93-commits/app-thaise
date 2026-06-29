@@ -300,7 +300,7 @@ function ProjectsPageContent() {
                 menuItems={isGestor ? [
                   { label: 'Pedir SKU desta obra', href: skuRequestCreateUrl({ projectId: project.id }) },
                   { label: 'Novo orçamento', href: quoteCreateUrl(project.id) },
-                  { label: 'Criar pedido desta obra', href: orderCreateUrl({ projectId: project.id, clientId: project.client_id ?? undefined }) },
+                  ...(!simple ? [{ label: 'Criar pedido desta obra', href: orderCreateUrl({ projectId: project.id, clientId: project.client_id ?? undefined }) }] : []),
                   ...(project.client_id && project.portal_enabled ? [{ label: 'Convidar cliente', href: inviteUserUrl({ role: 'cliente', clientId: project.client_id }) }] : []),
                   ...(!simple ? [
                     { label: 'Gerar resumo', onClick: () => handleSummary(project.id) },

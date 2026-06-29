@@ -4,8 +4,15 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { ROLE_CANON } from '@/lib/flow-roles'
+import { isSimpleMode } from '@/lib/app-mode'
 
-const GESTOR_LINKS = [
+const GESTOR_LINKS_V2 = [
+  { href: '/projects', label: 'Obras' },
+  { href: '/sku-requests?new=1', label: 'Pedir SKU' },
+  { href: '/quotes', label: 'Orçamentos' },
+] as const
+
+const GESTOR_LINKS_LEGACY = [
   { href: '/pipeline', label: 'Pipeline' },
   { href: '/products', label: 'Catálogo curado' },
   { href: '/orders?new=1', label: 'Novo pedido' },
@@ -17,8 +24,8 @@ const FORNECEDOR_LINKS = [
 ] as const
 
 const CLIENTE_LINKS = [
+  { href: '/quotes', label: 'Meus orçamentos' },
   { href: '/projects', label: 'Minha obra' },
-  { href: '/orders', label: 'Pedidos' },
   { href: '/reports/weekly', label: 'Relatório 360' },
 ] as const
 
@@ -32,7 +39,8 @@ export function RoleScopeBanner(_props?: Props) {
   if (loading || !role) return null
 
   const canon = ROLE_CANON[role]
-  const links = role === 'gestor' ? GESTOR_LINKS : role === 'fornecedor' ? FORNECEDOR_LINKS : CLIENTE_LINKS
+  const gestorLinks = isSimpleMode() ? GESTOR_LINKS_V2 : GESTOR_LINKS_LEGACY
+  const links = role === 'gestor' ? gestorLinks : role === 'fornecedor' ? FORNECEDOR_LINKS : CLIENTE_LINKS
 
   const isFornecedor = role === 'fornecedor'
   const isGestora = role === 'gestor'
@@ -66,7 +74,7 @@ export function RoleScopeBanner(_props?: Props) {
             key={href}
             href={href}
             className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg transition-colors ${
-              href.includes('new=1') || (isGestora && href === '/pipeline')
+              href.includes('new=1') || (isGestora && !isSimpleMode() && href === '/pipeline')
                 ? 'bg-[var(--estlar-wine)] text-white hover:bg-[var(--estlar-wine-light)]'
                 : 'bg-white border border-gray-200 text-gray-700 hover:border-violet-200'
             }`}

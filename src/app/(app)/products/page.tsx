@@ -15,6 +15,7 @@ import { productsApi } from '@/lib/api'
 import { useLiveRefresh } from '@/lib/hooks'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { orderCreateUrl } from '@/lib/flow-links'
+import { isSimpleMode } from '@/lib/app-mode'
 import { toast } from 'sonner'
 import type { Product } from '@/types/database'
 
@@ -29,6 +30,7 @@ export default function ProductsPage() {
 function ProductsPageContent() {
   const searchParams = useSearchParams()
   const { isGestor, role } = useAuth()
+  const simple = isSimpleMode()
   const [products, setProducts] = useState<Product[]>([])
   const [search, setSearch] = useState('')
   const [supplierFilter, setSupplierFilter] = useState('')
@@ -130,7 +132,7 @@ function ProductsPageContent() {
           </span>
         }
         menuItems={isGestor ? [
-          { label: 'Criar pedido', href: orderCreateUrl({ supplierId: product.supplier_id, projectId: product.project_id ?? undefined }) },
+          ...(!simple ? [{ label: 'Criar pedido', href: orderCreateUrl({ supplierId: product.supplier_id, projectId: product.project_id ?? undefined }) }] : []),
           { label: 'Editar', onClick: () => { setEditing(product); setModalOpen(true) } },
           { label: 'Excluir', onClick: () => setDeleting(product), danger: true },
         ] : role === 'fornecedor' && product.catalog_status !== 'pending' ? [
@@ -153,7 +155,7 @@ function ProductsPageContent() {
             <p className="text-xs text-gray-400 mt-0.5">{product.lead_time_days} dias prazo</p>
           )}
         </div>
-        <ActivityTimeline entityType="product" entityId={product.id} />
+        {!simple && <ActivityTimeline entityType="product" entityId={product.id} />}
       </PanelCard>
     )
   }
@@ -170,7 +172,7 @@ function ProductsPageContent() {
         subtitle={pageSubtitle}
         menuItems={isGestor ? [
           { label: 'Pedir SKU', href: '/sku-requests?new=1' },
-          { label: 'Novo pedido', href: '/orders?new=1' },
+          ...(!simple ? [{ label: 'Novo pedido', href: '/orders?new=1' }] : []),
           { label: 'Exportar CSV', onClick: () => productsApi.exportCsv().catch(() => toast.error('Erro ao exportar')) },
         ] : role === 'fornecedor' ? [
           { label: 'Ver SKUs solicitados', href: '/sku-requests' },
@@ -240,12 +242,14 @@ function ProductsPageContent() {
                   {group.name}
                   <span className="text-gray-400 font-normal ml-2">{group.items.length} produto(s)</span>
                 </h3>
+                {!simple && (
                 <Link
                   href={orderCreateUrl({ supplierId })}
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-700 hover:text-violet-900"
                 >
                   <ShoppingCart size={14} /> Pedido com este fornecedor
                 </Link>
+                )}
               </div>
               <div className="space-y-2">{group.items.map(renderProductCard)}</div>
             </section>

@@ -13,6 +13,7 @@ import { ordersApi } from '@/lib/api'
 import { useDebounce, useLiveRefresh } from '@/lib/hooks'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { SipocBadge } from '@/components/ui/SipocBadge'
+import { isSimpleMode } from '@/lib/app-mode'
 import { OrderNotificationsBadge } from '@/components/orders/OrderNotificationsBadge'
 import { toast } from 'sonner'
 import type { Order } from '@/types/database'
@@ -37,6 +38,7 @@ export default function OrdersPage() {
 function OrdersPageContent() {
   const searchParams = useSearchParams()
   const { isGestor, role } = useAuth()
+  const simple = isSimpleMode()
   const [orders, setOrders] = useState<Order[]>([])
   const [notifications, setNotifications] = useState<Record<string, Array<{
     order_id: string
@@ -127,7 +129,7 @@ function OrdersPageContent() {
           )
         }
         menuItems={isGestor ? [
-          { label: 'Novo pedido', onClick: () => setModalOpen(true) },
+          ...(!simple ? [{ label: 'Novo pedido', onClick: () => setModalOpen(true) }] : []),
           { label: 'Exportar CSV', onClick: () => ordersApi.exportCsv().catch(() => toast.error('Erro ao exportar')) },
         ] : [
           { label: 'Atualizar lista', onClick: () => load() },
@@ -163,13 +165,15 @@ function OrdersPageContent() {
             search
               ? 'Tente outro termo.'
               : isGestor
-                ? 'Crie um pedido vinculando cliente, produto e fornecedor.'
+                ? simple
+                  ? 'Pedidos são gerados após o cliente aprovar o orçamento.'
+                  : 'Crie um pedido vinculando cliente, produto e fornecedor.'
                 : role === 'fornecedor'
                   ? 'Quando o gestor aprovar pedidos, eles aparecerão aqui.'
                   : 'Seus pedidos aparecerão aqui quando forem criados pelo gestor.'
           }
-          actionLabel={search || !isGestor ? undefined : 'Novo Pedido'}
-          onAction={search || !isGestor ? undefined : () => setModalOpen(true)}
+          actionLabel={search || !isGestor || simple ? undefined : 'Novo Pedido'}
+          onAction={search || !isGestor || simple ? undefined : () => setModalOpen(true)}
         />
       ) : (
         <div className="space-y-2">
@@ -188,8 +192,8 @@ function OrdersPageContent() {
               menuItems={statusMenuItems(order)}
             >
               <div className="flex items-center gap-2 mb-1">
-                <SipocBadge />
-                <span className="text-gray-300">→</span>
+                {!simple && <SipocBadge />}
+                {!simple && <span className="text-gray-300">→</span>}
                 <p className="text-sm text-gray-600">{order.supplier?.name}</p>
               </div>
               <p className="text-sm text-gray-500">
@@ -199,7 +203,7 @@ function OrdersPageContent() {
                 <div className="flex flex-wrap items-center gap-2">
                   {order.project && (
                     <span className="text-xs bg-violet-50 text-violet-700 px-2 py-0.5 rounded-full font-medium">
-                      {order.project.name} · Fase {order.project.phase}
+                      {order.project.name}{!simple && ` · Fase ${order.project.phase}`}
                     </span>
                   )}
                   <span className="text-xs text-gray-400">

@@ -42,7 +42,7 @@ export default function PendingSuppliersPage() {
       <PageFeedHeader
         title="Homologação"
         icon={Truck}
-        subtitle="Gate SIPOC (S): só fornecedores aprovados entram no catálogo curado"
+        subtitle="Só fornecedores homologados entram no catálogo e recebem pedidos de SKU"
         menuItems={[
           { label: 'Cadastrar fornecedor', href: '/suppliers?new=1' },
           { label: 'Catálogo curado', href: '/products' },
