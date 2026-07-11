@@ -58,6 +58,7 @@ function QuotesPageContent() {
   const [loading, setLoading] = useState(true)
   const [createOpen, setCreateOpen] = useState(false)
   const [selectedProjectId, setSelectedProjectId] = useState('')
+  const [autoGenerate, setAutoGenerate] = useState(true)
   const [editingQuote, setEditingQuote] = useState<ProjectQuote | null>(null)
   const [rejectQuote, setRejectQuote] = useState<ProjectQuote | null>(null)
   const [rejectNote, setRejectNote] = useState('')
@@ -103,7 +104,25 @@ function QuotesPageContent() {
     setActing('create')
     try {
       const quote = await projectQuotesApi.create({ project_id: selectedProjectId })
-      toast.success('Orçamento criado')
+      if (autoGenerate) {
+        try {
+          const { quote: generated, generation } = await projectQuotesApi.generate(quote.id)
+          toast.success(
+            generation.ai_powered
+              ? 'Orçamento criado e gerado com IA'
+              : 'Orçamento criado com matchmaking QCPS',
+          )
+          setCreateOpen(false)
+          setEditingQuote(generated)
+          load()
+          return
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : 'Rascunho criado, mas falhou a geração IA')
+          setEditingQuote(quote)
+        }
+      } else {
+        toast.success('Orçamento criado')
+      }
       setCreateOpen(false)
       setEditingQuote(quote)
       load()
@@ -345,9 +364,22 @@ function QuotesPageContent() {
               ))}
             </select>
           </div>
+          <label className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={autoGenerate}
+              onChange={e => setAutoGenerate(e.target.checked)}
+              className="mt-1 rounded border-gray-300"
+            />
+            <span>
+              Gerar itens automaticamente com IA (matchmaking QCPS + catálogo aprovado)
+            </span>
+          </label>
           <div className="flex justify-end gap-3">
             <Button variant="secondary" onClick={() => setCreateOpen(false)}>Cancelar</Button>
-            <Button onClick={handleCreate} loading={acting === 'create'}>Criar rascunho</Button>
+            <Button onClick={handleCreate} loading={acting === 'create'}>
+              {autoGenerate ? 'Criar e gerar com IA' : 'Criar rascunho'}
+            </Button>
           </div>
         </div>
       </Modal>

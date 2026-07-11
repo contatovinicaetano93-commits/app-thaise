@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { CheckCircle2, Circle, Paperclip, ExternalLink, Loader2 } from 'lucide-react'
 import { PHASE_CHECKLISTS, phaseProgress, isChecklistItemDone } from '@/lib/checklists'
 import type { ProjectPhase } from '@/lib/phases'
-import type { ChecklistItemValue, PhaseChecklist } from '@/lib/auth/roles'
+import type { ChecklistItemValue, PhaseChecklist, EvidenceAudit } from '@/lib/auth/roles'
+import { EvidenceAuditPanel } from '@/components/projects/EvidenceAuditPanel'
 import { toast } from 'sonner'
 
 interface Props {
@@ -12,21 +13,24 @@ interface Props {
   checklist: PhaseChecklist
   onToggle: (itemId: string, checked: boolean, evidence?: string) => void
   onAttach?: (itemId: string, file: File) => Promise<void>
+  onAudit?: (itemId: string) => Promise<void>
+  onAuditDecide?: (itemId: string, decision: 'approve' | 'reject' | 'override') => Promise<void>
   readOnly?: boolean
 }
 
 function getMeta(value: ChecklistItemValue | undefined) {
   if (!value || typeof value !== 'object' || !('checked' in value)) {
-    return { evidence: '', fileName: '', filePath: '' }
+    return { evidence: '', fileName: '', filePath: '', audit: undefined as EvidenceAudit | undefined }
   }
   return {
     evidence: value.evidence ?? '',
     fileName: value.fileName ?? '',
     filePath: value.filePath ?? '',
+    audit: value.audit,
   }
 }
 
-export function PhaseChecklist({ phase, checklist, onToggle, onAttach, readOnly }: Props) {
+export function PhaseChecklist({ phase, checklist, onToggle, onAttach, onAudit, onAuditDecide, readOnly }: Props) {
   const items = PHASE_CHECKLISTS[phase]
   const { done, total } = phaseProgress(phase, checklist)
   const phaseDone = checklist[phase] ?? {}
@@ -57,7 +61,7 @@ export function PhaseChecklist({ phase, checklist, onToggle, onAttach, readOnly 
         {items.map(item => {
           const value = phaseDone[item.id]
           const checked = isChecklistItemDone(value)
-          const { evidence, fileName, filePath } = getMeta(value)
+          const { evidence, fileName, filePath, audit } = getMeta(value)
           const busy = uploading === item.id
 
           return (
@@ -102,6 +106,14 @@ export function PhaseChecklist({ phase, checklist, onToggle, onAttach, readOnly 
                       {fileName}
                       {filePath && <span className="text-gray-300">· salvo no storage</span>}
                     </p>
+                  )}
+                  {(filePath || audit) && (
+                    <EvidenceAuditPanel
+                      audit={audit}
+                      onRunAudit={filePath && onAudit ? () => onAudit(item.id) : undefined}
+                      onDecide={onAuditDecide ? d => onAuditDecide(item.id, d) : undefined}
+                      readOnly={readOnly}
+                    />
                   )}
                 </div>
               )}

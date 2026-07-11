@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { ok, err, handleError } from '@/lib/api-response'
 import { requireProfile } from '@/lib/auth/api-context'
 import { createSupabaseServer } from '@/lib/supabase/server'
+import { auditChecklistEvidence, saveChecklistAudit } from '@/lib/agents/audit-agent'
+import { mediaTypeFromMime } from '@/lib/llm-vision'
 import type { ProjectPhase } from '@/lib/phases'
 
 const MAX_BYTES = 10 * 1024 * 1024
@@ -46,12 +48,63 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     if (signErr || !signed?.signedUrl) return err(signErr?.message ?? 'Erro ao gerar URL', 500)
 
+    let audit = null
+    let canAutoCheck = false
+    let project = null
+    if (mediaTypeFromMime(file.type)) {
+      try {
+        const result = await auditChecklistEvidence({
+          projectId,
+          phase: phase as ProjectPhase,
+          itemId,
+          filePath: path,
+          fileName: file.name,
+        })
+        await saveChecklistAudit(projectId, phase as ProjectPhase, itemId, result.audit, {
+          autoCheck: result.can_auto_check,
+          filePath: path,
+          fileName: file.name,
+        })
+        audit = result.audit
+        canAutoCheck = result.can_auto_check
+      } catch {
+        // upload succeeds even if audit fails — still save file reference
+        await saveChecklistAudit(projectId, phase as ProjectPhase, itemId, {
+          status: 'pending',
+          score: 0,
+          summary: 'Auditoria automática indisponível — revise manualmente.',
+          issues: [],
+          ai_powered: false,
+          audited_at: new Date().toISOString(),
+        }, { filePath: path, fileName: file.name })
+      }
+    } else {
+      await saveChecklistAudit(projectId, phase as ProjectPhase, itemId, {
+        status: 'pending',
+        score: 0,
+        summary: 'PDF anexado — revise manualmente o documento.',
+        issues: [],
+        ai_powered: false,
+        audited_at: new Date().toISOString(),
+      }, { filePath: path, fileName: file.name })
+    }
+
+    const { data: updatedProject } = await supabase
+      .from('projects')
+      .select('*, client:clients(*)')
+      .eq('id', projectId)
+      .single()
+    project = updatedProject
+
     return ok({
       path,
       fileName: file.name,
       signedUrl: signed.signedUrl,
       phase: phase as ProjectPhase,
       itemId,
+      audit,
+      can_auto_check: canAutoCheck,
+      project,
     })
   } catch (e) {
     return handleError(e)

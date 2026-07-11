@@ -48,6 +48,9 @@ export function navLabelForRole(baseLabel: string, href: string, role: UserRole)
   if (href === '/orders') {
     return role === 'fornecedor' ? 'Meus pedidos' : role === 'cliente' ? 'Meus pedidos' : 'Pedidos'
   }
+  if (href === '/payments') {
+    return role === 'fornecedor' ? 'Meus recebimentos' : 'Pagamentos'
+  }
   if (href === '/reports/weekly') {
     return role === 'cliente' ? 'Relatório 360' : 'Relatório 360'
   }

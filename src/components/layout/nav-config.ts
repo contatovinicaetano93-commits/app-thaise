@@ -1,7 +1,7 @@
 import type { ElementType } from 'react'
 import {
   LayoutDashboard, Building2, Truck, Users, Package, ShoppingCart,
-  Code2, Sparkles, GitBranch, Server, UserCheck, Bell, Kanban, FileBarChart, UserPlus, ClipboardList, Receipt,
+  Code2, Sparkles, GitBranch, Server, UserCheck, Bell, Kanban, FileBarChart, UserPlus, ClipboardList, Receipt, Wallet,
 } from 'lucide-react'
 import type { UserRole } from '@/lib/auth/roles'
 import { navLabelForRole } from '@/lib/flow-roles'
@@ -40,6 +40,7 @@ export const APP_NAV: NavItem[] = [
   { href: '/quotes', label: 'Orçamentos', icon: Receipt, roles: ['gestor', 'cliente'], section: 'operacao' },
   { href: '/sku-requests', label: 'SKUs solicitados', icon: ClipboardList, roles: ['fornecedor'], section: 'operacao' },
   { href: '/orders', label: 'Pedidos', icon: ShoppingCart, roles: ['fornecedor', 'cliente'], section: 'operacao' },
+  { href: '/payments', label: 'Pagamentos', icon: Wallet, roles: ['gestor', 'fornecedor'], section: 'operacao' },
   { href: '/reports/weekly', label: 'Relatório 360', icon: FileBarChart, roles: ['gestor', 'cliente'], section: 'operacao' },
   { href: '/users', label: 'Convidar usuário', icon: UserPlus, roles: ['gestor'], section: 'operacao' },
   { href: '/notifications', label: 'Notificações', icon: Bell, roles: ['gestor', 'fornecedor', 'cliente'], section: 'operacao' },

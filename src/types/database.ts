@@ -11,6 +11,7 @@ export type AmendmentStatus = 'draft' | 'approved' | 'rejected'
 
 export type SupplierStatus = 'active' | 'inactive' | 'pending'
 export type OrderStatus = 'pending' | 'approved' | 'processing' | 'delivered' | 'cancelled'
+export type OrderPaymentStatus = 'held' | 'released' | 'blocked' | 'cancelled'
 export type ProjectStatus = 'active' | 'paused' | 'completed' | 'cancelled'
 
 export interface Supplier extends QcpsScores {
@@ -262,6 +263,33 @@ export interface Order {
   project?: Project
 }
 
+export interface OrderPayment {
+  id: string
+  order_id: string
+  project_id?: string | null
+  supplier_id: string
+  amount: number
+  status: OrderPaymentStatus
+  checklist_phase?: string | null
+  checklist_item_id?: string | null
+  audit_status?: string | null
+  audit_score?: number | null
+  held_at: string
+  released_at?: string | null
+  released_by?: string | null
+  release_notes?: string | null
+  pix_reference?: string | null
+  payment_method: 'escrow' | 'manual_pix'
+  created_at: string
+  updated_at: string
+  order?: Pick<Order, 'id' | 'total_price' | 'status' | 'quantity' | 'unit_price'> & {
+    product?: Pick<Product, 'id' | 'name' | 'unit'> | null
+    supplier?: Pick<Supplier, 'id' | 'name'> | null
+    project?: Pick<Project, 'id' | 'name'> | null
+    client?: Pick<Client, 'id' | 'name'> | null
+  }
+}
+
 export interface Webhook {
   id: string
   url: string
@@ -281,6 +309,7 @@ export interface Database {
       projects: { Row: Project; Insert: Omit<Project, 'id' | 'created_at' | 'updated_at' | 'client'>; Update: Partial<Omit<Project, 'client'>> }
       products: { Row: Product; Insert: Omit<Product, 'id' | 'created_at'>; Update: Partial<Product> }
       orders: { Row: Order; Insert: Omit<Order, 'id' | 'created_at' | 'updated_at' | 'total_price' | 'client' | 'supplier' | 'product' | 'project'>; Update: Partial<Order> }
+      order_payments: { Row: OrderPayment; Insert: Omit<OrderPayment, 'id' | 'created_at' | 'updated_at' | 'order'>; Update: Partial<Omit<OrderPayment, 'order'>> }
       profiles: { Row: Profile; Insert: Omit<Profile, 'created_at'>; Update: Partial<Profile> }
       job_logs: { Row: JobLog; Insert: Omit<JobLog, 'id' | 'created_at'>; Update: Partial<JobLog> }
       agent_insights: { Row: AgentInsight; Insert: Omit<AgentInsight, 'id' | 'created_at'>; Update: Partial<AgentInsight> }
@@ -290,6 +319,9 @@ export interface Database {
       scope_amendments: { Row: ScopeAmendment; Insert: Omit<ScopeAmendment, 'id' | 'created_at' | 'approved_at'>; Update: Partial<ScopeAmendment> }
       quotations: { Row: Quotation; Insert: Omit<Quotation, 'id' | 'created_at' | 'supplier'>; Update: Partial<Omit<Quotation, 'supplier'>> }
       webhooks: { Row: Webhook; Insert: Omit<Webhook, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Webhook> }
+      sku_requests: { Row: SkuRequest; Insert: Omit<SkuRequest, 'id' | 'created_at' | 'updated_at' | 'project' | 'supplier' | 'product'>; Update: Partial<Omit<SkuRequest, 'project' | 'supplier' | 'product'>> }
+      project_quotes: { Row: ProjectQuote; Insert: Omit<ProjectQuote, 'id' | 'created_at' | 'updated_at' | 'version' | 'total_price' | 'project' | 'client' | 'lines'>; Update: Partial<Omit<ProjectQuote, 'project' | 'client' | 'lines'>> }
+      project_quote_lines: { Row: ProjectQuoteLine; Insert: Omit<ProjectQuoteLine, 'id' | 'created_at' | 'line_total' | 'sort_order' | 'product' | 'supplier'>; Update: Partial<Omit<ProjectQuoteLine, 'product' | 'supplier'>> }
     }
   }
 }

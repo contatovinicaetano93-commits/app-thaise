@@ -38,7 +38,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { profile, error: authErr } = await requireGestor()
+    const { error: authErr } = await requireGestor()
     if (authErr) return authErr
 
     const { id } = await params

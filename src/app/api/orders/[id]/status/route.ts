@@ -92,6 +92,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         clientId: order.client_id,
         projectId: order.project_id,
       }).catch(console.error)
+
+      const { createHeldPaymentForOrder } = await import('@/lib/payments/server')
+      createHeldPaymentForOrder(order.id).catch(console.error)
     }
 
     return ok(data)

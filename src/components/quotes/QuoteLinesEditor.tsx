@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Save } from 'lucide-react'
+import { Plus, Trash2, Save, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { productsApi, projectQuotesApi } from '@/lib/api'
+import { QuoteMatchmakingPanel } from '@/components/quotes/QuoteMatchmakingPanel'
 import { toast } from 'sonner'
+import type { MatchmakingPick } from '@/lib/quotes/matchmaking'
 import type { Product, ProjectQuote } from '@/types/database'
 
 interface LineDraft {
@@ -30,6 +32,9 @@ export function QuoteLinesEditor({ quote, onSaved }: Props) {
   const [lines, setLines] = useState<LineDraft[]>([])
   const [addProductId, setAddProductId] = useState('')
   const [saving, setSaving] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [matchmaking, setMatchmaking] = useState<MatchmakingPick[]>([])
+  const [generationMeta, setGenerationMeta] = useState<{ summary?: string; aiPowered?: boolean; marginNote?: string } | null>(null)
 
   useEffect(() => {
     productsApi.list({ projectId: quote.project_id })
@@ -81,6 +86,29 @@ export function QuoteLinesEditor({ quote, onSaved }: Props) {
 
   const total = lines.reduce((s, l) => s + l.quantity * l.unit_price, 0)
 
+  async function handleGenerate() {
+    setGenerating(true)
+    try {
+      const { quote: updated, generation } = await projectQuotesApi.generate(quote.id)
+      setMatchmaking(generation.matchmaking)
+      setGenerationMeta({
+        summary: generation.summary,
+        aiPowered: generation.ai_powered,
+        marginNote: generation.margin_note,
+      })
+      toast.success(
+        generation.ai_powered
+          ? `Orçamento gerado com IA — ${generation.lines.length} itens`
+          : `Orçamento gerado — ${generation.lines.length} itens (QCPS)`,
+      )
+      onSaved(updated)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao gerar orçamento')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   async function handleSave() {
     if (lines.length === 0) {
       toast.error('Adicione pelo menos um item')
@@ -108,6 +136,24 @@ export function QuoteLinesEditor({ quote, onSaved }: Props) {
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap gap-2 items-center justify-between">
+        <p className="text-xs text-gray-500">
+          Use a IA para montar um rascunho com fornecedores priorizados por QCPS.
+        </p>
+        <Button type="button" variant="secondary" onClick={handleGenerate} loading={generating}>
+          <Sparkles size={14} /> Gerar com IA
+        </Button>
+      </div>
+
+      {generationMeta && (
+        <QuoteMatchmakingPanel
+          matchmaking={matchmaking}
+          summary={generationMeta.summary}
+          aiPowered={generationMeta.aiPowered}
+          marginNote={generationMeta.marginNote}
+        />
+      )}
+
       {available.length > 0 ? (
         <div className="flex flex-wrap gap-2 items-end">
           <div className="flex-1 min-w-[200px]">

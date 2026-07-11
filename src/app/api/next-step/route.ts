@@ -46,6 +46,8 @@ export async function GET() {
         { count: draftQuotes },
         { count: openSku },
         { count: openOrders },
+        { count: paymentsReady },
+        { count: paymentsHeld },
         { data: portalOff },
         { data: projectNoSku },
       ] = await Promise.all([
@@ -59,6 +61,8 @@ export async function GET() {
         db.from('project_quotes').select('id', { count: 'exact', head: true }).eq('status', 'draft'),
         db.from('sku_requests').select('id', { count: 'exact', head: true }).eq('status', 'open'),
         db.from('orders').select('id', { count: 'exact', head: true }).in('status', ['pending', 'approved', 'processing']),
+        db.from('order_payments').select('id', { count: 'exact', head: true }).eq('status', 'held').in('audit_status', ['passed', 'override']),
+        db.from('order_payments').select('id', { count: 'exact', head: true }).eq('status', 'held'),
         db.from('projects').select('id, name').eq('status', 'active').eq('portal_enabled', false).limit(1),
         db.from('projects').select('id, name').eq('status', 'active').limit(5),
       ])
@@ -179,6 +183,21 @@ export async function GET() {
           label: 'Acompanhar pedidos',
           href: '/quotes?tab=pedidos',
           reason: `${openOrders} pedido(s) em andamento — fornecedor foi notificado para separar`,
+        })
+      }
+      if ((paymentsReady ?? 0) > 0) {
+        steps.push({
+          sipoc: '10',
+          label: 'Liberar pagamento ao fornecedor',
+          href: '/payments',
+          reason: `${paymentsReady} pagamento(s) com auditoria aprovada — prontos para liberar`,
+        })
+      } else if ((paymentsHeld ?? 0) > 0) {
+        steps.push({
+          sipoc: '10',
+          label: 'Auditar entrega para liberar pagamento',
+          href: '/payments',
+          reason: `${paymentsHeld} pagamento(s) em escrow — anexe e aprove a foto no checklist da obra`,
         })
       }
 

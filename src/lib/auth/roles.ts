@@ -34,11 +34,25 @@ export function canManage(role: UserRole): boolean {
   return role === 'gestor'
 }
 
+export type EvidenceAuditStatus = 'pending' | 'passed' | 'failed' | 'override'
+
+export interface EvidenceAudit {
+  status: EvidenceAuditStatus
+  score: number
+  summary: string
+  issues: string[]
+  ai_powered: boolean
+  audited_at: string
+  approved_by?: string | null
+  approved_at?: string | null
+}
+
 export type ChecklistItemValue = boolean | {
   checked: boolean
   evidence?: string
   filePath?: string
   fileName?: string
+  audit?: EvidenceAudit
 }
 
 export type PhaseChecklist = Record<ProjectPhase, Record<string, ChecklistItemValue>>

@@ -37,7 +37,7 @@ async function assertApprovedProductForProject(productId: string, projectId: str
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { profile, error: authErr } = await requireGestor()
+    const { error: authErr } = await requireGestor()
     if (authErr) return authErr
 
     const { id: quoteId } = await params

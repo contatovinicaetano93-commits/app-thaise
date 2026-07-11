@@ -29,7 +29,7 @@ const createSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    const { profile, error: authErr } = await requireGestor()
+    const { error: authErr } = await requireGestor()
     if (authErr) return authErr
 
     const includeClosed = req.nextUrl.searchParams.get('include_closed') === '1'

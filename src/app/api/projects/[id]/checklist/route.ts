@@ -13,6 +13,16 @@ const schema = z.object({
   evidence: z.string().optional().transform(v => v?.trim() || undefined),
   filePath: z.string().optional(),
   fileName: z.string().optional(),
+  audit: z.object({
+    status: z.enum(['pending', 'passed', 'failed', 'override']),
+    score: z.number(),
+    summary: z.string(),
+    issues: z.array(z.string()),
+    ai_powered: z.boolean(),
+    audited_at: z.string(),
+    approved_by: z.string().nullable().optional(),
+    approved_at: z.string().nullable().optional(),
+  }).optional(),
 })
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -22,7 +32,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (profile!.role !== 'gestor') return err('Apenas gestor pode editar checklist', 403)
 
     const { id } = await params
-    const { phase, itemId, checked, evidence, filePath, fileName } = schema.parse(await req.json())
+    const { phase, itemId, checked, evidence, filePath, fileName, audit } = schema.parse(await req.json())
     const db = await createSupabaseServer()
 
     const { data: project, error: fetchErr } = await db
@@ -38,12 +48,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const prev = checklist[phase]?.[itemId]
     const prevObj = prev && typeof prev === 'object' && 'checked' in prev ? prev : null
 
-    const value = prevObj || evidence || filePath || fileName
+    // A auditoria visual é consultiva no checklist — não trava a obra.
+    // O portão de garantia real fica na liberação do pagamento (escrow).
+    const value = prevObj || evidence || filePath || fileName || audit
       ? {
           checked,
           evidence: evidence ?? prevObj?.evidence,
           filePath: filePath ?? prevObj?.filePath,
           fileName: fileName ?? prevObj?.fileName,
+          audit: audit ?? prevObj?.audit,
         }
       : checked
     checklist[phase] = { ...(checklist[phase] ?? {}), [itemId]: value }

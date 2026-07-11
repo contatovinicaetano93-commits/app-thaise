@@ -126,21 +126,46 @@ function ProjectsPageContent() {
 
   async function handleChecklistAttach(project: Project, itemId: string, file: File) {
     const uploaded = await projectsApi.uploadChecklistFile(project.id, project.phase, itemId, file)
-    const value = phaseDone(project, itemId)
-    const checked = value?.checked ?? true
-    const updated = await projectsApi.updateChecklist(project.id, project.phase, itemId, checked, {
-      evidence: value?.evidence,
-      filePath: uploaded.path,
-      fileName: uploaded.fileName,
-    })
-    setProjects(prev => prev.map(p => p.id === project.id ? updated : p))
+    if (uploaded.project) {
+      setProjects(prev => prev.map(p => p.id === project.id ? uploaded.project! : p))
+    }
+    if (uploaded.audit) {
+      const statusLabel = uploaded.audit.status === 'passed'
+        ? 'aprovada'
+        : uploaded.audit.status === 'failed'
+          ? 'reprovada'
+          : 'pendente de revisão'
+      toast.success(`Foto enviada · auditoria ${statusLabel} (${uploaded.audit.score}/10)`)
+    } else {
+      toast.success('Anexo enviado')
+    }
   }
 
-  function phaseDone(project: Project, itemId: string) {
-    const checklist = (project.checklist ?? {}) as PhaseChecklistType
-    const raw = checklist[project.phase]?.[itemId]
-    if (raw && typeof raw === 'object' && 'checked' in raw) return raw
-    return undefined
+  async function handleChecklistAudit(project: Project, itemId: string) {
+    try {
+      const { project: updated, audit } = await projectsApi.runChecklistAudit(project.id, project.phase, itemId)
+      setProjects(prev => prev.map(p => p.id === project.id ? updated : p))
+      toast.success(`Auditoria concluída · ${audit.status} (${audit.score}/10)`)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro na auditoria')
+      throw e
+    }
+  }
+
+  async function handleAuditDecide(
+    project: Project,
+    itemId: string,
+    decision: 'approve' | 'reject' | 'override',
+  ) {
+    try {
+      const { project: updated } = await projectsApi.decideChecklistAudit(project.id, project.phase, itemId, decision)
+      setProjects(prev => prev.map(p => p.id === project.id ? updated : p))
+      const labels = { approve: 'aprovada', reject: 'reprovada', override: 'sobrescrita' }
+      toast.success(`Evidência ${labels[decision]}`)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao decidir auditoria')
+      throw e
+    }
   }
 
   async function handleScore(projectId: string) {
@@ -206,6 +231,12 @@ function ProjectsPageContent() {
           { label: 'Relatório', href: '/reports/weekly' },
         ] : undefined}
       />
+
+      {isGestor && (
+        <p className="text-sm text-violet-900 bg-violet-50 border border-violet-100 rounded-xl px-4 py-3 mb-4">
+          Fotos no checklist são <strong>auditadas por IA</strong> contra o padrão Estlar. Itens reprovados exigem correção ou sobrescrita do gestor.
+        </p>
+      )}
 
       {isGestor && (
         <div className="mb-4">
@@ -355,6 +386,8 @@ function ProjectsPageContent() {
                   checklist={checklist}
                   onToggle={(itemId, checked, evidence) => handleChecklistToggle(project, itemId, checked, evidence)}
                   onAttach={isGestor ? (itemId, file) => handleChecklistAttach(project, itemId, file) : undefined}
+                  onAudit={isGestor ? itemId => handleChecklistAudit(project, itemId) : undefined}
+                  onAuditDecide={isGestor ? (itemId, d) => handleAuditDecide(project, itemId, d) : undefined}
                   readOnly={!isGestor}
                 />
 

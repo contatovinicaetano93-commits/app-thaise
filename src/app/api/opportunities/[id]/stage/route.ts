@@ -4,7 +4,7 @@ import { ok, err, handleError } from '@/lib/api-response'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { requireGestor } from '@/lib/auth/api-context'
 import { auditAndInvalidate } from '@/lib/memory/audit'
-import { ACTIVE_PIPELINE_STAGES, STAGE_LABELS, type OpportunityStage } from '@/lib/pipeline'
+import { ACTIVE_PIPELINE_STAGES, STAGE_LABELS } from '@/lib/pipeline'
 import { validateStageTransition } from '@/lib/pipeline/stage-gates'
 import type { Opportunity } from '@/types/database'
 

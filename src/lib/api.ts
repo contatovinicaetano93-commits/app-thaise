@@ -1,7 +1,7 @@
 // Cliente tipado que o frontend usa para consumir /api/*
 // NUNCA importe supabase diretamente nas páginas — use este arquivo
 
-import type { Supplier, Client, Product, Order, Project, Opportunity, WeeklyReport, WelcomeKit, ProjectDiaryEntry, ScopeAmendment, Quotation, SkuRequest, ProjectQuote } from '@/types/database'
+import type { Supplier, Client, Product, Order, Project, Opportunity, WeeklyReport, WelcomeKit, ProjectDiaryEntry, ScopeAmendment, Quotation, SkuRequest, ProjectQuote, OrderPayment } from '@/types/database'
 import type { QcpsScores } from '@/lib/qcps'
 import type { BriefingData, BriefingType } from '@/lib/briefing'
 
@@ -235,6 +235,25 @@ export const projectQuotesApi = {
 
   fulfill: (id: string): ApiResult<{ order_ids: string[]; count: number }> =>
     request(`/api/project-quotes/${id}/fulfill`, { method: 'POST' }),
+
+  generate: (id: string): ApiResult<{
+    quote: ProjectQuote
+    generation: {
+      lines: Array<{ product_id: string; supplier_id: string; quantity: number; unit_price: number }>
+      matchmaking: Array<{
+        category: string
+        supplier_id: string
+        supplier_name: string
+        qcps_score: number
+        tier: string
+        alternatives: Array<{ id: string; name: string; score: number }>
+      }>
+      summary: string
+      ai_powered: boolean
+      margin_note: string
+    }
+  }> =>
+    request(`/api/project-quotes/${id}/generate`, { method: 'POST' }),
 }
 
 // --- Orders ---
@@ -266,6 +285,34 @@ export const ordersApi = {
     request('/api/orders/notifications'),
 }
 
+// --- Payments (escrow) ---
+export const paymentsApi = {
+  list: (opts?: { status?: string }): ApiResult<OrderPayment[]> => {
+    const params = new URLSearchParams()
+    if (opts?.status) params.set('status', opts.status)
+    const q = params.toString()
+    return request(`/api/payments${q ? `?${q}` : ''}`)
+  },
+
+  get: (id: string): ApiResult<{
+    payment: OrderPayment
+    eligible_audit?: {
+      phase: string
+      itemId: string
+      itemLabel: string
+      audit: import('@/lib/auth/roles').EvidenceAudit
+    } | null
+    can_release: boolean
+    block_reason?: string
+  }> => request(`/api/payments/${id}`),
+
+  release: (
+    id: string,
+    data?: { pix_reference?: string | null; release_notes?: string | null },
+  ): ApiResult<OrderPayment> =>
+    request(`/api/payments/${id}/release`, { method: 'POST', body: JSON.stringify(data ?? {}) }),
+}
+
 // --- Projects ---
 export const projectsApi = {
   list: (search?: string): ApiResult<Project[]> =>
@@ -292,12 +339,40 @@ export const projectsApi = {
       body: JSON.stringify({ phase, itemId, checked, ...opts }),
     }),
 
+  runChecklistAudit: (
+    id: string,
+    phase: string,
+    itemId: string,
+  ): ApiResult<{ project: Project; audit: import('@/lib/auth/roles').EvidenceAudit; can_auto_check: boolean }> =>
+    request(`/api/projects/${id}/checklist/audit`, {
+      method: 'POST',
+      body: JSON.stringify({ phase, itemId }),
+    }),
+
+  decideChecklistAudit: (
+    id: string,
+    phase: string,
+    itemId: string,
+    decision: 'approve' | 'reject' | 'override',
+  ): ApiResult<{ project: Project; audit: import('@/lib/auth/roles').EvidenceAudit }> =>
+    request(`/api/projects/${id}/checklist/audit`, {
+      method: 'PATCH',
+      body: JSON.stringify({ phase, itemId, decision }),
+    }),
+
   uploadChecklistFile: async (
     id: string,
     phase: string,
     itemId: string,
     file: File,
-  ): Promise<{ path: string; fileName: string; signedUrl: string }> => {
+  ): Promise<{
+    path: string
+    fileName: string
+    signedUrl: string
+    audit?: import('@/lib/auth/roles').EvidenceAudit | null
+    can_auto_check?: boolean
+    project?: Project
+  }> => {
     const form = new FormData()
     form.append('file', file)
     form.append('phase', phase)

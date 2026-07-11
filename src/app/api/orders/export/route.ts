@@ -1,4 +1,4 @@
-import { ok, err, handleError } from '@/lib/api-response'
+import { err, handleError } from '@/lib/api-response'
 import { requireGestor } from '@/lib/auth/api-context'
 import { createSupabaseServer } from '@/lib/supabase/server'
 

@@ -1,8 +1,8 @@
 import { ok, handleError } from '@/lib/api-response'
 import { requireProfile } from '@/lib/auth/api-context'
 import { createSupabaseServer } from '@/lib/supabase/server'
-import { qcpsAverage } from '@/lib/qcps'
 import { chatCompletion, isLlmConfigured } from '@/lib/llm'
+import { rankSuppliers, type SupplierForMatch } from '@/lib/quotes/matchmaking'
 
 export async function POST(req: Request) {
   try {
@@ -25,17 +25,9 @@ export async function POST(req: Request) {
       .select('id, name, category, status, score_q, score_c, score_p, score_s')
       .eq('status', 'active')
 
-    type SupplierRow = { id: string; name: string; category: string; score_q: number; score_c: number; score_p: number; score_s: number }
-    const ranked = ((suppliers ?? []) as SupplierRow[])
-      .filter(s => !productCategory || s.category.toLowerCase().includes(productCategory.toLowerCase()) || productCategory.toLowerCase().includes(s.category.toLowerCase()))
-      .map(s => ({
-        id: s.id,
-        name: s.name,
-        category: s.category,
-        score: qcpsAverage(s as { score_q: number; score_c: number; score_p: number; score_s: number }),
-      }))
-      .sort((a, b) => b.score - a.score)
+    const ranked = rankSuppliers((suppliers ?? []) as SupplierForMatch[], productCategory)
       .slice(0, 3)
+      .map(s => ({ id: s.id, name: s.name, category: s.category, score: s.score }))
 
     const suggestion = ranked[0]
 

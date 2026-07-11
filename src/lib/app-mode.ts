@@ -15,6 +15,7 @@ export const GESTOR_V2_HREFS: readonly string[] = [
   '/suppliers',
   '/products',
   '/quotes',
+  '/payments',
   '/reports/weekly',
   '/users',
 ]
@@ -75,7 +76,7 @@ export function filterNavItems<T extends { href: string; roles: UserRole[] }>(
 
   if (role === 'fornecedor') {
     return filtered.filter(i =>
-      ['/dashboard', '/sku-requests', '/products', '/orders', '/notifications'].includes(i.href),
+      ['/dashboard', '/sku-requests', '/products', '/orders', '/payments', '/notifications'].includes(i.href),
     )
   }
 
