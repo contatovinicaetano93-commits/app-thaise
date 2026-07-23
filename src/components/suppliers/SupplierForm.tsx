@@ -31,11 +31,13 @@ const CATEGORIES = [
 
 interface Props {
   supplier?: Supplier
+  /** Cadastro direto como homologado (ativo), sem fila de Homologação. */
+  createAsHomologated?: boolean
   onSuccess: () => void
   onCancel: () => void
 }
 
-export function SupplierForm({ supplier, onSuccess, onCancel }: Props) {
+export function SupplierForm({ supplier, createAsHomologated = false, onSuccess, onCancel }: Props) {
   const [qcps, setQcps] = useState({
     score_q: supplier?.score_q ?? 5,
     score_c: supplier?.score_c ?? 5,
@@ -45,7 +47,7 @@ export function SupplierForm({ supplier, onSuccess, onCancel }: Props) {
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: supplier ?? { status: 'pending' },
+    defaultValues: supplier ?? { status: createAsHomologated ? 'active' : 'pending' },
   })
 
   async function onSubmit(data: FormData) {
@@ -56,7 +58,7 @@ export function SupplierForm({ supplier, onSuccess, onCancel }: Props) {
         toast.success('Fornecedor atualizado!')
       } else {
         await suppliersApi.create(payload)
-        toast.success('Fornecedor cadastrado!')
+        toast.success(createAsHomologated ? 'Fornecedor homologado!' : 'Fornecedor cadastrado!')
       }
       onSuccess()
     } catch (e) {
@@ -90,15 +92,26 @@ export function SupplierForm({ supplier, onSuccess, onCancel }: Props) {
         ) : (
           <div>
             <p className="text-sm font-medium text-gray-700 mb-1">Status</p>
-            <p className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
-              Pendente — aguarda homologação
+            <p className={`text-sm rounded-lg px-3 py-2 border ${
+              createAsHomologated
+                ? 'text-emerald-800 bg-emerald-50 border-emerald-100'
+                : 'text-gray-600 bg-gray-50 border-gray-200'
+            }`}>
+              {createAsHomologated
+                ? 'Ativo — homologado agora (sem vínculo com fornecedor existente)'
+                : 'Pendente — aguarda homologação'}
             </p>
             <input type="hidden" {...register('status')} />
           </div>
         )}
-        {!supplier && (
+        {!supplier && !createAsHomologated && (
           <p className="col-span-2 text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
             Novos fornecedores entram como <strong>Pendente</strong>. Homologue em Homologação antes de usar em pedidos.
+          </p>
+        )}
+        {!supplier && createAsHomologated && (
+          <p className="col-span-2 text-xs text-emerald-800 bg-emerald-50 rounded-lg px-3 py-2">
+            Cadastro novo e independente — entra já homologado no catálogo curado.
           </p>
         )}
         <Input label="Nome do contato *" placeholder="João Silva" error={errors.contact_name?.message} {...register('contact_name')} />
@@ -120,7 +133,7 @@ export function SupplierForm({ supplier, onSuccess, onCancel }: Props) {
       <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
         <Button type="button" variant="secondary" onClick={onCancel}>Cancelar</Button>
         <Button type="submit" loading={isSubmitting}>
-          {supplier ? 'Salvar alterações' : 'Cadastrar fornecedor'}
+          {supplier ? 'Salvar alterações' : createAsHomologated ? 'Homologar fornecedor' : 'Cadastrar fornecedor'}
         </Button>
       </div>
     </form>

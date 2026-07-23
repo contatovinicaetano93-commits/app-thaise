@@ -11,7 +11,7 @@ import { inviteUserUrl } from '@/lib/flow-links'
 import { toast } from 'sonner'
 import type { Supplier } from '@/types/database'
 
-export function PendingSuppliersPanel() {
+export function PendingSuppliersPanel({ onCreateNew }: { onCreateNew?: () => void }) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -43,7 +43,14 @@ export function PendingSuppliersPanel() {
         collapsible={false}
         summary="Todos homologados"
       >
-        <p className="text-sm text-gray-500 text-center">Nenhum fornecedor aguardando curadoria.</p>
+        <p className="text-sm text-gray-500 text-center mb-3">
+          Ninguém aguardando curadoria. Para cadastrar um novo já homologado:
+        </p>
+        {onCreateNew && (
+          <div className="flex justify-center">
+            <Button onClick={onCreateNew}>Homologar novo fornecedor</Button>
+          </div>
+        )}
       </PanelCard>
     )
   }

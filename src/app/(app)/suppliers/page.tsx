@@ -44,8 +44,21 @@ function SuppliersPageContent() {
   const debouncedSearch = useDebounce(search)
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
+  const [createAsHomologated, setCreateAsHomologated] = useState(false)
   const [editing, setEditing] = useState<Supplier | undefined>()
   const [deleting, setDeleting] = useState<Supplier | undefined>()
+
+  function openNewHomologated() {
+    setEditing(undefined)
+    setCreateAsHomologated(true)
+    setModalOpen(true)
+  }
+
+  function openEdit(supplier: Supplier) {
+    setEditing(supplier)
+    setCreateAsHomologated(false)
+    setModalOpen(true)
+  }
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -68,8 +81,7 @@ function SuppliersPageContent() {
 
   useEffect(() => {
     if (searchParams.get('new') === '1') {
-      setEditing(undefined)
-      setModalOpen(true)
+      openNewHomologated()
     }
   }, [searchParams])
 
@@ -100,9 +112,18 @@ function SuppliersPageContent() {
             : `${suppliers.length} cadastrado${suppliers.length !== 1 ? 's' : ''}`
         }
         menuItems={[
-          { label: 'Novo fornecedor', onClick: () => { setEditing(undefined); setModalOpen(true) } },
+          { label: 'Homologar novo fornecedor', onClick: openNewHomologated },
         ]}
       />
+
+      <div className="mb-4">
+        <Button onClick={openNewHomologated}>
+          <Plus size={16} /> Homologar novo fornecedor
+        </Button>
+        <p className="text-xs text-gray-500 mt-2">
+          Cadastra um fornecedor novo e já ativo — sem vínculo com um existente.
+        </p>
+      </div>
 
       <PageTabs
         tabs={[
@@ -112,7 +133,7 @@ function SuppliersPageContent() {
       />
 
       {tab === 'homologacao' ? (
-        <PendingSuppliersPanel />
+        <PendingSuppliersPanel onCreateNew={openNewHomologated} />
       ) : (
       <>
 
@@ -141,9 +162,9 @@ function SuppliersPageContent() {
           icon={Plus}
           iconClass="text-indigo-600"
           title={search ? 'Nenhum resultado' : 'Nenhum fornecedor ainda'}
-          description={search ? 'Tente outro termo.' : 'Adicione seu primeiro fornecedor curado.'}
-          actionLabel={search ? undefined : 'Novo Fornecedor'}
-          onAction={search ? undefined : () => { setEditing(undefined); setModalOpen(true) }}
+          description={search ? 'Tente outro termo.' : 'Homologue o primeiro fornecedor curado.'}
+          actionLabel={search ? undefined : 'Homologar novo fornecedor'}
+          onAction={search ? undefined : openNewHomologated}
         />
       ) : (
         <div className="space-y-2">
@@ -174,7 +195,7 @@ function SuppliersPageContent() {
                         { label: 'Convidar ao portal', href: inviteUserUrl({ role: 'fornecedor', supplierId: supplier.id }) },
                       ]
                     : []),
-                { label: 'Editar', onClick: () => { setEditing(supplier); setModalOpen(true) } },
+                { label: 'Editar', onClick: () => openEdit(supplier) },
                 { label: 'Excluir', onClick: () => setDeleting(supplier), danger: true },
               ]}
             >
@@ -198,9 +219,16 @@ function SuppliersPageContent() {
       </>
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Editar Fornecedor' : 'Novo Fornecedor'} size="lg">
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={editing ? 'Editar Fornecedor' : createAsHomologated ? 'Homologar novo fornecedor' : 'Novo Fornecedor'}
+        size="lg"
+      >
         <SupplierForm
+          key={editing?.id ?? (createAsHomologated ? 'new-homologated' : 'new-pending')}
           supplier={editing}
+          createAsHomologated={!editing && createAsHomologated}
           onSuccess={() => { setModalOpen(false); load() }}
           onCancel={() => setModalOpen(false)}
         />
