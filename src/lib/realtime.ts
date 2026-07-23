@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/client'
 
 export type RealtimeTable = 'clients' | 'products' | 'orders' | 'suppliers' | 'projects' | 'activity_events' | 'opportunities'
 
+let channelSeq = 0
+
 /** Recarrega dados quando o Supabase Realtime detecta mudança nas tabelas. */
 export function useRealtimeRefresh(tables: RealtimeTable[], onRefresh: () => void) {
   const callbackRef = useRef(onRefresh)
@@ -23,35 +25,45 @@ export function useRealtimeRefresh(tables: RealtimeTable[], onRefresh: () => voi
     }
 
     let cancelled = false
-    const channel = supabase.channel(`sync:${tablesKey}`)
+    // Nome único por instância: reusar o mesmo topic após subscribe() quebra o client
+    // (ex.: Strict Mode, duas listas na mesma página ouvindo a mesma tabela).
+    const topic = `sync:${tablesKey}:${++channelSeq}`
 
-    for (const table of tables) {
-      channel.on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table },
-        () => {
-          if (cancelled) return
-          try {
-            callbackRef.current()
-          } catch {
-            // Evita propagar erros do callback para o client Realtime (Sentry)
-          }
-        },
-      )
-    }
+    try {
+      const channel = supabase.channel(topic)
 
-    channel.subscribe((status, err) => {
-      if (err && !cancelled) {
-        console.warn('[realtime] subscribe error:', err.message)
+      for (const table of tables) {
+        channel.on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table },
+          () => {
+            if (cancelled) return
+            try {
+              callbackRef.current()
+            } catch {
+              // Evita propagar erros do callback para o client Realtime (Sentry)
+            }
+          },
+        )
       }
-      if ((status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') && !cancelled) {
-        console.warn('[realtime] channel status:', status)
-      }
-    })
 
-    return () => {
-      cancelled = true
-      void supabase.removeChannel(channel)
+      channel.subscribe((status, err) => {
+        if (err && !cancelled) {
+          console.warn('[realtime] subscribe error:', err.message)
+        }
+        if ((status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') && !cancelled) {
+          console.warn('[realtime] channel status:', status)
+        }
+      })
+
+      return () => {
+        cancelled = true
+        void supabase.removeChannel(channel)
+      }
+    } catch (e) {
+      console.warn('[realtime] setup failed:', e instanceof Error ? e.message : e)
+      return
     }
-  }, [tablesKey])
+    // tablesKey cobre o conteúdo de `tables`; evita re-subscribe a cada render com array literal novo
+  }, [tablesKey]) // eslint-disable-line react-hooks/exhaustive-deps -- tables via tablesKey
 }

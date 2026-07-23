@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
 
     let query = db
       .from('sku_requests')
-      .select('*, project:projects(id,name,client_id), supplier:suppliers(id,name), product:products(id,name,price,unit,catalog_status,active)')
+      .select('*, project:projects(id,name,client_id), supplier:suppliers(id,name), product:products!sku_requests_product_id_fkey(id,name,price,unit,catalog_status,active)')
       .order('created_at', { ascending: false })
       .limit(100)
 

@@ -20,7 +20,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const db = await createSupabaseServer()
     const { data: request } = await db
       .from('sku_requests')
-      .select('*, product:products(id, name, catalog_status)')
+      .select('*, product:products!sku_requests_product_id_fkey(id, name, catalog_status)')
       .eq('id', id)
       .single()
 
@@ -42,7 +42,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         .from('sku_requests')
         .update({ status: 'cancelled' } as never)
         .eq('id', id)
-        .select('*, project:projects(id,name), supplier:suppliers(id,name), product:products(id,name,price,unit,catalog_status,active)')
+        .select('*, project:projects(id,name), supplier:suppliers(id,name), product:products!sku_requests_product_id_fkey(id,name,price,unit,catalog_status,active)')
         .single()
       if (error) return err(error.message, 500)
       return ok(data)
@@ -57,7 +57,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         .from('sku_requests')
         .update({ status: 'approved' } as never)
         .eq('id', id)
-        .select('*, project:projects(id,name), supplier:suppliers(id,name), product:products(id,name,price,unit,catalog_status,active)')
+        .select('*, project:projects(id,name), supplier:suppliers(id,name), product:products!sku_requests_product_id_fkey(id,name,price,unit,catalog_status,active)')
         .single()
       if (error) return err(error.message, 500)
 
@@ -82,7 +82,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       .from('sku_requests')
       .update({ status: 'rejected' } as never)
       .eq('id', id)
-      .select('*, project:projects(id,name), supplier:suppliers(id,name), product:products(id,name,price,unit,catalog_status,active)')
+      .select('*, project:projects(id,name), supplier:suppliers(id,name), product:products!sku_requests_product_id_fkey(id,name,price,unit,catalog_status,active)')
       .single()
     if (error) return err(error.message, 500)
 

@@ -59,7 +59,8 @@ function ProductsPageContent() {
   }, [isGestor])
 
   useEffect(() => { load() }, [load])
-  useLiveRefresh(load, ['products'])
+  // Só no catálogo — a aba SKUs tem o próprio refresh em SkuRequestsPanel
+  useLiveRefresh(load, tab === 'skus' ? [] : ['products'])
 
   useEffect(() => {
     if (searchParams.get('new') === '1' && role === 'fornecedor') {
