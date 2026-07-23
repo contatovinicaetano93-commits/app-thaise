@@ -89,9 +89,8 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL('/onboarding', req.url))
     }
 
-    if (profile?.role && !profile.onboarding_completed_at && profile.role === 'gestor' && !pathname.startsWith('/onboarding')) {
-      return NextResponse.redirect(new URL('/onboarding', req.url))
-    }
+    // Onboarding é opcional na UX — não prender gestora em loop se o POST falhar.
+    // A página /onboarding grava onboarding_completed_at quando concluir.
 
     const role = profile?.role as UserRole | undefined
     if (role && !canAccessRoute(role, pathname)) {

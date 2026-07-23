@@ -17,10 +17,8 @@ const GESTOR_STEPS = [
     icon: Building2,
     color: 'bg-violet-100 text-violet-600',
     title: 'Comece pela obra',
-    desc: 'A obra é um container simples: vincule o cliente e acompanhe o progresso. Sem fases A→F nem flip de portal.',
+    desc: 'A obra é um container simples: vincule o cliente e acompanhe o progresso.',
     cta: 'Entendido',
-    action: '/projects',
-    actionLabel: 'Ir para Obras →',
   },
   {
     icon: Receipt,
@@ -33,14 +31,14 @@ const GESTOR_STEPS = [
 
 const FORNECEDOR_STEPS = [
   { icon: Package, color: 'bg-amber-100 text-amber-600', title: 'Portal Fornecedor', desc: 'A Estlar pede SKUs — você cadastra produtos. Pedidos aparecem em Meus pedidos.', cta: 'Começar' },
-  { icon: Package, color: 'bg-violet-100 text-violet-600', title: 'SKUs solicitados', desc: 'Quando a Estlar pedir um SKU, cadastre o produto aqui.', cta: 'Ver SKUs', action: '/sku-requests' },
-  { icon: ShoppingCart, color: 'bg-rose-100 text-rose-600', title: 'Pedidos', desc: 'Separe os produtos quando receber notificação de pedido.', cta: 'Ver pedidos', action: '/orders' },
+  { icon: Package, color: 'bg-violet-100 text-violet-600', title: 'SKUs solicitados', desc: 'Quando a Estlar pedir um SKU, cadastre o produto aqui.', cta: 'Entendido' },
+  { icon: ShoppingCart, color: 'bg-rose-100 text-rose-600', title: 'Pedidos', desc: 'Separe os produtos quando receber notificação de pedido.', cta: 'Ir para o Dashboard' },
 ]
 
 const CLIENTE_STEPS = [
   { icon: Package, color: 'bg-stone-100 text-stone-700', title: 'Portal do Cliente', desc: 'Acompanhe sua obra, aprove orçamentos e veja o Relatório 360 da Estlar.', cta: 'Começar' },
-  { icon: Receipt, color: 'bg-violet-100 text-violet-700', title: 'Aprovar orçamentos', desc: 'Quando a Estlar enviar um orçamento, você aprova ou rejeita em Meus orçamentos.', cta: 'Entendido', action: '/quotes', actionLabel: 'Meus orçamentos →' },
-  { icon: Users, color: 'bg-emerald-100 text-emerald-600', title: 'Minha obra', desc: 'Veja o progresso % do seu empreendimento.', cta: 'Ver obra', action: '/projects' },
+  { icon: Receipt, color: 'bg-violet-100 text-violet-700', title: 'Aprovar orçamentos', desc: 'Quando a Estlar enviar um orçamento, você aprova ou rejeita em Meus orçamentos.', cta: 'Entendido' },
+  { icon: Users, color: 'bg-emerald-100 text-emerald-600', title: 'Minha obra', desc: 'Veja o progresso % do seu empreendimento.', cta: 'Ir para o Dashboard' },
 ]
 
 export default function OnboardingPage() {
@@ -50,41 +48,47 @@ export default function OnboardingPage() {
   const [finishing, setFinishing] = useState(false)
 
   useEffect(() => {
-    fetch('/api/auth/me')
+    fetch('/api/auth/me', { credentials: 'include' })
       .then(r => r.json())
       .then(j => {
-        const r = j.data?.profile?.role
+        const profile = j.data?.profile
+        const r = profile?.role
         if (r === 'fornecedor' || r === 'cliente') setRole(r)
+        if (profile?.onboarding_completed_at) {
+          router.replace('/dashboard')
+        }
       })
       .catch(() => {})
-  }, [])
+  }, [router])
 
   const STEPS = role === 'fornecedor' ? FORNECEDOR_STEPS : role === 'cliente' ? CLIENTE_STEPS : GESTOR_STEPS
   const current = STEPS[step]
   const Icon = current.icon
   const isLast = step === STEPS.length - 1
 
-  async function finish() {
+  async function goToDashboard() {
     if (finishing) return
     setFinishing(true)
+    localStorage.setItem('onboarding_done', '1')
+
     try {
       const res = await fetch('/api/auth/onboarding', { method: 'POST', credentials: 'include' })
       const json = await res.json().catch(() => ({}))
       if (!res.ok || json.ok === false) {
-        throw new Error(json.error ?? 'Não foi possível concluir o onboarding')
+        console.warn('onboarding POST failed', json)
+        toast.message('Abrindo o hub')
       }
-      localStorage.setItem('onboarding_done', '1')
-      router.replace('/dashboard')
-      router.refresh()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Erro ao ir para o dashboard')
-      setFinishing(false)
+      console.warn('onboarding POST error', e)
     }
+
+    // Hard navigation: evita loop com cache do middleware/router
+    window.location.href = '/dashboard'
   }
 
   function next() {
     if (isLast) {
-      void finish()
+      void goToDashboard()
       return
     }
     setStep(s => s + 1)
@@ -104,15 +108,6 @@ export default function OnboardingPage() {
           </div>
           <h1 className="text-xl font-bold text-gray-900 mb-2">{current.title}</h1>
           <p className="text-gray-500 text-sm leading-relaxed mb-6">{current.desc}</p>
-          {'action' in current && current.action && (
-            <button
-              type="button"
-              onClick={() => router.push(current.action!)}
-              className="w-full mb-3 py-3 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium rounded-xl text-sm transition-colors"
-            >
-              {String('actionLabel' in current ? current.actionLabel : 'Ir agora →')}
-            </button>
-          )}
           <button
             type="button"
             onClick={next}
@@ -127,6 +122,15 @@ export default function OnboardingPage() {
               <>{current.cta}<ArrowRight size={16} /></>
             )}
           </button>
+          {isLast && !finishing && (
+            <button
+              type="button"
+              onClick={() => { window.location.href = '/dashboard' }}
+              className="w-full mt-3 py-2 text-sm text-gray-500 hover:text-gray-800"
+            >
+              Pular e ir ao dashboard
+            </button>
+          )}
         </div>
       </div>
     </div>
