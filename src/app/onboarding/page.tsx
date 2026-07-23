@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Users, Package, ShoppingCart, Check, ArrowRight, Building2, Receipt } from 'lucide-react'
+import { toast } from 'sonner'
 
 const GESTOR_STEPS = [
   {
@@ -46,6 +47,7 @@ export default function OnboardingPage() {
   const router = useRouter()
   const [step, setStep] = useState(0)
   const [role, setRole] = useState<'gestor' | 'fornecedor' | 'cliente'>('gestor')
+  const [finishing, setFinishing] = useState(false)
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -62,16 +64,27 @@ export default function OnboardingPage() {
   const Icon = current.icon
   const isLast = step === STEPS.length - 1
 
-  function finish() {
-    fetch('/api/auth/onboarding', { method: 'POST', credentials: 'include' })
-      .catch(() => {})
-    localStorage.setItem('onboarding_done', '1')
-    router.push('/dashboard')
+  async function finish() {
+    if (finishing) return
+    setFinishing(true)
+    try {
+      const res = await fetch('/api/auth/onboarding', { method: 'POST', credentials: 'include' })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok || json.ok === false) {
+        throw new Error(json.error ?? 'Não foi possível concluir o onboarding')
+      }
+      localStorage.setItem('onboarding_done', '1')
+      router.replace('/dashboard')
+      router.refresh()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao ir para o dashboard')
+      setFinishing(false)
+    }
   }
 
   function next() {
     if (isLast) {
-      finish()
+      void finish()
       return
     }
     setStep(s => s + 1)
@@ -93,14 +106,26 @@ export default function OnboardingPage() {
           <p className="text-gray-500 text-sm leading-relaxed mb-6">{current.desc}</p>
           {'action' in current && current.action && (
             <button
+              type="button"
               onClick={() => router.push(current.action!)}
               className="w-full mb-3 py-3 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium rounded-xl text-sm transition-colors"
             >
               {String('actionLabel' in current ? current.actionLabel : 'Ir agora →')}
             </button>
           )}
-          <button onClick={next} className="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
-            {isLast ? <><Check size={16} />{current.cta}</> : <>{current.cta}<ArrowRight size={16} /></>}
+          <button
+            type="button"
+            onClick={next}
+            disabled={finishing}
+            className="w-full py-3 bg-violet-600 hover:bg-violet-700 disabled:opacity-60 text-white font-medium rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+          >
+            {finishing ? (
+              'Abrindo dashboard…'
+            ) : isLast ? (
+              <><Check size={16} />{current.cta}</>
+            ) : (
+              <>{current.cta}<ArrowRight size={16} /></>
+            )}
           </button>
         </div>
       </div>
