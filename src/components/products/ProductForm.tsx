@@ -40,9 +40,11 @@ interface Props {
 export function ProductForm({ product, defaultSupplierId, skuRequest, onSuccess, onCancel }: Props) {
   const { role, profile } = useAuth()
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
+  const [supplierStatus, setSupplierStatus] = useState<'active' | 'inactive' | 'pending' | null>(null)
+  const [statusLoading, setStatusLoading] = useState(false)
   const isFornecedor = role === 'fornecedor'
   const isSkuFill = Boolean(skuRequest && !product)
-  const linkedSupplier = suppliers.find(s => s.id === profile?.supplier_id)
+  const supplierBlocked = isFornecedor && !statusLoading && supplierStatus !== null && supplierStatus !== 'active'
 
   const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -71,10 +73,24 @@ export function ProductForm({ product, defaultSupplierId, skuRequest, onSuccess,
   })
 
   useEffect(() => {
-    if (!isFornecedor) {
-      suppliersApi.list().then(setSuppliers).catch(() => toast.error('Erro ao carregar fornecedores'))
+    if (isFornecedor) {
+      if (!profile?.supplier_id) {
+        setSupplierStatus(null)
+        return
+      }
+      setStatusLoading(true)
+      suppliersApi.list()
+        .then(list => {
+          setSuppliers(list)
+          const mine = list.find(s => s.id === profile.supplier_id)
+          setSupplierStatus(mine?.status ?? null)
+        })
+        .catch(() => setSupplierStatus(null))
+        .finally(() => setStatusLoading(false))
+      return
     }
-  }, [isFornecedor])
+    suppliersApi.list().then(setSuppliers).catch(() => toast.error('Erro ao carregar fornecedores'))
+  }, [isFornecedor, profile?.supplier_id])
 
   useEffect(() => {
     if (isFornecedor && profile?.supplier_id && !product) {
@@ -128,7 +144,7 @@ export function ProductForm({ product, defaultSupplierId, skuRequest, onSuccess,
           Obra: <strong>{skuRequest!.project?.name}</strong> · Após enviar, a Estlar aprova para o catálogo.
         </div>
       )}
-      {isFornecedor && linkedSupplier?.status !== 'active' && (
+      {supplierBlocked && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
           Seu cadastro ainda aguarda homologação pela Estlar.
         </div>
@@ -186,7 +202,7 @@ export function ProductForm({ product, defaultSupplierId, skuRequest, onSuccess,
       </div>
       <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
         <Button type="button" variant="secondary" onClick={onCancel}>Cancelar</Button>
-        <Button type="submit" loading={isSubmitting} disabled={isFornecedor && linkedSupplier?.status !== 'active'}>
+        <Button type="submit" loading={isSubmitting} disabled={supplierBlocked || statusLoading}>
           {product ? 'Salvar alterações' : isSkuFill ? 'Enviar SKU para aprovação' : 'Cadastrar produto'}
         </Button>
       </div>
