@@ -16,7 +16,18 @@ export async function GET() {
 
     if (error) return err(error.message, 500)
 
-    return ok({ user: { id: user.id, email: user.email }, profile })
+    let supplier: { id: string; name: string; status: string } | null = null
+    const supplierId = (profile as { supplier_id?: string | null } | null)?.supplier_id
+    if (supplierId) {
+      const { data: row } = await supabase
+        .from('suppliers')
+        .select('id, name, status')
+        .eq('id', supplierId)
+        .maybeSingle()
+      if (row) supplier = row as { id: string; name: string; status: string }
+    }
+
+    return ok({ user: { id: user.id, email: user.email }, profile, supplier })
   } catch (e) {
     return handleError(e)
   }

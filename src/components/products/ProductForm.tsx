@@ -38,13 +38,16 @@ interface Props {
 }
 
 export function ProductForm({ product, defaultSupplierId, skuRequest, onSuccess, onCancel }: Props) {
-  const { role, profile } = useAuth()
+  const { role, profile, linkedSupplier } = useAuth()
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
-  const [supplierStatus, setSupplierStatus] = useState<'active' | 'inactive' | 'pending' | null>(null)
-  const [statusLoading, setStatusLoading] = useState(false)
   const isFornecedor = role === 'fornecedor'
   const isSkuFill = Boolean(skuRequest && !product)
-  const supplierBlocked = isFornecedor && !statusLoading && supplierStatus !== null && supplierStatus !== 'active'
+  // Pedido de SKU já implica fornecedor elegível; o aviso só vale fora desse fluxo.
+  const supplierBlocked =
+    isFornecedor &&
+    !isSkuFill &&
+    linkedSupplier != null &&
+    linkedSupplier.status !== 'active'
 
   const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -73,24 +76,10 @@ export function ProductForm({ product, defaultSupplierId, skuRequest, onSuccess,
   })
 
   useEffect(() => {
-    if (isFornecedor) {
-      if (!profile?.supplier_id) {
-        setSupplierStatus(null)
-        return
-      }
-      setStatusLoading(true)
-      suppliersApi.list()
-        .then(list => {
-          setSuppliers(list)
-          const mine = list.find(s => s.id === profile.supplier_id)
-          setSupplierStatus(mine?.status ?? null)
-        })
-        .catch(() => setSupplierStatus(null))
-        .finally(() => setStatusLoading(false))
-      return
+    if (!isFornecedor) {
+      suppliersApi.list().then(setSuppliers).catch(() => toast.error('Erro ao carregar fornecedores'))
     }
-    suppliersApi.list().then(setSuppliers).catch(() => toast.error('Erro ao carregar fornecedores'))
-  }, [isFornecedor, profile?.supplier_id])
+  }, [isFornecedor])
 
   useEffect(() => {
     if (isFornecedor && profile?.supplier_id && !product) {
@@ -141,7 +130,7 @@ export function ProductForm({ product, defaultSupplierId, skuRequest, onSuccess,
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {isSkuFill && (
         <div className="rounded-lg border border-violet-100 bg-violet-50 px-3 py-2 text-sm text-violet-900">
-          Obra: <strong>{skuRequest!.project?.name}</strong> · Após enviar, a Estlar aprova para o catálogo.
+          Obra: <strong>{skuRequest!.project?.name ?? '—'}</strong> · Após enviar, a Estlar aprova para o catálogo.
         </div>
       )}
       {supplierBlocked && (
@@ -202,7 +191,7 @@ export function ProductForm({ product, defaultSupplierId, skuRequest, onSuccess,
       </div>
       <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
         <Button type="button" variant="secondary" onClick={onCancel}>Cancelar</Button>
-        <Button type="submit" loading={isSubmitting} disabled={supplierBlocked || statusLoading}>
+        <Button type="submit" loading={isSubmitting} disabled={supplierBlocked}>
           {product ? 'Salvar alterações' : isSkuFill ? 'Enviar SKU para aprovação' : 'Cadastrar produto'}
         </Button>
       </div>
