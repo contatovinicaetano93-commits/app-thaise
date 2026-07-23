@@ -1,9 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { Users, Package, ShoppingCart, Check, ArrowRight, Building2, Receipt } from 'lucide-react'
-import { toast } from 'sonner'
 
 const GESTOR_STEPS = [
   {
@@ -41,11 +39,20 @@ const CLIENTE_STEPS = [
   { icon: Users, color: 'bg-emerald-100 text-emerald-600', title: 'Minha obra', desc: 'Veja o progresso % do seu empreendimento.', cta: 'Ir para o Dashboard' },
 ]
 
+function leaveOnboarding() {
+  try {
+    localStorage.setItem('onboarding_done', '1')
+  } catch {
+    // ignore
+  }
+  // Fire-and-forget — não esperar API (ela travava o botão em "Abrindo…")
+  void fetch('/api/auth/onboarding', { method: 'POST', credentials: 'include' }).catch(() => {})
+  window.location.replace('/dashboard')
+}
+
 export default function OnboardingPage() {
-  const router = useRouter()
   const [step, setStep] = useState(0)
   const [role, setRole] = useState<'gestor' | 'fornecedor' | 'cliente'>('gestor')
-  const [finishing, setFinishing] = useState(false)
 
   useEffect(() => {
     fetch('/api/auth/me', { credentials: 'include' })
@@ -55,40 +62,20 @@ export default function OnboardingPage() {
         const r = profile?.role
         if (r === 'fornecedor' || r === 'cliente') setRole(r)
         if (profile?.onboarding_completed_at) {
-          router.replace('/dashboard')
+          window.location.replace('/dashboard')
         }
       })
       .catch(() => {})
-  }, [router])
+  }, [])
 
   const STEPS = role === 'fornecedor' ? FORNECEDOR_STEPS : role === 'cliente' ? CLIENTE_STEPS : GESTOR_STEPS
   const current = STEPS[step]
   const Icon = current.icon
   const isLast = step === STEPS.length - 1
 
-  async function goToDashboard() {
-    if (finishing) return
-    setFinishing(true)
-    localStorage.setItem('onboarding_done', '1')
-
-    try {
-      const res = await fetch('/api/auth/onboarding', { method: 'POST', credentials: 'include' })
-      const json = await res.json().catch(() => ({}))
-      if (!res.ok || json.ok === false) {
-        console.warn('onboarding POST failed', json)
-        toast.message('Abrindo o hub')
-      }
-    } catch (e) {
-      console.warn('onboarding POST error', e)
-    }
-
-    // Hard navigation: evita loop com cache do middleware/router
-    window.location.href = '/dashboard'
-  }
-
   function next() {
     if (isLast) {
-      void goToDashboard()
+      leaveOnboarding()
       return
     }
     setStep(s => s + 1)
@@ -111,21 +98,18 @@ export default function OnboardingPage() {
           <button
             type="button"
             onClick={next}
-            disabled={finishing}
-            className="w-full py-3 bg-violet-600 hover:bg-violet-700 disabled:opacity-60 text-white font-medium rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
           >
-            {finishing ? (
-              'Abrindo dashboard…'
-            ) : isLast ? (
+            {isLast ? (
               <><Check size={16} />{current.cta}</>
             ) : (
               <>{current.cta}<ArrowRight size={16} /></>
             )}
           </button>
-          {isLast && !finishing && (
+          {isLast && (
             <button
               type="button"
-              onClick={() => { window.location.href = '/dashboard' }}
+              onClick={leaveOnboarding}
               className="w-full mt-3 py-2 text-sm text-gray-500 hover:text-gray-800"
             >
               Pular e ir ao dashboard

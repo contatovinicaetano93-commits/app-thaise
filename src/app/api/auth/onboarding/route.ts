@@ -1,6 +1,5 @@
 import { ok, err, handleError } from '@/lib/api-response'
 import { createSupabaseServer } from '@/lib/supabase/server'
-import { createServiceClient } from '@/lib/supabase-server'
 
 export async function POST() {
   try {
@@ -8,9 +7,8 @@ export async function POST() {
     const { data: { user } } = await db.auth.getUser()
     if (!user) return err('Não autenticado', 401)
 
-    // Service role evita falha silenciosa de RLS no update do profile
-    const admin = createServiceClient()
-    const { error } = await admin
+    // Update via sessão do usuário (RLS: profiles update own) — sem service role
+    const { error } = await db
       .from('profiles')
       .update({ onboarding_completed_at: new Date().toISOString() } as never)
       .eq('id', user.id)

@@ -78,21 +78,21 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 
+  // Autenticado em /onboarding — deixa a página decidir; NUNCA prender em loop
+  if (user && pathname.startsWith('/onboarding')) {
+    if (rateRemaining !== undefined) response.headers.set('X-RateLimit-Remaining', String(rateRemaining))
+    return response
+  }
+
   if (user && !isPublic && !pathname.startsWith('/api/')) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role, onboarding_completed_at, supplier_id, client_id')
+      .select('role')
       .eq('id', user.id)
-      .single()
-
-    if (!profile?.role && !pathname.startsWith('/onboarding')) {
-      return NextResponse.redirect(new URL('/onboarding', req.url))
-    }
-
-    // Onboarding é opcional na UX — não prender gestora em loop se o POST falhar.
-    // A página /onboarding grava onboarding_completed_at quando concluir.
+      .maybeSingle()
 
     const role = profile?.role as UserRole | undefined
+    // Sem role: libera o hub (não manda de volta ao onboarding)
     if (role && !canAccessRoute(role, pathname)) {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }
