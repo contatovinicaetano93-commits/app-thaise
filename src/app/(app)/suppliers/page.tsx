@@ -116,12 +116,12 @@ function SuppliersPageContent() {
         ]}
       />
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <Button onClick={openNewHomologated}>
           <Plus size={16} /> Homologar novo fornecedor
         </Button>
-        <p className="text-xs text-gray-500 mt-2">
-          Cadastra um fornecedor novo e já ativo — sem vínculo com um existente.
+        <p className="text-xs text-gray-500 max-w-sm leading-snug">
+          Novo e já ativo — sem vínculo com fornecedor existente.
         </p>
       </div>
 

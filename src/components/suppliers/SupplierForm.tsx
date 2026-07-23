@@ -68,10 +68,25 @@ export function SupplierForm({ supplier, createAsHomologated = false, onSuccess,
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2">
+      {!supplier && (
+        <p
+          className={`text-xs leading-relaxed rounded-lg px-3.5 py-2.5 border ${
+            createAsHomologated
+              ? 'text-emerald-800 bg-emerald-50/80 border-emerald-100'
+              : 'text-amber-800 bg-amber-50/80 border-amber-100'
+          }`}
+        >
+          {createAsHomologated
+            ? 'Cadastro novo e independente — entra já homologado (ativo) no catálogo curado.'
+            : 'Entra como pendente. Homologue na aba Homologação antes de usar em pedidos.'}
+        </p>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="sm:col-span-2">
           <Input label="Nome da empresa *" placeholder="Ex: Revestimentos Silva" error={errors.name?.message} {...register('name')} />
         </div>
+
         <Select
           label="Categoria *"
           error={errors.category?.message}
@@ -79,6 +94,7 @@ export function SupplierForm({ supplier, createAsHomologated = false, onSuccess,
           placeholder="Selecione..."
           {...register('category')}
         />
+
         {supplier ? (
           <Select
             label="Status"
@@ -90,46 +106,44 @@ export function SupplierForm({ supplier, createAsHomologated = false, onSuccess,
             {...register('status')}
           />
         ) : (
-          <div>
-            <p className="text-sm font-medium text-gray-700 mb-1">Status</p>
-            <p className={`text-sm rounded-lg px-3 py-2 border ${
-              createAsHomologated
-                ? 'text-emerald-800 bg-emerald-50 border-emerald-100'
-                : 'text-gray-600 bg-gray-50 border-gray-200'
-            }`}>
-              {createAsHomologated
-                ? 'Ativo — homologado agora (sem vínculo com fornecedor existente)'
-                : 'Pendente — aguarda homologação'}
-            </p>
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-gray-700">Status</span>
+            <div
+              className={`min-h-[42px] flex items-center gap-2 px-3 py-2.5 border rounded-lg text-sm ${
+                createAsHomologated
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                  : 'border-gray-200 bg-gray-50 text-gray-700'
+              }`}
+            >
+              <span
+                className={`inline-flex h-2 w-2 shrink-0 rounded-full ${
+                  createAsHomologated ? 'bg-emerald-500' : 'bg-amber-500'
+                }`}
+              />
+              {createAsHomologated ? 'Ativo · homologado agora' : 'Pendente · aguarda homologação'}
+            </div>
             <input type="hidden" {...register('status')} />
           </div>
         )}
-        {!supplier && !createAsHomologated && (
-          <p className="col-span-2 text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
-            Novos fornecedores entram como <strong>Pendente</strong>. Homologue em Homologação antes de usar em pedidos.
-          </p>
-        )}
-        {!supplier && createAsHomologated && (
-          <p className="col-span-2 text-xs text-emerald-800 bg-emerald-50 rounded-lg px-3 py-2">
-            Cadastro novo e independente — entra já homologado no catálogo curado.
-          </p>
-        )}
+
         <Input label="Nome do contato *" placeholder="João Silva" error={errors.contact_name?.message} {...register('contact_name')} />
         <Input label="Telefone *" placeholder="(11) 99999-9999" error={errors.contact_phone?.message} {...register('contact_phone')} />
-        <div className="col-span-2">
+
+        <div className="sm:col-span-2">
           <Input label="Email *" type="email" placeholder="contato@empresa.com" error={errors.contact_email?.message} {...register('contact_email')} />
         </div>
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <Input label="Site" type="url" placeholder="https://empresa.com.br" error={errors.website?.message} {...register('website')} />
         </div>
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <Textarea label="Observações" placeholder="Condições especiais, produtos preferidos..." {...register('notes')} />
         </div>
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <p className="text-sm font-medium text-gray-700 mb-2">Avaliação QCPS</p>
           <QcpsEditor values={qcps} onChange={setQcps} />
         </div>
       </div>
+
       <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
         <Button type="button" variant="secondary" onClick={onCancel}>Cancelar</Button>
         <Button type="submit" loading={isSubmitting}>
