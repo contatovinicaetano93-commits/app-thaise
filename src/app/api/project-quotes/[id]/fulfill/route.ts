@@ -61,7 +61,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
           quantity: line.quantity,
           unit_price: line.unit_price,
           notes: line.notes,
-          status: 'pending',
+          status: 'approved',
         } as never)
         .select('id')
         .single()
@@ -70,7 +70,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
       const orderId = (order as { id: string }).id
       created.push(orderId)
 
-      await logOrderStatus({ orderId, fromStatus: null, toStatus: 'pending', changedBy: profile!.id })
+      await logOrderStatus({ orderId, fromStatus: null, toStatus: 'approved', changedBy: profile!.id })
       await logActivity({
         entityType: 'order',
         entityId: orderId,

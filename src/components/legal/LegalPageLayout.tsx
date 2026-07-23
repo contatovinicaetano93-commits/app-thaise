@@ -24,7 +24,7 @@ export function LegalPageLayout({ title, updatedAt, children }: LegalPageLayoutP
             <p className="text-sm text-[var(--estlar-sand)] mt-0.5">{BRAND.subtitle}</p>
           </Link>
           <Link
-            href="/intake"
+            href="/login"
             className="text-xs font-medium transition-colors hover:opacity-80 shrink-0"
             style={{ color: 'var(--estlar-wine-light)' }}
           >

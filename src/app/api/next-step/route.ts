@@ -1,12 +1,11 @@
 import { ok, handleError } from '@/lib/api-response'
 import { requireProfile } from '@/lib/auth/api-context'
 import { createSupabaseServer } from '@/lib/supabase/server'
-import { isSimpleMode } from '@/lib/app-mode'
 import { quoteCreateUrl, skuRequestCreateUrl } from '@/lib/flow-links'
 
 type Step = { label: string; href: string; reason: string; sipoc: string }
 
-/** Próximo passo — fluxo v2 Estlar Hub (modo simples) ou legado */
+/** Próximo passo — fluxo mínimo 3 papéis */
 export async function GET() {
   try {
     const { profile, error: authErr } = await requireProfile()
@@ -16,7 +15,6 @@ export async function GET() {
     const isGestor = role === 'gestor'
     const isFornecedor = role === 'fornecedor'
     const isCliente = role === 'cliente'
-    const v2 = isSimpleMode()
 
     const db = await createSupabaseServer()
     const steps: Step[] = []
@@ -34,7 +32,7 @@ export async function GET() {
       })
     }
 
-    if (isGestor && v2) {
+    if (isGestor) {
       const [
         { count: pendingSuppliers },
         { count: activeSuppliers },
@@ -46,9 +44,6 @@ export async function GET() {
         { count: draftQuotes },
         { count: openSku },
         { count: openOrders },
-        { count: paymentsReady },
-        { count: paymentsHeld },
-        { data: portalOff },
         { data: projectNoSku },
       ] = await Promise.all([
         db.from('suppliers').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
@@ -60,10 +55,7 @@ export async function GET() {
         db.from('project_quotes').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
         db.from('project_quotes').select('id', { count: 'exact', head: true }).eq('status', 'draft'),
         db.from('sku_requests').select('id', { count: 'exact', head: true }).eq('status', 'open'),
-        db.from('orders').select('id', { count: 'exact', head: true }).in('status', ['pending', 'approved', 'processing']),
-        db.from('order_payments').select('id', { count: 'exact', head: true }).eq('status', 'held').in('audit_status', ['passed', 'override']),
-        db.from('order_payments').select('id', { count: 'exact', head: true }).eq('status', 'held'),
-        db.from('projects').select('id, name').eq('status', 'active').eq('portal_enabled', false).limit(1),
+        db.from('orders').select('id', { count: 'exact', head: true }).in('status', ['approved', 'processing']),
         db.from('projects').select('id, name').eq('status', 'active').limit(5),
       ])
 
@@ -96,7 +88,7 @@ export async function GET() {
           sipoc: '4',
           label: 'Criar obra',
           href: '/projects?new=1',
-          reason: 'Inicie o empreendimento e defina as fases',
+          reason: 'Inicie o empreendimento vinculado ao cliente',
         })
       }
       if ((skuSubmitted ?? 0) > 0) {
@@ -123,15 +115,6 @@ export async function GET() {
           reason: `${quotesSent} orçamento(s) enviados — cliente decide em Meus orçamentos`,
         })
       }
-      if (portalOff?.length) {
-        const p = portalOff[0] as { id: string; name: string }
-        steps.push({
-          sipoc: '6',
-          label: 'Liberar portal do cliente',
-          href: `/projects?open=${p.id}`,
-          reason: `Obra "${p.name}" — libere o portal antes de enviar orçamento`,
-        })
-      }
       if ((draftQuotes ?? 0) > 0) {
         steps.push({
           sipoc: '6',
@@ -149,7 +132,6 @@ export async function GET() {
         })
       }
 
-      // Obra sem SKU pedido e sem orçamento
       for (const p of projectNoSku ?? []) {
         const proj = p as { id: string; name: string }
         const [{ count: skus }, { count: quotes }, { count: products }] = await Promise.all([
@@ -185,21 +167,6 @@ export async function GET() {
           reason: `${openOrders} pedido(s) em andamento — fornecedor foi notificado para separar`,
         })
       }
-      if ((paymentsReady ?? 0) > 0) {
-        steps.push({
-          sipoc: '10',
-          label: 'Liberar pagamento ao fornecedor',
-          href: '/payments',
-          reason: `${paymentsReady} pagamento(s) com auditoria aprovada — prontos para liberar`,
-        })
-      } else if ((paymentsHeld ?? 0) > 0) {
-        steps.push({
-          sipoc: '10',
-          label: 'Auditar entrega para liberar pagamento',
-          href: '/payments',
-          reason: `${paymentsHeld} pagamento(s) em escrow — anexe e aprove a foto no checklist da obra`,
-        })
-      }
 
       steps.push({
         sipoc: '→',
@@ -211,12 +178,11 @@ export async function GET() {
       return ok({ next: steps[0] ?? null, steps })
     }
 
-    // ── Fornecedor v2 ──
-    if (isFornecedor && v2) {
+    if (isFornecedor) {
       const supplierId = profile!.supplier_id!
       const [{ count: openSkus }, { count: openOrders }] = await Promise.all([
         db.from('sku_requests').select('id', { count: 'exact', head: true }).eq('supplier_id', supplierId).eq('status', 'open'),
-        db.from('orders').select('id', { count: 'exact', head: true }).eq('supplier_id', supplierId).in('status', ['pending', 'approved', 'processing']),
+        db.from('orders').select('id', { count: 'exact', head: true }).eq('supplier_id', supplierId).in('status', ['approved', 'processing']),
       ])
 
       if ((openSkus ?? 0) > 0) {
@@ -238,13 +204,12 @@ export async function GET() {
       return ok({ next: steps[0] ?? null, steps })
     }
 
-    // ── Cliente v2 ──
-    if (isCliente && v2) {
+    if (isCliente) {
       const clientId = profile!.client_id!
       const [{ count: pendingQuotes }, { count: sentReports }, { count: projects }] = await Promise.all([
         db.from('project_quotes').select('id', { count: 'exact', head: true }).eq('client_id', clientId).eq('status', 'sent'),
         db.from('weekly_reports').select('id', { count: 'exact', head: true }).eq('status', 'sent'),
-        db.from('projects').select('id', { count: 'exact', head: true }).eq('client_id', clientId).eq('portal_enabled', true),
+        db.from('projects').select('id', { count: 'exact', head: true }).eq('client_id', clientId).eq('status', 'active'),
       ])
 
       if ((pendingQuotes ?? 0) > 0) {
@@ -260,7 +225,7 @@ export async function GET() {
           sipoc: 'C',
           label: 'Acompanhar minha obra',
           href: '/projects',
-          reason: 'Veja o progresso % e as fases da obra',
+          reason: 'Veja o progresso % da obra',
         })
       }
       if ((sentReports ?? 0) > 0) {
@@ -274,44 +239,7 @@ export async function GET() {
       return ok({ next: steps[0] ?? null, steps })
     }
 
-    // ── Modo legado (NEXT_PUBLIC_SIMPLE_MODE=0) ──
-    const [
-      { count: pendingSuppliers },
-      { count: activeSuppliers },
-      { count: clientCount },
-      { count: projects },
-      { count: openOrders },
-    ] = await Promise.all([
-      db.from('suppliers').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-      db.from('suppliers').select('id', { count: 'exact', head: true }).eq('status', 'active'),
-      db.from('clients').select('id', { count: 'exact', head: true }),
-      db.from('projects').select('id', { count: 'exact', head: true }),
-      db.from('orders').select('id', { count: 'exact', head: true }).in('status', ['pending', 'approved', 'processing']),
-    ])
-
-    if (isGestor) {
-      if ((pendingSuppliers ?? 0) > 0) {
-        steps.push({ sipoc: 'S', label: 'Homologar fornecedores', href: '/pending-suppliers', reason: `${pendingSuppliers} pendente(s)` })
-      }
-      if ((projects ?? 0) === 0) {
-        steps.push({ sipoc: 'I', label: 'Criar empreendimento', href: '/projects', reason: 'Inicie a jornada A→F' })
-      }
-      if ((openOrders ?? 0) > 0) {
-        steps.push({ sipoc: 'P', label: 'Acompanhar pedidos', href: '/orders', reason: `${openOrders} em aberto` })
-      } else if ((clientCount ?? 0) > 0 && (activeSuppliers ?? 0) > 0) {
-        steps.push({ sipoc: 'O', label: 'Criar pedido', href: '/orders', reason: 'Conecte cliente, produto e fornecedor' })
-      }
-    }
-
-    if (isFornecedor && (openOrders ?? 0) > 0) {
-      steps.push({ sipoc: 'P', label: 'Pedidos para produção', href: '/orders', reason: `${openOrders} em aberto` })
-    }
-
-    if (isCliente) {
-      steps.push({ sipoc: 'C', label: 'Ver empreendimentos', href: '/projects', reason: 'Acompanhe sua obra' })
-    }
-
-    return ok({ next: steps[0] ?? null, steps })
+    return ok({ next: null, steps: [] })
   } catch (e) {
     return handleError(e)
   }

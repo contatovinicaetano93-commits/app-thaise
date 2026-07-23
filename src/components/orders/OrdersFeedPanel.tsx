@@ -1,17 +1,16 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { ShoppingCart, Lock } from 'lucide-react'
-import { ordersApi, paymentsApi } from '@/lib/api'
+import { ShoppingCart } from 'lucide-react'
+import { ordersApi } from '@/lib/api'
 import { useLiveRefresh } from '@/lib/hooks'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
 import { PanelCard } from '@/components/ui/PanelCard'
 import { OrderNotificationsBadge } from '@/components/orders/OrderNotificationsBadge'
 import { ORDER_STATUS_LABEL, allowedOrderTransitions, type OrderStatus } from '@/lib/orders/status-transitions'
-import { isSimpleMode } from '@/lib/app-mode'
 import { toast } from 'sonner'
-import type { Order, OrderPayment } from '@/types/database'
+import type { Order } from '@/types/database'
 
 const STATUS_COLOR: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-700',
@@ -27,9 +26,7 @@ interface Props {
 
 export function OrdersFeedPanel({ embedded }: Props) {
   const { isGestor, role } = useAuth()
-  const simple = isSimpleMode()
   const [orders, setOrders] = useState<Order[]>([])
-  const [paymentsByOrder, setPaymentsByOrder] = useState<Record<string, OrderPayment>>({})
   const [notifications, setNotifications] = useState<Record<string, Array<{
     order_id: string
     channel: 'whatsapp' | 'email' | 'in_app'
@@ -47,11 +44,6 @@ export function OrdersFeedPanel({ embedded }: Props) {
       const data = await ordersApi.list()
       setOrders(data)
       if (isGestor) {
-        paymentsApi.list().then(list => {
-          const map: Record<string, OrderPayment> = {}
-          for (const p of list) map[p.order_id] = p
-          setPaymentsByOrder(map)
-        }).catch(() => {})
         ordersApi.notifications().then(setNotifications).catch(() => {})
       }
     } catch {
@@ -83,7 +75,7 @@ export function OrdersFeedPanel({ embedded }: Props) {
         iconClass="text-rose-600"
         title="Nenhum pedido ainda"
         description={
-          simple && isGestor
+          isGestor
             ? 'Pedidos aparecem aqui após o cliente aprovar o orçamento e você clicar em Gerar pedidos.'
             : 'Nenhum pedido registrado.'
         }
@@ -93,7 +85,7 @@ export function OrdersFeedPanel({ embedded }: Props) {
 
   return (
     <div className="space-y-2">
-      {embedded && simple && isGestor && (
+      {embedded && isGestor && (
         <p className="text-sm text-gray-600 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 mb-2">
           Pedidos gerados a partir de orçamentos aprovados. Fornecedor é notificado para separar o produto.
         </p>
@@ -123,14 +115,6 @@ export function OrdersFeedPanel({ embedded }: Props) {
             {order.project && ` · ${order.project.name}`}
           </p>
           {isGestor && <OrderNotificationsBadge notifications={notifications[order.id]} />}
-          {order.status === 'delivered' && paymentsByOrder[order.id] && (
-            <p className={`text-xs mt-2 flex items-center gap-1 font-medium ${
-              paymentsByOrder[order.id].status === 'released' ? 'text-emerald-700' : 'text-amber-700'
-            }`}>
-              <Lock size={12} />
-              Pagamento: {paymentsByOrder[order.id].status === 'released' ? 'liberado' : 'em escrow — aguarda auditoria'}
-            </p>
-          )}
         </PanelCard>
       ))}
     </div>

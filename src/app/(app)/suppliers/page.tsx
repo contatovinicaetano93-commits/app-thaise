@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { Plus, Search, ExternalLink, Phone, Mail } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { SupplierForm } from '@/components/suppliers/SupplierForm'
@@ -12,9 +12,8 @@ import { homologationTierLabel, qcpsAverage } from '@/lib/qcps'
 import { Button } from '@/components/ui/Button'
 import { PanelCard } from '@/components/ui/PanelCard'
 import { PanelToolbar } from '@/components/ui/PanelToolbar'
-import { suppliersApi, agentsApi, pendingSuppliersApi } from '@/lib/api'
+import { suppliersApi, pendingSuppliersApi } from '@/lib/api'
 import { useDebounce, useLiveRefresh } from '@/lib/hooks'
-import { isSimpleMode } from '@/lib/app-mode'
 import { PageTabs } from '@/components/ui/PageTabs'
 import { PendingSuppliersPanel } from '@/components/suppliers/PendingSuppliersPanel'
 import { toast } from 'sonner'
@@ -37,9 +36,7 @@ export default function SuppliersPage() {
 }
 
 function SuppliersPageContent() {
-  const router = useRouter()
   const searchParams = useSearchParams()
-  const simple = isSimpleMode()
   const tab = searchParams.get('tab') ?? 'ativos'
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [pendingCount, setPendingCount] = useState(0)
@@ -49,14 +46,13 @@ function SuppliersPageContent() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Supplier | undefined>()
   const [deleting, setDeleting] = useState<Supplier | undefined>()
-  const [scoring, setScoring] = useState<string | null>(null)
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
     try {
       const [data, pending] = await Promise.all([
         suppliersApi.list(),
-        simple ? pendingSuppliersApi.list().catch(() => []) : Promise.resolve([]),
+        pendingSuppliersApi.list().catch(() => []),
       ])
       setSuppliers(data)
       setPendingCount(pending.length)
@@ -65,7 +61,7 @@ function SuppliersPageContent() {
     } finally {
       if (!silent) setLoading(false)
     }
-  }, [simple])
+  }, [])
 
   useEffect(() => { load() }, [load])
   useLiveRefresh(load, ['suppliers'])
@@ -75,10 +71,7 @@ function SuppliersPageContent() {
       setEditing(undefined)
       setModalOpen(true)
     }
-    if (searchParams.get('tab') === 'homologacao' && !simple) {
-      router.replace('/suppliers')
-    }
-  }, [searchParams, simple, router])
+  }, [searchParams])
 
   async function handleDelete() {
     if (!deleting) return
@@ -89,19 +82,6 @@ function SuppliersPageContent() {
       load()
     } catch {
       toast.error('Erro ao excluir fornecedor')
-    }
-  }
-
-  async function handleScore(supplierId: string) {
-    setScoring(supplierId)
-    try {
-      const result = await agentsApi.scoreSupplier(supplierId)
-      toast.success(`QCPS recalculado: ${result.average}/10`)
-      load()
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Erro no agente')
-    } finally {
-      setScoring(null)
     }
   }
 
@@ -124,16 +104,14 @@ function SuppliersPageContent() {
         ]}
       />
 
-      {simple && (
-        <PageTabs
-          tabs={[
-            { id: 'ativos', label: 'Homologados' },
-            { id: 'homologacao', label: 'Homologação', badge: pendingCount },
-          ]}
-        />
-      )}
+      <PageTabs
+        tabs={[
+          { id: 'ativos', label: 'Homologados' },
+          { id: 'homologacao', label: 'Homologação', badge: pendingCount },
+        ]}
+      />
 
-      {simple && tab === 'homologacao' ? (
+      {tab === 'homologacao' ? (
         <PendingSuppliersPanel />
       ) : (
       <>
@@ -196,7 +174,6 @@ function SuppliersPageContent() {
                         { label: 'Convidar ao portal', href: inviteUserUrl({ role: 'fornecedor', supplierId: supplier.id }) },
                       ]
                     : []),
-                { label: 'Recalcular QCPS', onClick: () => handleScore(supplier.id), disabled: scoring === supplier.id },
                 { label: 'Editar', onClick: () => { setEditing(supplier); setModalOpen(true) } },
                 { label: 'Excluir', onClick: () => setDeleting(supplier), danger: true },
               ]}

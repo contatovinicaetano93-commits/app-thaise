@@ -1,9 +1,46 @@
 import { ok, handleError } from '@/lib/api-response'
 import { requireGestor } from '@/lib/auth/api-context'
-import { generateMonthlySummary } from '@/lib/agents/monthly-report-agent'
-import { isLlmConfigured } from '@/lib/llm'
+import { chatCompletion, isLlmConfigured } from '@/lib/llm'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { qcpsAverage } from '@/lib/qcps'
+
+interface MonthlyMetrics {
+  orders: number
+  revenue: number
+  activeSuppliers: number
+  avgQcps: number
+  activeProjects: number
+  insights: number
+  delivered: number
+  pending: number
+}
+
+function buildDeterministicSummary(periodLabel: string, m: MonthlyMetrics): string {
+  return [
+    `Relatório ${periodLabel}`,
+    `${m.orders} pedido(s) no mês · receita entregue ${m.revenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`,
+    `${m.activeSuppliers} fornecedor(es) ativo(s) · QCPS médio ${m.avgQcps}/10`,
+    `${m.activeProjects} empreendimento(s) ativo(s)`,
+    `${m.insights} insight(s) AI gerados no mês`,
+  ].join(' · ')
+}
+
+async function generateMonthlySummary(periodLabel: string, metrics: MonthlyMetrics): Promise<string> {
+  const fallback = buildDeterministicSummary(periodLabel, metrics)
+  const ai = await chatCompletion([
+    {
+      role: 'system',
+      content:
+        'Você é analista do Hub Estlar (curadoria de ativos, empreendimentos e consolidação patrimonial). ' +
+        'Escreva um parágrafo executivo em português (3–4 frases), objetivo e acionável para a gestora.',
+    },
+    {
+      role: 'user',
+      content: JSON.stringify({ periodo: periodLabel, metricas: metrics }),
+    },
+  ], { maxTokens: 280, temperature: 0.4 })
+  return ai || fallback
+}
 
 export async function GET() {
   try {

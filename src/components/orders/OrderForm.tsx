@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Select, Textarea, Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
-import { clientsApi, suppliersApi, productsApi, ordersApi, projectsApi, assistantApi } from '@/lib/api'
+import { clientsApi, suppliersApi, productsApi, ordersApi, projectsApi } from '@/lib/api'
 import { toast } from 'sonner'
 import type { Client, Supplier, Product, Project } from '@/types/database'
 
@@ -35,8 +35,6 @@ export function OrderForm({ defaultProjectId, defaultClientId, defaultSupplierId
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [projects, setProjects] = useState<Project[]>([])
-  const [suggestion, setSuggestion] = useState('')
-  const [rankedSuppliers, setRankedSuppliers] = useState<Array<{ id: string; name: string; score: number }>>([])
 
   const { register, handleSubmit, setValue, control, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -89,20 +87,7 @@ export function OrderForm({ defaultProjectId, defaultClientId, defaultSupplierId
 
   function onProductChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const product = products.find(p => p.id === e.target.value)
-    if (product) {
-      setValue('unit_price', product.price)
-      assistantApi.suggest(product.id, product.category)
-        .then(r => {
-          setSuggestion(r.message)
-          setRankedSuppliers(r.suppliers ?? [])
-        })
-        .catch(() => { setSuggestion(''); setRankedSuppliers([]) })
-    }
-  }
-
-  function applySuggestedSupplier(id: string) {
-    setValue('supplier_id', id)
-    toast.success('Fornecedor recomendado aplicado')
+    if (product) setValue('unit_price', product.price)
   }
 
   const activeSuppliers = suppliers.filter(s => s.status === 'active')
@@ -154,20 +139,6 @@ export function OrderForm({ defaultProjectId, defaultClientId, defaultSupplierId
           error={errors.supplier_id?.message}
           {...register('supplier_id')}
         />
-        {suggestion && (
-          <div className="col-span-2 space-y-2">
-            <p className="text-xs text-violet-600 bg-violet-50 rounded-lg px-3 py-2">{suggestion}</p>
-            {rankedSuppliers.length > 0 && rankedSuppliers[0].id !== supplierId && (
-              <button
-                type="button"
-                onClick={() => applySuggestedSupplier(rankedSuppliers[0].id)}
-                className="text-xs font-medium text-violet-700 hover:text-violet-900 underline"
-              >
-                Usar {rankedSuppliers[0].name} (QCPS {rankedSuppliers[0].score}/10)
-              </button>
-            )}
-          </div>
-        )}
         <Select
           label="Produto *"
           options={products.map(p => ({ value: p.id, label: `${p.name} (${p.unit})` }))}

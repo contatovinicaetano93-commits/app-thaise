@@ -3,34 +3,20 @@
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Search, Building2, MapPin, Plus } from 'lucide-react'
-import { SimulationPanel } from '@/components/projects/SimulationPanel'
 import { Modal } from '@/components/ui/Modal'
 import { ProjectForm } from '@/components/projects/ProjectForm'
-import { PhaseStepper } from '@/components/ui/PhaseStepper'
-import { PhaseChecklist } from '@/components/ui/PhaseChecklist'
-import { QcpsBar } from '@/components/ui/QcpsBar'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
-import { ActivityTimeline } from '@/components/ui/ActivityTimeline'
 import { Button } from '@/components/ui/Button'
 import { PanelCard } from '@/components/ui/PanelCard'
 import { PanelToolbar } from '@/components/ui/PanelToolbar'
 import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { projectsApi, agentsApi } from '@/lib/api'
-import { isPhaseComplete, phaseProgress } from '@/lib/checklists'
-import { ProjectOpsPanel } from '@/components/projects/ProjectOpsPanel'
-import { ProjectPhasesPanel } from '@/components/projects/ProjectPhasesPanel'
+import { projectsApi } from '@/lib/api'
 import { ProjectProgressBar } from '@/components/projects/ProjectProgressBar'
-import { ProjectIntelligencePanel } from '@/components/projects/ProjectIntelligencePanel'
-import { ProjectRiskBadge } from '@/components/projects/ProjectRiskBadge'
-import { CLIENT_PHASE_LABELS, PHASES } from '@/lib/phases'
-import { isSimpleMode } from '@/lib/app-mode'
-import { PHASE_PROMPTS } from '@/lib/phase-prompts'
 import { useDebounce, useLiveRefresh } from '@/lib/hooks'
 import { toast } from 'sonner'
 import type { Project } from '@/types/database'
-import type { PhaseChecklist as PhaseChecklistType } from '@/lib/auth/roles'
-import { orderCreateUrl, inviteUserUrl, skuRequestCreateUrl, quoteCreateUrl } from '@/lib/flow-links'
+import { inviteUserUrl, skuRequestCreateUrl, quoteCreateUrl } from '@/lib/flow-links'
 
 const STATUS_LABEL: Record<string, string> = {
   active: 'Ativo', paused: 'Pausado', completed: 'Concluído', cancelled: 'Cancelado',
@@ -59,15 +45,14 @@ function ProjectsPageContent() {
   const [projects, setProjects] = useState<Project[]>([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
-  const [phaseFilter, setPhaseFilter] = useState('')
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Project | undefined>()
   const [deleting, setDeleting] = useState<Project | undefined>()
-  const [advancing, setAdvancing] = useState<string | null>(null)
-  const [scoring, setScoring] = useState<string | null>(null)
   const [forceOpenId, setForceOpenId] = useState<string | null>(null)
   const [newClientId, setNewClientId] = useState<string | undefined>()
+  const [progressDraft, setProgressDraft] = useState<Record<string, string>>({})
+  const [savingProgress, setSavingProgress] = useState<string | null>(null)
   const debouncedSearch = useDebounce(search)
 
   const load = useCallback(async () => {
@@ -75,7 +60,7 @@ function ProjectsPageContent() {
     try {
       setProjects(await projectsApi.list())
     } catch {
-      toast.error('Erro ao carregar empreendimentos')
+      toast.error('Erro ao carregar obras')
     } finally {
       setLoading(false)
     }
@@ -102,105 +87,34 @@ function ProjectsPageContent() {
     setModalOpen(true)
   }
 
-  async function handleAdvance(id: string) {
-    setAdvancing(id)
-    try {
-      const updated = await projectsApi.advancePhase(id)
-      setProjects(prev => prev.map(p => p.id === id ? updated : p))
-      toast.success(`Avançou para Fase ${updated.phase}`)
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Erro ao avançar fase')
-    } finally {
-      setAdvancing(null)
-    }
-  }
-
-  async function handleChecklistToggle(project: Project, itemId: string, checked: boolean, evidence?: string) {
-    try {
-      const updated = await projectsApi.updateChecklist(project.id, project.phase, itemId, checked, { evidence })
-      setProjects(prev => prev.map(p => p.id === project.id ? updated : p))
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Erro ao atualizar checklist')
-    }
-  }
-
-  async function handleChecklistAttach(project: Project, itemId: string, file: File) {
-    const uploaded = await projectsApi.uploadChecklistFile(project.id, project.phase, itemId, file)
-    if (uploaded.project) {
-      setProjects(prev => prev.map(p => p.id === project.id ? uploaded.project! : p))
-    }
-    if (uploaded.audit) {
-      const statusLabel = uploaded.audit.status === 'passed'
-        ? 'aprovada'
-        : uploaded.audit.status === 'failed'
-          ? 'reprovada'
-          : 'pendente de revisão'
-      toast.success(`Foto enviada · auditoria ${statusLabel} (${uploaded.audit.score}/10)`)
-    } else {
-      toast.success('Anexo enviado')
-    }
-  }
-
-  async function handleChecklistAudit(project: Project, itemId: string) {
-    try {
-      const { project: updated, audit } = await projectsApi.runChecklistAudit(project.id, project.phase, itemId)
-      setProjects(prev => prev.map(p => p.id === project.id ? updated : p))
-      toast.success(`Auditoria concluída · ${audit.status} (${audit.score}/10)`)
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Erro na auditoria')
-      throw e
-    }
-  }
-
-  async function handleAuditDecide(
-    project: Project,
-    itemId: string,
-    decision: 'approve' | 'reject' | 'override',
-  ) {
-    try {
-      const { project: updated } = await projectsApi.decideChecklistAudit(project.id, project.phase, itemId, decision)
-      setProjects(prev => prev.map(p => p.id === project.id ? updated : p))
-      const labels = { approve: 'aprovada', reject: 'reprovada', override: 'sobrescrita' }
-      toast.success(`Evidência ${labels[decision]}`)
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Erro ao decidir auditoria')
-      throw e
-    }
-  }
-
-  async function handleScore(projectId: string) {
-    setScoring(projectId)
-    try {
-      const result = await agentsApi.scoreProject(projectId)
-      toast.success(`QCPS recalculado: ${result.average}/10`)
-      load()
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Erro no agente')
-    } finally {
-      setScoring(null)
-    }
-  }
-
-  async function handleSummary(projectId: string) {
-    try {
-      const res = await fetch(`/api/projects/${projectId}/summary`, { method: 'POST' })
-      const json = await res.json()
-      if (!json.ok) throw new Error(json.error)
-      toast.success('Resumo gerado — veja em Insights AI')
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Erro ao gerar resumo')
-    }
-  }
-
   async function handleDelete() {
     if (!deleting) return
     try {
       await projectsApi.remove(deleting.id)
-      toast.success('Empreendimento removido')
+      toast.success('Obra removida')
       setDeleting(undefined)
       load()
     } catch {
       toast.error('Erro ao excluir')
+    }
+  }
+
+  async function saveProgress(project: Project) {
+    const raw = progressDraft[project.id] ?? String(project.progress_pct ?? 0)
+    const pct = Math.min(100, Math.max(0, Number(raw)))
+    if (Number.isNaN(pct)) {
+      toast.error('Progresso inválido')
+      return
+    }
+    setSavingProgress(project.id)
+    try {
+      const updated = await projectsApi.updateProgress(project.id, { progress_pct: pct })
+      setProjects(prev => prev.map(p => p.id === project.id ? { ...p, ...updated } : p))
+      toast.success('Progresso atualizado')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao salvar progresso')
+    } finally {
+      setSavingProgress(null)
     }
   }
 
@@ -210,19 +124,14 @@ function ProjectsPageContent() {
       (p.location ?? '').toLowerCase().includes(debouncedSearch.toLowerCase()) ||
       (p.client?.name ?? '').toLowerCase().includes(debouncedSearch.toLowerCase())
     const matchesStatus = !statusFilter || p.status === statusFilter
-    const matchesPhase = !phaseFilter || p.phase === phaseFilter
-    return matchesSearch && matchesStatus && matchesPhase
+    return matchesSearch && matchesStatus
   })
-
-  const simple = isSimpleMode()
 
   return (
     <div>
       <PageFeedHeader
         title={role === 'cliente' ? 'Minha obra' : 'Obras'}
-        subtitle={simple
-          ? 'Fases, progresso e portal do cliente'
-          : 'Jornada guiada A → F · checklist obrigatório'}
+        subtitle="Container da obra · progresso e fluxo com fornecedor/cliente"
         menuItems={isGestor ? [
           { label: 'Nova obra', onClick: () => openNewProject() },
           { label: 'Convidar usuário', href: '/users' },
@@ -231,12 +140,6 @@ function ProjectsPageContent() {
           { label: 'Relatório', href: '/reports/weekly' },
         ] : undefined}
       />
-
-      {isGestor && (
-        <p className="text-sm text-violet-900 bg-violet-50 border border-violet-100 rounded-xl px-4 py-3 mb-4">
-          Fotos no checklist são <strong>auditadas por IA</strong> contra o padrão Estlar. Itens reprovados exigem correção ou sobrescrita do gestor.
-        </p>
-      )}
 
       {isGestor && (
         <div className="mb-4">
@@ -267,16 +170,6 @@ function ProjectsPageContent() {
             <option key={v} value={v}>{l}</option>
           ))}
         </select>
-        <select
-          value={phaseFilter}
-          onChange={e => setPhaseFilter(e.target.value)}
-          className="px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-500"
-        >
-          <option value="">Todas as fases</option>
-          {PHASES.map(p => (
-            <option key={p.id} value={p.id}>Fase {p.id} — {p.label}</option>
-          ))}
-        </select>
       </div>
 
       {!loading && filtered.length > 0 && (
@@ -292,131 +185,82 @@ function ProjectsPageContent() {
         <EmptyState
           icon={Building2}
           iconClass="text-violet-600"
-          title={search || statusFilter || phaseFilter ? 'Nenhum resultado' : 'Nenhum empreendimento ainda'}
+          title={search || statusFilter ? 'Nenhum resultado' : 'Nenhuma obra ainda'}
           description={
-            search || statusFilter || phaseFilter
+            search || statusFilter
               ? 'Ajuste os filtros ou tente outro termo.'
-              : 'Crie o primeiro e acompanhe as fases A até F.'
+              : 'Crie a primeira obra e peça SKUs ao fornecedor.'
           }
-          actionLabel={isGestor && !search && !statusFilter && !phaseFilter ? 'Novo empreendimento' : undefined}
-          onAction={isGestor && !search && !statusFilter && !phaseFilter ? () => openNewProject() : undefined}
+          actionLabel={isGestor && !search && !statusFilter ? 'Nova obra' : undefined}
+          onAction={isGestor && !search && !statusFilter ? () => openNewProject() : undefined}
         />
       ) : (
         <div className="space-y-2">
-          {filtered.map(project => {
-            const checklist = (project.checklist ?? {}) as PhaseChecklistType
-            const canAdvance = isPhaseComplete(project.phase, checklist)
-            const progress = phaseProgress(project.phase, checklist)
+          {filtered.map(project => (
+            <PanelCard
+              key={project.id}
+              panelId={`project-${project.id}`}
+              title={project.name}
+              defaultOpen={forceOpenId === project.id}
+              summary={[
+                project.progress_pct != null ? `${project.progress_pct.toFixed(0)}%` : null,
+                project.client?.name,
+                project.location,
+                STATUS_LABEL[project.status],
+              ].filter(Boolean).join(' · ')}
+              headerExtra={
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[project.status]}`}>
+                  {STATUS_LABEL[project.status]}
+                </span>
+              }
+              menuItems={isGestor ? [
+                { label: 'Pedir SKU desta obra', href: skuRequestCreateUrl({ projectId: project.id }) },
+                { label: 'Novo orçamento', href: quoteCreateUrl(project.id) },
+                ...(project.client_id ? [{ label: 'Convidar cliente', href: inviteUserUrl({ role: 'cliente', clientId: project.client_id }) }] : []),
+                { label: 'Editar', onClick: () => { setEditing(project); setModalOpen(true) } },
+                { label: 'Excluir', onClick: () => setDeleting(project), danger: true },
+              ] : role === 'cliente' ? [
+                { label: 'Ver pedidos', href: '/orders' },
+                { label: 'Orçamentos', href: '/quotes' },
+              ] : undefined}
+            >
+              <div className="flex flex-wrap gap-3 text-xs text-gray-500 mb-3">
+                {project.client && <span className="flex items-center gap-1"><Building2 size={12} />{project.client.name}</span>}
+                {project.location && <span className="flex items-center gap-1"><MapPin size={12} />{project.location}</span>}
+              </div>
 
-            return (
-              <PanelCard
-                key={project.id}
-                panelId={`project-${project.id}`}
-                title={project.name}
-                defaultOpen={forceOpenId === project.id}
-                summary={[
-                  simple && project.progress_pct != null ? `${project.progress_pct.toFixed(0)}%` : null,
-                  !simple && (role === 'cliente' ? CLIENT_PHASE_LABELS[project.phase].label : `Fase ${project.phase}`),
-                  project.current_phase?.name,
-                  project.client?.name,
-                  project.location,
-                  STATUS_LABEL[project.status],
-                  project.portal_enabled ? 'Portal ativo' : null,
-                ].filter(Boolean).join(' · ')}
-                headerExtra={
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[project.status]}`}>
-                    {STATUS_LABEL[project.status]}
-                  </span>
-                }
-                menuItems={isGestor ? [
-                  { label: 'Pedir SKU desta obra', href: skuRequestCreateUrl({ projectId: project.id }) },
-                  { label: 'Novo orçamento', href: quoteCreateUrl(project.id) },
-                  ...(!simple ? [{ label: 'Criar pedido desta obra', href: orderCreateUrl({ projectId: project.id, clientId: project.client_id ?? undefined }) }] : []),
-                  ...(project.client_id && project.portal_enabled ? [{ label: 'Convidar cliente', href: inviteUserUrl({ role: 'cliente', clientId: project.client_id }) }] : []),
-                  ...(!simple ? [
-                    { label: 'Gerar resumo', onClick: () => handleSummary(project.id) },
-                    { label: 'Recalcular QCPS', onClick: () => handleScore(project.id), disabled: scoring === project.id },
-                  ] : []),
-                  { label: 'Editar', onClick: () => { setEditing(project); setModalOpen(true) } },
-                  { label: 'Excluir', onClick: () => setDeleting(project), danger: true },
-                ] : role === 'cliente' ? [
-                  { label: 'Ver pedidos', href: '/orders' },
-                ] : undefined}
-              >
-                <div className="flex flex-wrap gap-3 text-xs text-gray-500 mb-3">
-                  {project.client && <span className="flex items-center gap-1"><Building2 size={12} />{project.client.name}</span>}
-                  {project.location && <span className="flex items-center gap-1"><MapPin size={12} />{project.location}</span>}
-                  {isGestor && project.portal_enabled && (
-                    <span className="text-emerald-600 font-medium">Portal liberado</span>
-                  )}
+              <div className="mb-4">
+                <ProjectProgressBar project={project} compact />
+              </div>
+
+              {isGestor && (
+                <div className="flex flex-wrap items-end gap-2 border-t border-gray-100 pt-3">
+                  <label className="text-xs text-gray-500">
+                    Progresso %
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      className="mt-1 block w-24 px-2 py-1.5 border border-gray-200 rounded-lg text-sm"
+                      value={progressDraft[project.id] ?? String(project.progress_pct ?? 0)}
+                      onChange={e => setProgressDraft(prev => ({ ...prev, [project.id]: e.target.value }))}
+                    />
+                  </label>
+                  <Button
+                    variant="secondary"
+                    disabled={savingProgress === project.id}
+                    onClick={() => saveProgress(project)}
+                  >
+                    {savingProgress === project.id ? 'Salvando…' : 'Salvar %'}
+                  </Button>
                 </div>
-
-                {(simple || role === 'cliente') && (
-                  <div className="mb-4">
-                    <ProjectProgressBar project={project} compact={role === 'cliente'} />
-                    <ProjectIntelligencePanel projectId={project.id} compact={role === 'cliente'} />
-                  </div>
-                )}
-
-                {isGestor && (
-                  <ProjectPhasesPanel
-                    project={project}
-                    onUpdate={updated => setProjects(prev => prev.map(p => p.id === updated.id ? updated : p))}
-                  />
-                )}
-
-                {!simple && (
-                <>
-                <p className="text-xs text-violet-600 bg-violet-50 rounded-lg px-3 py-2 mb-3">
-                  {PHASE_PROMPTS[project.phase].guia}
-                </p>
-
-                <ProjectRiskBadge projectId={project.id} />
-
-                <PhaseStepper
-                  current={project.phase}
-                  clientView={role === 'cliente'}
-                  onAdvance={isGestor ? () => handleAdvance(project.id) : undefined}
-                  advancing={advancing === project.id}
-                  canAdvance={canAdvance}
-                />
-
-                <PhaseChecklist
-                  phase={project.phase}
-                  checklist={checklist}
-                  onToggle={(itemId, checked, evidence) => handleChecklistToggle(project, itemId, checked, evidence)}
-                  onAttach={isGestor ? (itemId, file) => handleChecklistAttach(project, itemId, file) : undefined}
-                  onAudit={isGestor ? itemId => handleChecklistAudit(project, itemId) : undefined}
-                  onAuditDecide={isGestor ? (itemId, d) => handleAuditDecide(project, itemId, d) : undefined}
-                  readOnly={!isGestor}
-                />
-
-                {!canAdvance && progress.total > 0 && (
-                  <p className="text-xs text-amber-600 mt-2">{PHASE_PROMPTS[project.phase].pergunta}</p>
-                )}
-
-                <SimulationPanel projectId={project.id} phase={project.phase} />
-
-                <div className="mt-4 pt-4 border-t border-gray-50">
-                  <QcpsBar scores={project} />
-                </div>
-                </>
-                )}
-
-                {isGestor && !simple ? (
-                  <ProjectOpsPanel projectId={project.id} projectName={project.name} />
-                ) : role === 'cliente' && !simple ? (
-                  <ProjectOpsPanel projectId={project.id} projectName={project.name} readOnly />
-                ) : null}
-
-                {!simple && <ActivityTimeline entityType="project" entityId={project.id} />}
-              </PanelCard>
-            )
-          })}
+              )}
+            </PanelCard>
+          ))}
         </div>
       )}
 
-      <Modal open={modalOpen} onClose={() => { setModalOpen(false); setNewClientId(undefined) }} title={editing ? 'Editar Empreendimento' : 'Novo Empreendimento'} size="lg">
+      <Modal open={modalOpen} onClose={() => { setModalOpen(false); setNewClientId(undefined) }} title={editing ? 'Editar obra' : 'Nova obra'} size="lg">
         <ProjectForm
           project={editing}
           defaultClientId={editing ? undefined : newClientId}

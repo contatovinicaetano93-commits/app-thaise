@@ -3,8 +3,6 @@
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Search, ShoppingCart } from 'lucide-react'
-import { Modal } from '@/components/ui/Modal'
-import { OrderForm } from '@/components/orders/OrderForm'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
 import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { PanelCard } from '@/components/ui/PanelCard'
@@ -12,9 +10,6 @@ import { PanelToolbar } from '@/components/ui/PanelToolbar'
 import { ordersApi } from '@/lib/api'
 import { useDebounce, useLiveRefresh } from '@/lib/hooks'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { SipocBadge } from '@/components/ui/SipocBadge'
-import { isSimpleMode } from '@/lib/app-mode'
-import { OrderNotificationsBadge } from '@/components/orders/OrderNotificationsBadge'
 import { toast } from 'sonner'
 import type { Order } from '@/types/database'
 
@@ -39,54 +34,32 @@ function OrdersPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { isGestor, role } = useAuth()
-  const simple = isSimpleMode()
   const [orders, setOrders] = useState<Order[]>([])
-  const [notifications, setNotifications] = useState<Record<string, Array<{
-    order_id: string
-    channel: 'whatsapp' | 'email' | 'in_app'
-    status: 'sent' | 'failed' | 'stub'
-    recipient: string | null
-    error: string | null
-    metadata: Record<string, unknown> | null
-    created_at: string
-  }>>>({})
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
-  const [modalOpen, setModalOpen] = useState(false)
-  const defaultProjectId = searchParams.get('project_id') ?? undefined
-  const defaultClientId = searchParams.get('client_id') ?? undefined
-  const defaultSupplierId = searchParams.get('supplier_id') ?? undefined
   const debouncedSearch = useDebounce(search)
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
     try {
-      const data = await ordersApi.list()
-      setOrders(data)
-      if (isGestor) {
-        ordersApi.notifications().then(setNotifications).catch(() => {})
-      }
+      setOrders(await ordersApi.list())
     } catch {
       if (!silent) toast.error('Erro ao carregar pedidos')
     } finally {
       if (!silent) setLoading(false)
     }
-  }, [isGestor])
+  }, [])
 
   useEffect(() => { load() }, [load])
   useLiveRefresh(load, ['orders'])
 
   useEffect(() => {
-    if (isGestor && simple) {
+    if (isGestor) {
       const q = new URLSearchParams(searchParams.toString())
       q.set('tab', 'pedidos')
       router.replace(`/quotes?${q.toString()}`)
     }
-  }, [isGestor, simple, router, searchParams])
-
-  useEffect(() => {
-    if (searchParams.get('new') === '1' && isGestor && !simple) setModalOpen(true)
-  }, [searchParams, isGestor, simple])
+  }, [isGestor, router, searchParams])
 
   async function updateStatus(id: string, status: string) {
     try {
@@ -121,7 +94,7 @@ function OrdersPageContent() {
     .filter(o => !['delivered', 'cancelled'].includes(o.status))
     .reduce((acc, o) => acc + (o.total_price ?? 0), 0)
 
-  if (isGestor && simple) {
+  if (isGestor) {
     return <ListSkeleton rows={4} />
   }
 
@@ -141,10 +114,7 @@ function OrdersPageContent() {
             </>
           )
         }
-        menuItems={isGestor ? [
-          ...(!simple ? [{ label: 'Novo pedido', onClick: () => setModalOpen(true) }] : []),
-          { label: 'Exportar CSV', onClick: () => ordersApi.exportCsv().catch(() => toast.error('Erro ao exportar')) },
-        ] : [
+        menuItems={[
           { label: 'Atualizar lista', onClick: () => load() },
         ]}
       />
@@ -177,16 +147,10 @@ function OrdersPageContent() {
           description={
             search
               ? 'Tente outro termo.'
-              : isGestor
-                ? simple
-                  ? 'Pedidos são gerados após o cliente aprovar o orçamento.'
-                  : 'Crie um pedido vinculando cliente, produto e fornecedor.'
-                : role === 'fornecedor'
-                  ? 'Quando o gestor aprovar pedidos, eles aparecerão aqui.'
-                  : 'Seus pedidos aparecerão aqui quando forem criados pelo gestor.'
+              : role === 'fornecedor'
+                ? 'Quando o gestor aprovar pedidos, eles aparecerão aqui.'
+                : 'Seus pedidos aparecerão aqui quando forem criados pelo gestor.'
           }
-          actionLabel={search || !isGestor || simple ? undefined : 'Novo Pedido'}
-          onAction={search || !isGestor || simple ? undefined : () => setModalOpen(true)}
         />
       ) : (
         <div className="space-y-2">
@@ -205,8 +169,6 @@ function OrdersPageContent() {
               menuItems={statusMenuItems(order)}
             >
               <div className="flex items-center gap-2 mb-1">
-                {!simple && <SipocBadge />}
-                {!simple && <span className="text-gray-300">→</span>}
                 <p className="text-sm text-gray-600">{order.supplier?.name}</p>
               </div>
               <p className="text-sm text-gray-500">
@@ -216,7 +178,7 @@ function OrdersPageContent() {
                 <div className="flex flex-wrap items-center gap-2">
                   {order.project && (
                     <span className="text-xs bg-violet-50 text-violet-700 px-2 py-0.5 rounded-full font-medium">
-                      {order.project.name}{!simple && ` · Fase ${order.project.phase}`}
+                      {order.project.name}
                     </span>
                   )}
                   <span className="text-xs text-gray-400">
@@ -227,23 +189,10 @@ function OrdersPageContent() {
                   {(order.total_price ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </p>
               </div>
-              {isGestor && (
-                <OrderNotificationsBadge notifications={notifications[order.id]} />
-              )}
             </PanelCard>
           ))}
         </div>
       )}
-
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Novo Pedido" size="lg">
-        <OrderForm
-          defaultProjectId={defaultProjectId}
-          defaultClientId={defaultClientId}
-          defaultSupplierId={defaultSupplierId}
-          onSuccess={() => { setModalOpen(false); load() }}
-          onCancel={() => setModalOpen(false)}
-        />
-      </Modal>
     </div>
   )
 }

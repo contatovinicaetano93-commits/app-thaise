@@ -47,8 +47,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const updates: Record<string, unknown> = { phase: newPhase }
     if (newPhase === 'F') {
       updates.status = 'completed'
-      const { scoreProject } = await import('@/lib/agents/scoring-agent')
-      await scoreProject(id)
     }
 
     const { data, error } = await db

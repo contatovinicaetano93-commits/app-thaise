@@ -2,18 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Truck, Users, Package, ShoppingCart, Check, ArrowRight, Building2, Receipt, Kanban } from 'lucide-react'
-import { isSimpleMode } from '@/lib/app-mode'
+import { Users, Package, ShoppingCart, Check, ArrowRight, Building2, Receipt } from 'lucide-react'
 
-const GESTOR_STEPS_FULL = [
-  { icon: Package, color: 'bg-stone-100 text-stone-800', title: 'Bem-vinda ao Hub Estlar', desc: 'Inteligência para curadoria de ativos, empreendimentos e consolidação patrimonial.', cta: 'Começar' },
-  { icon: Kanban, color: 'bg-violet-100 text-violet-600', title: 'Pipeline comercial', desc: 'Leads do intake → briefing → proposta → Obra Fechada → empreendimento Fase A.', cta: 'Entendido', action: '/pipeline', actionLabel: 'Ver pipeline →' },
-  { icon: Truck, color: 'bg-indigo-100 text-indigo-600', title: 'Homologue fornecedores', desc: 'Fornecedores pendentes passam por curadoria antes de entrar no catálogo.', cta: 'Entendido', action: '/suppliers?tab=homologacao', actionLabel: 'Ver fila →' },
-  { icon: Users, color: 'bg-emerald-100 text-emerald-600', title: 'Clientes e empreendimentos', desc: 'Cada empreendimento exige cliente — jornada A→F com checklist.', cta: 'Entendido', action: '/projects', actionLabel: 'Empreendimentos →' },
-  { icon: ShoppingCart, color: 'bg-rose-100 text-rose-600', title: 'Pronto!', desc: 'Use o assistente ✨ e o card "Próximo passo" no dashboard.', cta: 'Ir para o Dashboard' },
-]
-
-const GESTOR_STEPS_SIMPLE = [
+const GESTOR_STEPS = [
   {
     icon: Package,
     color: 'bg-stone-100 text-stone-800',
@@ -25,7 +16,7 @@ const GESTOR_STEPS_SIMPLE = [
     icon: Building2,
     color: 'bg-violet-100 text-violet-600',
     title: 'Comece pela obra',
-    desc: 'Cadastre cliente e obra, defina as fases e o % de progresso. Libere o portal antes de enviar orçamento.',
+    desc: 'A obra é um container simples: vincule o cliente e acompanhe o progresso. Sem fases A→F nem flip de portal.',
     cta: 'Entendido',
     action: '/projects',
     actionLabel: 'Ir para Obras →',
@@ -48,7 +39,7 @@ const FORNECEDOR_STEPS = [
 const CLIENTE_STEPS = [
   { icon: Package, color: 'bg-stone-100 text-stone-700', title: 'Portal do Cliente', desc: 'Acompanhe sua obra, aprove orçamentos e veja o Relatório 360 da Estlar.', cta: 'Começar' },
   { icon: Receipt, color: 'bg-violet-100 text-violet-700', title: 'Aprovar orçamentos', desc: 'Quando a Estlar enviar um orçamento, você aprova ou rejeita em Meus orçamentos.', cta: 'Entendido', action: '/quotes', actionLabel: 'Meus orçamentos →' },
-  { icon: Users, color: 'bg-emerald-100 text-emerald-600', title: 'Minha obra', desc: 'Veja o progresso % e as fases customizadas do seu empreendimento.', cta: 'Ver obra', action: '/projects' },
+  { icon: Users, color: 'bg-emerald-100 text-emerald-600', title: 'Minha obra', desc: 'Veja o progresso % do seu empreendimento.', cta: 'Ver obra', action: '/projects' },
 ]
 
 export default function OnboardingPage() {
@@ -66,7 +57,6 @@ export default function OnboardingPage() {
       .catch(() => {})
   }, [])
 
-  const GESTOR_STEPS = isSimpleMode() ? GESTOR_STEPS_SIMPLE : GESTOR_STEPS_FULL
   const STEPS = role === 'fornecedor' ? FORNECEDOR_STEPS : role === 'cliente' ? CLIENTE_STEPS : GESTOR_STEPS
   const current = STEPS[step]
   const Icon = current.icon

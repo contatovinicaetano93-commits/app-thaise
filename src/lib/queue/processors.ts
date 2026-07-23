@@ -1,6 +1,4 @@
 import type { OrderJobPayload, OrderJobType } from '@/lib/queue/types'
-import { createServiceClient } from '@/lib/supabase-server'
-import { scoreSupplier } from '@/lib/agents/scoring-agent'
 import { logActivity } from '@/lib/memory/events'
 import { jobKey, isJobProcessed, markJobProcessed } from '@/lib/queue/idempotency'
 import { dispatchWebhooks } from '@/lib/webhooks/dispatch'
@@ -15,8 +13,6 @@ export async function processOrderJob(
   if (!opts?.force && await isJobProcessed(key)) {
     return { action: 'skipped', reason: 'already_processed', orderId: payload.orderId }
   }
-
-  const db = createServiceClient()
 
   if (jobType === 'order.approved') {
     const notice = await notifySupplierSeparation(payload.orderId)
@@ -46,26 +42,18 @@ export async function processOrderJob(
   }
 
   if (jobType === 'order.delivered') {
-    const scoring = await scoreSupplier(payload.supplierId)
-
-    if (payload.projectId) {
-      const { scoreProject } = await import('@/lib/agents/scoring-agent')
-      await scoreProject(payload.projectId)
-    }
-
     await logActivity({
       entityType: 'order',
       entityId: payload.orderId,
       eventType: 'order.delivered',
-      title: 'Pedido entregue — QCPS atualizado',
-      detail: `Score fornecedor: ${scoring.average}/10`,
-      metadata: { scoring },
+      title: 'Pedido entregue',
+      detail: 'Pedido marcado como entregue',
+      metadata: { supplierId: payload.supplierId, projectId: payload.projectId },
     })
 
     const result = {
-      action: 'score_and_close',
+      action: 'delivered',
       orderId: payload.orderId,
-      scoring,
     }
     await markJobProcessed(key, jobType, payload.orderId, result)
     await dispatchWebhooks('order.delivered', result)

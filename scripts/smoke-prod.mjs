@@ -64,44 +64,10 @@ async function testHealth() {
 
 async function testPublicPages() {
   console.log('\n── Páginas públicas ──')
-  for (const path of ['/login', '/intake', '/privacidade', '/termos', '/auth/reset-password']) {
+  for (const path of ['/login', '/privacidade', '/termos', '/auth/reset-password']) {
     const res = await fetch(`${BASE}${path}`, { redirect: 'manual' })
     if (res.status === 200 || res.status === 307 || res.status === 308) pass(`${path} acessível (${res.status})`)
     else fail(`${path} HTTP ${res.status}`)
-  }
-}
-
-async function testIntakeConsent() {
-  console.log('\n── Intake LGPD ──')
-  try {
-    const res = await fetch(`${BASE}/api/intake`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: 'Smoke Test',
-        email: 'smoke.test@pipeline.demo',
-        phone: '11999998888',
-        scope: 'residencial',
-        intervention: 'turnkey',
-        budget: 'acima_500k',
-        urgency: 'sem_pressa',
-        source: 'outro',
-      }),
-    })
-    const json = await res.json()
-    if (
-      res.status === 400 ||
-      res.status === 422 ||
-      (json.ok === false && /consent|privacidade|obrigat/i.test(json.error ?? ''))
-    ) {
-      pass('Intake exige consentimento LGPD')
-    } else if (res.status === 429) {
-      warn('Intake rate limit — consent check skipped')
-    } else {
-      fail(`Intake deveria rejeitar sem consent: HTTP ${res.status}`)
-    }
-  } catch (e) {
-    fail(`Intake consent: ${e.message}`)
   }
 }
 
@@ -169,7 +135,6 @@ async function main() {
   console.log(`Smoke test · ${BASE}`)
   await testHealth()
   await testPublicPages()
-  await testIntakeConsent()
 
   let gestorToken = null
   for (const u of USERS) {

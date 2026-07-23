@@ -2,20 +2,16 @@
 
 import { useState, useEffect, useCallback, Suspense, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
-import Link from 'next/link'
-import { Search, Package, ShoppingCart } from 'lucide-react'
+import { Search, Package } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { ProductForm } from '@/components/products/ProductForm'
 import { EmptyState, ListSkeleton } from '@/components/ui/EmptyState'
 import { PageFeedHeader } from '@/components/ui/PageFeedHeader'
 import { Button } from '@/components/ui/Button'
 import { PanelCard } from '@/components/ui/PanelCard'
-import { ActivityTimeline } from '@/components/ui/ActivityTimeline'
 import { productsApi } from '@/lib/api'
 import { useLiveRefresh } from '@/lib/hooks'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { orderCreateUrl } from '@/lib/flow-links'
-import { isSimpleMode } from '@/lib/app-mode'
 import { PageTabs } from '@/components/ui/PageTabs'
 import { SkuRequestsPanel } from '@/components/sku/SkuRequestsPanel'
 import { skuRequestsApi } from '@/lib/api'
@@ -33,7 +29,6 @@ export default function ProductsPage() {
 function ProductsPageContent() {
   const searchParams = useSearchParams()
   const { isGestor, role } = useAuth()
-  const simple = isSimpleMode()
   const tab = searchParams.get('tab') ?? 'catalogo'
   const [skuOpenCount, setSkuOpenCount] = useState(0)
   const [products, setProducts] = useState<Product[]>([])
@@ -50,7 +45,7 @@ function ProductsPageContent() {
     try {
       const [list, skus] = await Promise.all([
         productsApi.list(),
-        isGestor && simple ? skuRequestsApi.list().catch(() => []) : Promise.resolve([]),
+        isGestor ? skuRequestsApi.list().catch(() => []) : Promise.resolve([]),
       ])
       setProducts(list)
       if (Array.isArray(skus)) {
@@ -61,7 +56,7 @@ function ProductsPageContent() {
     } finally {
       if (!silent) setLoading(false)
     }
-  }, [isGestor, simple])
+  }, [isGestor])
 
   useEffect(() => { load() }, [load])
   useLiveRefresh(load, ['products'])
@@ -144,7 +139,6 @@ function ProductsPageContent() {
           </span>
         }
         menuItems={isGestor ? [
-          ...(!simple ? [{ label: 'Criar pedido', href: orderCreateUrl({ supplierId: product.supplier_id, projectId: product.project_id ?? undefined }) }] : []),
           { label: 'Editar', onClick: () => { setEditing(product); setModalOpen(true) } },
           { label: 'Excluir', onClick: () => setDeleting(product), danger: true },
         ] : role === 'fornecedor' && product.catalog_status !== 'pending' ? [
@@ -167,12 +161,11 @@ function ProductsPageContent() {
             <p className="text-xs text-gray-400 mt-0.5">{product.lead_time_days} dias prazo</p>
           )}
         </div>
-        {!simple && <ActivityTimeline entityType="product" entityId={product.id} />}
       </PanelCard>
     )
   }
 
-  const pageTitle = isGestor ? (simple ? 'Catálogo' : 'Catálogo curado') : 'Meus produtos'
+  const pageTitle = isGestor ? 'Catálogo' : 'Meus produtos'
   const pageSubtitle = isGestor
     ? `${products.filter(p => (p.catalog_status ?? 'approved') === 'approved').length} aprovado(s) · ${products.filter(p => p.catalog_status === 'pending').length} aguardando`
     : `${products.length} produto${products.length !== 1 ? 's' : ''}`
@@ -184,14 +177,13 @@ function ProductsPageContent() {
         subtitle={pageSubtitle}
         menuItems={isGestor ? [
           { label: 'Pedir SKU', href: '/products?tab=skus&new=1' },
-          ...(!simple ? [{ label: 'Novo pedido', href: '/orders?new=1' }] : []),
           { label: 'Exportar CSV', onClick: () => productsApi.exportCsv().catch(() => toast.error('Erro ao exportar')) },
         ] : role === 'fornecedor' ? [
           { label: 'Ver SKUs solicitados', href: '/sku-requests' },
         ] : undefined}
       />
 
-      {isGestor && simple && (
+      {isGestor && (
         <PageTabs
           tabs={[
             { id: 'catalogo', label: 'Aprovados' },
@@ -200,7 +192,7 @@ function ProductsPageContent() {
         />
       )}
 
-      {isGestor && simple && tab === 'skus' ? (
+      {isGestor && tab === 'skus' ? (
         <SkuRequestsPanel
           defaultProjectId={searchParams.get('project_id') ?? undefined}
           defaultSupplierId={defaultSupplierId}
@@ -271,14 +263,6 @@ function ProductsPageContent() {
                   {group.name}
                   <span className="text-gray-400 font-normal ml-2">{group.items.length} produto(s)</span>
                 </h3>
-                {!simple && (
-                <Link
-                  href={orderCreateUrl({ supplierId })}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-700 hover:text-violet-900"
-                >
-                  <ShoppingCart size={14} /> Pedido com este fornecedor
-                </Link>
-                )}
               </div>
               <div className="space-y-2">{group.items.map(renderProductCard)}</div>
             </section>

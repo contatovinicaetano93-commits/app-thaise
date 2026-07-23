@@ -13,7 +13,6 @@ import { PanelCard } from '@/components/ui/PanelCard'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { skuRequestsApi } from '@/lib/api'
 import { useLiveRefresh } from '@/lib/hooks'
-import { isSimpleMode } from '@/lib/app-mode'
 import { toast } from 'sonner'
 import type { SkuRequest } from '@/types/database'
 
@@ -44,7 +43,6 @@ export default function SkuRequestsPage() {
 function SkuRequestsPageContent() {
   const router = useRouter()
   const { isGestor, role } = useAuth()
-  const simple = isSimpleMode()
   const searchParams = useSearchParams()
   const [requests, setRequests] = useState<SkuRequest[]>([])
   const [loading, setLoading] = useState(true)
@@ -67,21 +65,17 @@ function SkuRequestsPageContent() {
   }, [])
 
   useEffect(() => {
-    if (isGestor && simple) {
+    if (isGestor) {
       const q = new URLSearchParams(searchParams.toString())
       q.set('tab', 'skus')
       router.replace(`/products?${q.toString()}`)
     }
-  }, [isGestor, simple, router, searchParams])
+  }, [isGestor, router, searchParams])
 
   useEffect(() => { load() }, [load])
   useLiveRefresh(load, ['products'])
 
-  useEffect(() => {
-    if (searchParams.get('new') === '1' && isGestor && !simple) setCreateOpen(true)
-  }, [searchParams, isGestor, simple])
-
-  if (isGestor && simple) {
+  if (isGestor) {
     return <ListSkeleton rows={4} height="h-20" />
   }
 

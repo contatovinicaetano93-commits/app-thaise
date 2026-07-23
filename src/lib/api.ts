@@ -1,9 +1,8 @@
 // Cliente tipado que o frontend usa para consumir /api/*
 // NUNCA importe supabase diretamente nas páginas — use este arquivo
 
-import type { Supplier, Client, Product, Order, Project, Opportunity, WeeklyReport, WelcomeKit, ProjectDiaryEntry, ScopeAmendment, Quotation, SkuRequest, ProjectQuote, OrderPayment } from '@/types/database'
+import type { Supplier, Client, Product, Order, Project, WeeklyReport, SkuRequest, ProjectQuote } from '@/types/database'
 import type { QcpsScores } from '@/lib/qcps'
-import type { BriefingData, BriefingType } from '@/lib/briefing'
 
 type ApiResult<T> = Promise<T>
 
@@ -60,21 +59,8 @@ export interface DashboardStats {
   error?: string
 }
 
-export interface AgentInsightRow {
-  id: string
-  entity_type: 'supplier' | 'project'
-  entity_id: string
-  insight: string
-  scores?: Record<string, number> | null
-  created_at: string
-}
-
 export const dashboardApi = {
   get: (): ApiResult<DashboardStats> => request('/api/dashboard'),
-}
-
-export const insightsApi = {
-  list: (): ApiResult<AgentInsightRow[]> => request('/api/insights'),
 }
 
 // --- Suppliers ---
@@ -117,42 +103,6 @@ export const clientsApi = {
     request(`/api/clients/${id}/invite-portal`, { method: 'POST', body: JSON.stringify(data ?? {}) }),
 }
 
-// --- Pipeline / Oportunidades ---
-export const opportunitiesApi = {
-  list: (includeClosed = false): ApiResult<Opportunity[]> =>
-    request(`/api/opportunities${includeClosed ? '?include_closed=1' : ''}`),
-
-  create: (data: Omit<Opportunity, 'id' | 'created_at' | 'updated_at' | 'closed_at' | 'client_id' | 'project_id' | 'lost_reason'> & { lost_reason?: string | null }): ApiResult<Opportunity> =>
-    request('/api/opportunities', { method: 'POST', body: JSON.stringify(data) }),
-
-  update: (id: string, data: Partial<Opportunity>): ApiResult<Opportunity> =>
-    request(`/api/opportunities/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-
-  moveStage: (id: string, stage: string, lostReason?: string): ApiResult<Opportunity> =>
-    request(`/api/opportunities/${id}/stage`, {
-      method: 'PATCH',
-      body: JSON.stringify({ stage, lost_reason: lostReason }),
-    }),
-
-  convert: (id: string, projectName?: string): ApiResult<{
-    opportunity: Opportunity
-    client: { id: string; name: string }
-    project: { id: string; name: string }
-  }> =>
-    request(`/api/opportunities/${id}/convert`, {
-      method: 'POST',
-      body: JSON.stringify({ project_name: projectName }),
-    }),
-
-  reviewIntake: (id: string, action: 'approve' | 'reject', reason?: string): ApiResult<Opportunity> =>
-    request(`/api/opportunities/${id}/intake-review`, {
-      method: 'POST',
-      body: JSON.stringify({ action, reason }),
-    }),
-
-  remove: (id: string): ApiResult<void> =>
-    request(`/api/opportunities/${id}`, { method: 'DELETE' }),
-}
 
 // --- Products ---
 export const productsApi = {
@@ -285,33 +235,6 @@ export const ordersApi = {
     request('/api/orders/notifications'),
 }
 
-// --- Payments (escrow) ---
-export const paymentsApi = {
-  list: (opts?: { status?: string }): ApiResult<OrderPayment[]> => {
-    const params = new URLSearchParams()
-    if (opts?.status) params.set('status', opts.status)
-    const q = params.toString()
-    return request(`/api/payments${q ? `?${q}` : ''}`)
-  },
-
-  get: (id: string): ApiResult<{
-    payment: OrderPayment
-    eligible_audit?: {
-      phase: string
-      itemId: string
-      itemLabel: string
-      audit: import('@/lib/auth/roles').EvidenceAudit
-    } | null
-    can_release: boolean
-    block_reason?: string
-  }> => request(`/api/payments/${id}`),
-
-  release: (
-    id: string,
-    data?: { pix_reference?: string | null; release_notes?: string | null },
-  ): ApiResult<OrderPayment> =>
-    request(`/api/payments/${id}/release`, { method: 'POST', body: JSON.stringify(data ?? {}) }),
-}
 
 // --- Projects ---
 export const projectsApi = {
@@ -327,66 +250,6 @@ export const projectsApi = {
   advancePhase: (id: string): ApiResult<Project> =>
     request(`/api/projects/${id}/phase`, { method: 'PATCH', body: JSON.stringify({}) }),
 
-  updateChecklist: (
-    id: string,
-    phase: string,
-    itemId: string,
-    checked: boolean,
-    opts?: { evidence?: string; filePath?: string; fileName?: string },
-  ): ApiResult<Project> =>
-    request(`/api/projects/${id}/checklist`, {
-      method: 'PATCH',
-      body: JSON.stringify({ phase, itemId, checked, ...opts }),
-    }),
-
-  runChecklistAudit: (
-    id: string,
-    phase: string,
-    itemId: string,
-  ): ApiResult<{ project: Project; audit: import('@/lib/auth/roles').EvidenceAudit; can_auto_check: boolean }> =>
-    request(`/api/projects/${id}/checklist/audit`, {
-      method: 'POST',
-      body: JSON.stringify({ phase, itemId }),
-    }),
-
-  decideChecklistAudit: (
-    id: string,
-    phase: string,
-    itemId: string,
-    decision: 'approve' | 'reject' | 'override',
-  ): ApiResult<{ project: Project; audit: import('@/lib/auth/roles').EvidenceAudit }> =>
-    request(`/api/projects/${id}/checklist/audit`, {
-      method: 'PATCH',
-      body: JSON.stringify({ phase, itemId, decision }),
-    }),
-
-  uploadChecklistFile: async (
-    id: string,
-    phase: string,
-    itemId: string,
-    file: File,
-  ): Promise<{
-    path: string
-    fileName: string
-    signedUrl: string
-    audit?: import('@/lib/auth/roles').EvidenceAudit | null
-    can_auto_check?: boolean
-    project?: Project
-  }> => {
-    const form = new FormData()
-    form.append('file', file)
-    form.append('phase', phase)
-    form.append('itemId', itemId)
-    const res = await fetch(`/api/projects/${id}/checklist/upload`, {
-      method: 'POST',
-      credentials: 'include',
-      body: form,
-    })
-    const json = await res.json()
-    if (!json.ok) throw new Error(json.error ?? 'Erro ao enviar arquivo')
-    return json.data
-  },
-
   remove: (id: string): ApiResult<void> =>
     request(`/api/projects/${id}`, { method: 'DELETE' }),
 
@@ -401,52 +264,8 @@ export const projectsApi = {
     data: { progress_pct?: number; current_phase_id?: string | null; portal_enabled?: boolean },
   ): ApiResult<Project> =>
     request(`/api/projects/${id}/progress`, { method: 'PATCH', body: JSON.stringify(data) }),
-
-  intelligence: (id: string): ApiResult<ProjectIntelligence> =>
-    request(`/api/projects/${id}/intelligence`),
 }
 
-export interface ProjectIntelligence {
-  project_id: string
-  progress_pct: number
-  current_phase: string | null
-  summary: string
-  highlights: string[]
-  stats: {
-    open_orders: number
-    delivered_orders: number
-    approved_quotes: number
-    pending_skus: number
-    week_events: number
-  }
-  generated_at: string
-}
-
-// --- Agent (AI Scoring) ---
-export const agentsApi = {
-  scoreSupplier: (id: string): ApiResult<{ scores: QcpsScores; insight: string; average: number }> =>
-    request(`/api/agents/score-supplier/${id}`, { method: 'POST' }),
-
-  scoreProject: (id: string): ApiResult<{ scores: QcpsScores; insight: string; average: number }> =>
-    request(`/api/agents/score-project/${id}`, { method: 'POST' }),
-}
-
-export interface JobLogRow {
-  id: string
-  job_type: string
-  payload: Record<string, unknown>
-  status: 'pending' | 'processing' | 'completed' | 'failed'
-  result?: Record<string, unknown> | null
-  error?: string | null
-  created_at: string
-  completed_at?: string | null
-}
-
-export interface SipocData {
-  map: typeof import('@/lib/sipoc').SIPOC
-  metrics: Record<string, Record<string, number | string>>
-  topSuppliers: { id: string; score: number }[]
-}
 
 export interface AlertRow {
   type: string
@@ -465,15 +284,6 @@ export interface ActivityEventRow {
   created_at: string
 }
 
-export const jobsApi = {
-  list: (): ApiResult<JobLogRow[]> => request('/api/jobs'),
-  retry: (id: string): ApiResult<Record<string, unknown>> =>
-    request(`/api/jobs/${id}/retry`, { method: 'POST' }),
-}
-
-export const sipocApi = {
-  get: (): ApiResult<SipocData> => request('/api/sipoc'),
-}
 
 export const alertsApi = {
   list: (): ApiResult<AlertRow[]> => request('/api/alerts'),
@@ -489,10 +299,6 @@ export const activityApi = {
     request(`/api/activity?entity_type=${entityType}&entity_id=${entityId}`),
 }
 
-export const assistantApi = {
-  suggest: (productId?: string, category?: string): ApiResult<{ suppliers: { id: string; name: string; score: number }[]; suggestion?: { id: string; name: string; score: number }; message: string }> =>
-    request('/api/assistant', { method: 'POST', body: JSON.stringify({ product_id: productId, category }) }),
-}
 
 export const reportsApi = {
   monthly: (): ApiResult<{
@@ -559,36 +365,6 @@ export const estlarApi = {
 
   generateWeeklyReport: (projectId: string): ApiResult<WeeklyReport> =>
     request(`/api/projects/${projectId}/weekly-reports`, { method: 'POST' }),
-
-  getWelcomeKit: (projectId: string): ApiResult<WelcomeKit | null> =>
-    request(`/api/projects/${projectId}/welcome-kit`),
-
-  listDiary: (projectId: string): ApiResult<ProjectDiaryEntry[]> =>
-    request(`/api/projects/${projectId}/diary`),
-
-  saveDiary: (projectId: string, data: { planned?: string; actual?: string; risks?: string }): ApiResult<ProjectDiaryEntry> =>
-    request(`/api/projects/${projectId}/diary`, { method: 'POST', body: JSON.stringify(data) }),
-
-  listAmendments: (projectId: string): ApiResult<ScopeAmendment[]> =>
-    request(`/api/projects/${projectId}/amendments`),
-
-  createAmendment: (projectId: string, data: { description: string; amount: number; days_added: number }): ApiResult<ScopeAmendment> =>
-    request(`/api/projects/${projectId}/amendments`, { method: 'POST', body: JSON.stringify(data) }),
-
-  listQuotations: (projectId: string): ApiResult<Quotation[]> =>
-    request(`/api/projects/${projectId}/quotations`),
-
-  createQuotation: (projectId: string, data: { description: string; amount: number; score_q?: number; score_c?: number; score_p?: number; score_s?: number }): ApiResult<Quotation> =>
-    request(`/api/projects/${projectId}/quotations`, { method: 'POST', body: JSON.stringify(data) }),
-
-  selectQuotation: (projectId: string, quotationId: string): ApiResult<Quotation> =>
-    request(`/api/projects/${projectId}/quotations`, { method: 'PATCH', body: JSON.stringify({ quotation_id: quotationId }) }),
-
-  saveBriefing: (opportunityId: string, data: { briefing_type: BriefingType; briefing_data: BriefingData }): ApiResult<unknown> =>
-    request(`/api/opportunities/${opportunityId}/briefing`, { method: 'PATCH', body: JSON.stringify(data) }),
-
-  getProposal: (opportunityId: string): ApiResult<{ content: string }> =>
-    request(`/api/opportunities/${opportunityId}/proposal`),
 
   getCap: (): ApiResult<{ cap: { max: number; label: string }; active: number; available: number; atCap: boolean }> =>
     request('/api/operational/cap'),

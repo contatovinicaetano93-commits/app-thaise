@@ -13,7 +13,6 @@ import { PanelCard } from '@/components/ui/PanelCard'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { projectQuotesApi, projectsApi, ordersApi } from '@/lib/api'
 import { useLiveRefresh } from '@/lib/hooks'
-import { isSimpleMode } from '@/lib/app-mode'
 import { PageTabs } from '@/components/ui/PageTabs'
 import { OrdersFeedPanel } from '@/components/orders/OrdersFeedPanel'
 import { toast } from 'sonner'
@@ -50,7 +49,6 @@ export default function QuotesPage() {
 function QuotesPageContent() {
   const { isGestor, role } = useAuth()
   const searchParams = useSearchParams()
-  const simple = isSimpleMode()
   const tab = searchParams.get('tab') ?? 'orcamentos'
   const [quotes, setQuotes] = useState<ProjectQuote[]>([])
   const [openOrdersCount, setOpenOrdersCount] = useState(0)
@@ -72,7 +70,7 @@ function QuotesPageContent() {
       const [q, p, orders] = await Promise.all([
         projectQuotesApi.list(),
         isGestor ? projectsApi.list() : Promise.resolve([]),
-        isGestor && simple ? ordersApi.list().catch(() => []) : Promise.resolve([]),
+        isGestor ? ordersApi.list().catch(() => []) : Promise.resolve([]),
       ])
       setQuotes(q)
       setProjects(p)
@@ -84,7 +82,7 @@ function QuotesPageContent() {
     } finally {
       setLoading(false)
     }
-  }, [isGestor, simple])
+  }, [isGestor])
 
   useEffect(() => { load() }, [load])
   useLiveRefresh(load, ['projects'])
@@ -176,7 +174,7 @@ function QuotesPageContent() {
   }
 
   const pendingClient = quotes.filter(q => q.status === 'sent').length
-  const ordersHref = simple && isGestor ? '/quotes?tab=pedidos' : '/orders'
+  const ordersHref = isGestor ? '/quotes?tab=pedidos' : '/orders'
 
   return (
     <div>
@@ -190,7 +188,7 @@ function QuotesPageContent() {
         menuItems={isGestor ? [{ label: 'Novo orçamento', onClick: () => setCreateOpen(true) }] : undefined}
       />
 
-      {isGestor && simple && (
+      {isGestor && (
         <PageTabs
           tabs={[
             { id: 'orcamentos', label: 'Orçamentos' },
@@ -199,7 +197,7 @@ function QuotesPageContent() {
         />
       )}
 
-      {isGestor && simple && tab === 'pedidos' ? (
+      {isGestor && tab === 'pedidos' ? (
         <OrdersFeedPanel embedded />
       ) : (
       <>

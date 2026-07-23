@@ -13,22 +13,21 @@ Hub operacional para digitalizar fornecedores curados, clientes, catálogo e ped
 
 ## Funcionalidades
 
-- **Empreendimentos** — jornada guiada A → F com checklist obrigatório
-- **QCPS** — scoring em 4 dimensões (Qualidade, Custo, Prazo, Sustentabilidade)
-- **Fornecedores / Clientes / Catálogo / Pedidos** — CRUD completo
+- **Fluxo mínimo 3 papéis** — obra → SKU → orçamento → pedido → entregue → relatório
+- **Obras** — container com progresso % (fases A–F / escrow / QCPS = fase 2)
+- **Fornecedores / Clientes / Catálogo / Pedidos** — CRUD do fluxo canônico
 - **Auth + roles** — Gestor, Fornecedor, Cliente (nav filtrada por perfil)
-- **Filas** — ao aprovar/entregar pedido (BullMQ ou inline)
-- **Agente AI** — recalcula QCPS + insights (OpenAI opcional)
+- **Filas** — notify/order inline (BullMQ/Redis opcional)
+- **Next-step** — dashboard guiado por papel
 
 ## Premissas
 
 | Premissa | Implementação |
 |---|---|
-| **Escalável** | API REST + worker separado + Postgres |
-| **Guiado** | Onboarding, checklists por fase, gates de avanço |
-| **AI-first** | Agente de scoring QCPS com insights |
-| **Resiliente** | BullMQ com retry + fallback inline + job_logs |
-| **SIPOC** | `src/lib/sipoc.ts` |
+| **Escalável** | API REST + Postgres |
+| **Guiado** | Onboarding + card "Próximo passo" |
+| **AI-first** | Next-step + geração opcional de orçamento |
+| **Resiliente** | Fallback inline + job_logs |
 
 ## Setup rápido
 
@@ -88,10 +87,9 @@ docs/                # deploy
 
 ## Roadmap
 
-- [x] MVP — CRUD + QCPS + empreendimentos
-- [x] Auth + roles + checklists + filas + agente
-- [x] Sprint A–E — SIPOC, resiliência, memória, portais por role
-- [x] Passos 51–86 — simulação, webhooks, OpenAPI, k6
-- [x] Passos 87–100 — API v1, cache Redis, paginação, workers, SDK, case
+- [x] Fluxo mínimo 3 papéis (obra → SKU → orçamento → pedido → relatório)
+- [ ] Escrow / pagamentos (fase 2)
+- [ ] QCPS + scoring AI (fase 2)
+- [ ] Fases A–F + checklist com evidências (fase 2)
 - [ ] NestJS hub (quando escala exigir)
 - [ ] Agente de compra via API de fornecedores externos

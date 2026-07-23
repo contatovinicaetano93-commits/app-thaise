@@ -127,10 +127,10 @@ export function LandingPage() {
               Entrar
             </Link>
             <Link
-              href="/intake"
+              href="/login"
               className="inline-flex items-center gap-2 border border-[var(--estlar-linen)]/20 px-5 py-2.5 text-xs tracking-[0.12em] uppercase transition-all hover:border-[var(--estlar-wine-light)] hover:bg-[var(--estlar-wine)]/10"
             >
-              Iniciar mapeamento
+              Entrar no Hub
               <ArrowRight size={14} />
             </Link>
           </div>
@@ -159,10 +159,10 @@ export function LandingPage() {
           </p>
           <div className="mt-12 flex flex-wrap gap-4 animate-fade-in">
             <Link
-              href="/intake"
+              href="/login"
               className="inline-flex items-center gap-3 bg-[var(--estlar-wine)] px-8 py-4 text-xs tracking-[0.15em] uppercase text-[var(--estlar-linen)] transition-colors hover:bg-[var(--estlar-wine-light)]"
             >
-              Solicitar mapeamento
+              Entrar no Hub
               <ChevronRight size={16} />
             </Link>
             <a
@@ -358,15 +358,15 @@ export function LandingPage() {
             Estruture a decisão antes de executar
           </h2>
           <p className="mx-auto mt-6 max-w-lg text-sm leading-relaxed text-[var(--estlar-titanium)]">
-            O mapeamento inicial leva cerca de dois minutos. Nossa equipe avalia a compatibilidade
-            entre sua demanda e nossa expertise antes de agendar a Reunião de Imersão.
+            Acesse o Hub com seu login para operar o fluxo da obra — gestora, fornecedor e cliente
+            no mesmo sistema, guiados pelo próximo passo.
           </p>
           <div className="mt-12 flex flex-col items-center justify-center gap-6 sm:flex-row">
             <Link
-              href="/intake"
+              href="/login"
               className="inline-flex items-center gap-3 bg-[var(--estlar-wine)] px-10 py-4 text-xs tracking-[0.15em] uppercase text-[var(--estlar-linen)] transition-colors hover:bg-[var(--estlar-wine-light)]"
             >
-              Iniciar mapeamento de projeto
+              Entrar no Hub
               <ArrowRight size={16} />
             </Link>
             <Link

@@ -19,11 +19,34 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   cliente: 'Cliente investidor',
 }
 
-/** Rotas permitidas por role (prefix match) */
+/** Rotas permitidas por role (prefix match) — fluxo mínimo 3 papéis */
 export const ROLE_ROUTES: Record<UserRole, string[]> = {
-  gestor: ['/dashboard', '/projects', '/sku-requests', '/suppliers', '/clients', '/products', '/quotes', '/orders', '/pending-suppliers', '/reports/weekly', '/notifications', '/users', '/acesso-pendente'],
-  fornecedor: ['/dashboard', '/sku-requests', '/products', '/orders', '/notifications', '/acesso-pendente'],
-  cliente: ['/dashboard', '/projects', '/quotes', '/orders', '/notifications', '/reports/weekly', '/acesso-pendente'],
+  gestor: [
+    '/dashboard',
+    '/projects',
+    '/suppliers',
+    '/clients',
+    '/products',
+    '/quotes',
+    '/reports/weekly',
+    '/notifications',
+    '/users',
+  ],
+  fornecedor: [
+    '/dashboard',
+    '/sku-requests',
+    '/products',
+    '/orders',
+    '/notifications',
+  ],
+  cliente: [
+    '/dashboard',
+    '/projects',
+    '/quotes',
+    '/orders',
+    '/notifications',
+    '/reports/weekly',
+  ],
 }
 
 export function canAccessRoute(role: UserRole, pathname: string): boolean {

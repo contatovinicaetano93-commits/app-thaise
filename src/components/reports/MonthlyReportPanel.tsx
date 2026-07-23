@@ -42,10 +42,9 @@ export function MonthlyReportPanel({
       defaultOpen={defaultOpen}
       className="border-violet-200 bg-gradient-to-br from-violet-50/80 to-white"
       summary={summaryPreview}
-      href={compact ? '/reports' : undefined}
+      href={compact ? '/reports/weekly' : undefined}
       menuItems={[
-        { label: 'Abrir página completa', href: '/reports' },
-        { label: 'Ver insights QCPS', href: '/insights' },
+        { label: 'Abrir relatório 360', href: '/reports/weekly' },
         ...(onRetry ? [{ label: 'Atualizar', onClick: onRetry }] : []),
       ]}
       headerExtra={

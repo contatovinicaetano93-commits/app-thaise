@@ -41,12 +41,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (error) return err(error.message, 500)
     if (!data) return err('Obra não encontrada', 404)
 
-    const project = data as { id: string; name: string; portal_enabled?: boolean }
+    const project = data as { id: string; name: string }
     await auditAndInvalidate({
       entityType: 'project',
       entityId: project.id,
       eventType: 'project.progress_updated',
-      title: payload.portal_enabled ? 'Portal do cliente liberado' : 'Progresso da obra atualizado',
+      title: 'Progresso da obra atualizado',
       detail: project.name,
       actorId: profile!.id,
       cachePrefix: 'projects',

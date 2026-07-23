@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
 
     const { data, error } = await db
       .from('projects')
-      .insert({ ...payload, phase: 'A' } as never)
+      .insert({ ...payload, phase: 'A', portal_enabled: true } as never)
       .select('*, client:clients(*)')
       .single()
 

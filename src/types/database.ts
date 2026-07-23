@@ -1,9 +1,25 @@
 import type { QcpsScores, HomologationTier } from '@/lib/qcps'
 import type { ProjectPhase } from '@/lib/phases'
-import type { OpportunitySource, OpportunityStage } from '@/lib/pipeline'
 import type { IntakeData, IntakeStatus } from '@/lib/intake'
 import type { BriefingData, BriefingType } from '@/lib/briefing'
 import type { PhaseChecklist, Profile, AgentInsight, JobLog } from '@/lib/auth/roles'
+
+export type OpportunityStage =
+  | 'primeiro_contato'
+  | 'briefing'
+  | 'viabilidade_previa'
+  | 'proposta'
+  | 'contrato'
+  | 'ganho'
+  | 'perdido'
+
+export type OpportunitySource =
+  | 'whatsapp'
+  | 'indicacao'
+  | 'instagram'
+  | 'parceiro'
+  | 'evento'
+  | 'outro'
 
 export type FeeModel = 'fixo' | 'variavel' | 'hibrido'
 export type WeeklyReportStatus = 'draft' | 'approved' | 'sent'

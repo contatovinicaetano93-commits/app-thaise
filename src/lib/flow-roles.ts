@@ -25,7 +25,7 @@ export const ROLE_CANON: Record<UserRole, {
     title: 'Cliente investidor',
     mission: 'Acompanha a obra, aprova orçamentos e vê produtos escolhidos pela Estlar.',
     does: 'Aprova orçamento · acompanha % da obra · lê relatório',
-    doesNot: 'Não cadastra fornecedores, produtos nem altera fases.',
+    doesNot: 'Não cadastra fornecedores, produtos nem altera progresso da obra.',
   },
 }
 
@@ -48,11 +48,11 @@ export function navLabelForRole(baseLabel: string, href: string, role: UserRole)
   if (href === '/orders') {
     return role === 'fornecedor' ? 'Meus pedidos' : role === 'cliente' ? 'Meus pedidos' : 'Pedidos'
   }
-  if (href === '/payments') {
-    return role === 'fornecedor' ? 'Meus recebimentos' : 'Pagamentos'
-  }
   if (href === '/reports/weekly') {
-    return role === 'cliente' ? 'Relatório 360' : 'Relatório 360'
+    return 'Relatório 360'
+  }
+  if (href === '/clients') {
+    return 'Clientes'
   }
   return baseLabel
 }

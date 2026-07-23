@@ -55,11 +55,10 @@ export async function inviteAppUser(input: InviteUserInput): Promise<InvitedUser
       .from('projects')
       .select('id', { count: 'exact', head: true })
       .eq('client_id', input.clientId!)
-      .eq('portal_enabled', true)
       .eq('status', 'active')
 
     if (!count) {
-      throw new Error('Libere o portal da obra antes de convidar o cliente (Obras → Liberar portal)')
+      throw new Error('Cliente precisa ter ao menos uma obra ativa para receber convite')
     }
   }
 

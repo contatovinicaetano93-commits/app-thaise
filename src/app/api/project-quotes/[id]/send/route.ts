@@ -26,13 +26,9 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
 
     const { data: project } = await db
       .from('projects')
-      .select('portal_enabled, name')
+      .select('name')
       .eq('id', quote.project_id)
-      .single() as { data: { portal_enabled: boolean; name: string } | null }
-
-    if (!project?.portal_enabled) {
-      return err('Libere o portal da obra antes de enviar o orçamento ao cliente', 422)
-    }
+      .single() as { data: { name: string } | null }
 
     const { data, error } = await db
       .from('project_quotes')

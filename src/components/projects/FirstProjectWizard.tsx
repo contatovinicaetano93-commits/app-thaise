@@ -4,21 +4,13 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { X, Building2, Users, Truck, Receipt, Package } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { isSimpleMode } from '@/lib/app-mode'
 
-const STEPS_V2 = [
+const STEPS = [
   { icon: Users, title: '1. Cliente', desc: 'Registre o cliente da obra.', href: '/clients' },
   { icon: Building2, title: '2. Obra', desc: 'Crie a obra, defina fases e % de progresso.', href: '/projects' },
   { icon: Truck, title: '3. Homologar fornecedor', desc: 'Aprove fornecedores na fila de homologação.', href: '/suppliers?tab=homologacao' },
   { icon: Package, title: '4. Pedir SKU', desc: 'Solicite produtos ao fornecedor homologado.', href: '/products?tab=skus&new=1' },
   { icon: Receipt, title: '5. Orçamento', desc: 'Monte o orçamento e envie ao cliente para aprovação.', href: '/quotes' },
-]
-
-const STEPS_LEGACY = [
-  { icon: Truck, title: '1. Fornecedor', desc: 'Cadastre e homologue um fornecedor curado.', href: '/suppliers' },
-  { icon: Users, title: '2. Cliente', desc: 'Registre o cliente do empreendimento.', href: '/clients' },
-  { icon: Building2, title: '3. Empreendimento', desc: 'Crie o projeto na Fase A com checklist.', href: '/projects' },
-  { icon: Receipt, title: '4. Orçamento / Pedido', desc: 'Monte orçamento ou crie pedido direto.', href: '/quotes' },
 ]
 
 interface Props {
@@ -28,7 +20,6 @@ interface Props {
 
 export function FirstProjectWizard({ open, onClose }: Props) {
   const [step, setStep] = useState(0)
-  const STEPS = isSimpleMode() ? STEPS_V2 : STEPS_LEGACY
 
   if (!open) return null
 

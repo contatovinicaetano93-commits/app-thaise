@@ -1,5 +1,4 @@
 import { startOrderWorker } from './order.worker'
-import { startScoringWorker } from './scoring.worker'
 import { startNotifyWorker } from './notify.worker'
 
 const redisUrl = process.env.REDIS_URL
@@ -10,7 +9,6 @@ if (!redisUrl) {
 }
 
 startOrderWorker()
-startScoringWorker()
 startNotifyWorker()
 
-console.info('[workers] Todos os workers iniciados (orders, scoring, notifications)')
+console.info('[workers] Todos os workers iniciados (orders, notifications)')
