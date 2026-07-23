@@ -6,6 +6,7 @@ import { requireProfile, requireGestor, filterSuppliersByRole } from '@/lib/auth
 import { auditAndInvalidate } from '@/lib/memory/audit'
 import { cacheGet, cacheSet } from '@/lib/cache'
 import { parsePagination, paginationMeta } from '@/lib/pagination'
+import { notifySupplierHomologated } from '@/lib/notify/supplier-homologated'
 
 const qcpsSchema = z.object({
   score_q: z.coerce.number().min(0).max(10).default(5),
@@ -64,29 +65,44 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json()
     const parsed = schema.parse(body)
-    const payload = { ...parsed, status: 'pending' as const }
     const db = await createSupabaseServer()
 
     const { data, error } = await db
       .from('suppliers')
-      .insert(payload as never)
+      .insert(parsed as never)
       .select()
       .single()
 
     if (error) return err(error.message, 500)
 
-    const supplier = data as { id: string; name: string }
+    const supplier = data as {
+      id: string
+      name: string
+      status: string
+      contact_email: string
+      contact_name: string
+    }
+
     await auditAndInvalidate({
       entityType: 'supplier',
       entityId: supplier.id,
-      eventType: 'supplier.created',
-      title: 'Fornecedor cadastrado',
+      eventType: supplier.status === 'active' ? 'supplier.approved' : 'supplier.created',
+      title: supplier.status === 'active' ? 'Fornecedor homologado' : 'Fornecedor cadastrado',
       detail: supplier.name,
       actorId: profile!.id,
       cachePrefix: 'suppliers',
     })
 
-    return ok(data, undefined, 201)
+    let email: Awaited<ReturnType<typeof notifySupplierHomologated>> | undefined
+    if (supplier.status === 'active' && supplier.contact_email) {
+      email = await notifySupplierHomologated({
+        contactEmail: supplier.contact_email,
+        contactName: supplier.contact_name,
+        supplierName: supplier.name,
+      })
+    }
+
+    return ok({ ...supplier, email }, undefined, 201)
   } catch (e) {
     return handleError(e)
   }

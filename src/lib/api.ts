@@ -68,7 +68,9 @@ export const suppliersApi = {
   list: (search?: string): ApiResult<Supplier[]> =>
     request(`/api/suppliers${search ? `?search=${encodeURIComponent(search)}` : ''}`),
 
-  create: (data: Omit<Supplier, 'id' | 'created_at' | 'updated_at' | 'score' | 'score_q' | 'score_c' | 'score_p' | 'score_s'> & Partial<QcpsScores>): ApiResult<Supplier> =>
+  create: (data: Omit<Supplier, 'id' | 'created_at' | 'updated_at' | 'score' | 'score_q' | 'score_c' | 'score_p' | 'score_s'> & Partial<QcpsScores>): ApiResult<Supplier & {
+    email?: { sent: boolean; provider: string; error?: string }
+  }> =>
     request('/api/suppliers', { method: 'POST', body: JSON.stringify(data) }),
 
   update: (id: string, data: Partial<Supplier>): ApiResult<Supplier> =>
@@ -321,7 +323,9 @@ export const reportsApi = {
 
 export const pendingSuppliersApi = {
   list: (): ApiResult<Supplier[]> => request('/api/suppliers/pending'),
-  review: (id: string, action: 'approve' | 'reject'): ApiResult<Supplier> =>
+  review: (id: string, action: 'approve' | 'reject'): ApiResult<Supplier & {
+    email?: { sent: boolean; provider: string; error?: string }
+  }> =>
     request('/api/suppliers/pending', { method: 'PATCH', body: JSON.stringify({ id, action }) }),
 }
 

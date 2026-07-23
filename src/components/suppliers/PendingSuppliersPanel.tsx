@@ -24,8 +24,17 @@ export function PendingSuppliersPanel({ onCreateNew }: { onCreateNew?: () => voi
 
   async function review(id: string, action: 'approve' | 'reject') {
     try {
-      await pendingSuppliersApi.review(id, action)
-      toast.success(action === 'approve' ? 'Fornecedor homologado' : 'Fornecedor rejeitado')
+      const result = await pendingSuppliersApi.review(id, action)
+      if (action === 'approve') {
+        toast.success('Fornecedor homologado')
+        if (result.email?.sent) {
+          toast.success(`E-mail enviado para ${result.contact_email}`)
+        } else if (result.email) {
+          toast.warning(result.email.error ?? 'E-mail de homologação não enviado', { duration: 8000 })
+        }
+      } else {
+        toast.success('Fornecedor rejeitado')
+      }
       load()
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Erro')

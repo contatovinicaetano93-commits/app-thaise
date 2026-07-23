@@ -57,8 +57,21 @@ export function SupplierForm({ supplier, createAsHomologated = false, onSuccess,
         await suppliersApi.update(supplier.id, payload)
         toast.success('Fornecedor atualizado!')
       } else {
-        await suppliersApi.create(payload)
-        toast.success(createAsHomologated ? 'Fornecedor homologado!' : 'Fornecedor cadastrado!')
+        const created = await suppliersApi.create(payload)
+        if (createAsHomologated) {
+          if (created.email?.sent) {
+            toast.success(`Fornecedor homologado — e-mail enviado para ${data.contact_email}`)
+          } else {
+            toast.success('Fornecedor homologado!')
+            toast.warning(
+              created.email?.error
+                ?? 'E-mail não enviado. Com onboarding@resend.dev, o Resend só entrega para o e-mail da conta Resend — ou verifique um domínio próprio.',
+              { duration: 8000 },
+            )
+          }
+        } else {
+          toast.success('Fornecedor cadastrado!')
+        }
       }
       onSuccess()
     } catch (e) {

@@ -2,6 +2,7 @@ import { ok, err, handleError } from '@/lib/api-response'
 import { requireGestor } from '@/lib/auth/api-context'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { logActivity } from '@/lib/memory/events'
+import { notifySupplierHomologated } from '@/lib/notify/supplier-homologated'
 
 export async function GET() {
   try {
@@ -42,6 +43,13 @@ export async function PATCH(req: Request) {
 
     if (error) return err(error.message, 500)
 
+    const supplier = data as {
+      id: string
+      name: string
+      contact_email: string
+      contact_name: string
+    }
+
     await logActivity({
       entityType: 'supplier',
       entityId: id,
@@ -50,7 +58,16 @@ export async function PATCH(req: Request) {
       actorId: profile?.id,
     })
 
-    return ok(data)
+    let email: Awaited<ReturnType<typeof notifySupplierHomologated>> | undefined
+    if (action === 'approve' && supplier.contact_email) {
+      email = await notifySupplierHomologated({
+        contactEmail: supplier.contact_email,
+        contactName: supplier.contact_name,
+        supplierName: supplier.name,
+      })
+    }
+
+    return ok({ ...supplier, email })
   } catch (e) {
     return handleError(e)
   }
