@@ -13,14 +13,7 @@ import { skuRequestsApi } from '@/lib/api'
 import { useLiveRefresh } from '@/lib/hooks'
 import { toast } from 'sonner'
 import type { SkuRequest } from '@/types/database'
-
-const STATUS_LABEL: Record<string, string> = {
-  open: 'Aguardando fornecedor',
-  submitted: 'Aguardando sua aprovação',
-  approved: 'Aprovado no catálogo',
-  rejected: 'Rejeitado',
-  cancelled: 'Cancelado',
-}
+import { skuRequestStatusLabel } from '@/lib/sku-request-labels'
 
 const STATUS_COLOR: Record<string, string> = {
   open: 'bg-amber-100 text-amber-800',
@@ -108,10 +101,10 @@ export function SkuRequestsPanel({ defaultProjectId, defaultSupplierId, autoOpen
               panelId={`sku-${req.id}`}
               title={req.name}
               defaultOpen={req.status === 'submitted' && isGestor}
-              summary={[req.project?.name, req.supplier?.name, STATUS_LABEL[req.status]].filter(Boolean).join(' · ')}
+              summary={[req.project?.name, req.supplier?.name, skuRequestStatusLabel(req.status, role)].filter(Boolean).join(' · ')}
               headerExtra={
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[req.status] ?? 'bg-gray-100'}`}>
-                  {STATUS_LABEL[req.status]}
+                  {skuRequestStatusLabel(req.status, role)}
                 </span>
               }
             >

@@ -7,7 +7,7 @@ const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', '
 
 export async function GET() {
   try {
-    const { error: authErr } = await requireProfile()
+    const { profile, error: authErr } = await requireProfile()
     if (authErr) return authErr
 
     const db = await createSupabaseServer()
@@ -15,7 +15,7 @@ export async function GET() {
     const [suppliersRes, clientsRes, ordersRes, projectsRes, productsRes] = await Promise.all([
       db.from('suppliers').select('id, name, status, score_q, score_c, score_p, score_s, score'),
       db.from('clients').select('id', { count: 'exact', head: true }),
-      db.from('orders').select('id, status, total_price, created_at, supplier_id, client:clients(name), supplier:suppliers(name)'),
+      db.from('orders').select('id, status, total_price, created_at, supplier_id, client_id, client:clients(name), supplier:suppliers(name)'),
       db.from('projects').select('id', { count: 'exact', head: true }),
       db.from('products').select('id, supplier_id, created_at, active'),
     ])
@@ -23,7 +23,7 @@ export async function GET() {
     if (suppliersRes.error) return ok(emptyDashboard(suppliersRes.error.message))
     if (ordersRes.error) return ok(emptyDashboard(ordersRes.error.message))
 
-    const suppliers = (suppliersRes.data ?? []) as Array<{
+    let suppliers = (suppliersRes.data ?? []) as Array<{
       id: string
       name: string
       status: string
@@ -33,15 +33,26 @@ export async function GET() {
       score_s: number
       score: number | null
     }>
-    const orders = (ordersRes.data ?? []) as Array<{
+    let orders = (ordersRes.data ?? []) as Array<{
       id: string
       status: string
       total_price: number
       created_at: string
       supplier_id: string
+      client_id?: string
       client?: { name: string }
       supplier?: { name: string }
     }>
+
+    if (profile!.role === 'fornecedor') {
+      if (!profile!.supplier_id) return ok(emptyDashboard())
+      suppliers = suppliers.filter(s => s.id === profile!.supplier_id)
+      orders = orders.filter(o => o.supplier_id === profile!.supplier_id)
+    } else if (profile!.role === 'cliente') {
+      if (!profile!.client_id) return ok(emptyDashboard())
+      orders = orders.filter(o => o.client_id === profile!.client_id)
+      suppliers = []
+    }
 
     const now = new Date()
     const thisMonth = now.getMonth()
@@ -107,12 +118,15 @@ export async function GET() {
     const activeSuppliers = suppliers.filter(s => s.status === 'active').length
     const pendingSuppliers = suppliers.filter(s => s.status === 'pending').length
 
-    const products = (productsRes.data ?? []) as Array<{
+    let products = (productsRes.data ?? []) as Array<{
       id: string
       supplier_id: string
       created_at: string
       active: boolean
     }>
+    if (profile!.role === 'fornecedor' && profile!.supplier_id) {
+      products = products.filter(p => p.supplier_id === profile!.supplier_id)
+    }
     const weekAgo = new Date(now)
     weekAgo.setDate(weekAgo.getDate() - 7)
     const weekAgoMs = weekAgo.getTime()

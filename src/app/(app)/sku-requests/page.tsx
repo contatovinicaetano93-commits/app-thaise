@@ -15,14 +15,7 @@ import { skuRequestsApi } from '@/lib/api'
 import { useLiveRefresh } from '@/lib/hooks'
 import { toast } from 'sonner'
 import type { SkuRequest } from '@/types/database'
-
-const STATUS_LABEL: Record<string, string> = {
-  open: 'Aguardando fornecedor',
-  submitted: 'Aguardando sua aprovação',
-  approved: 'Aprovado no catálogo',
-  rejected: 'Rejeitado',
-  cancelled: 'Cancelado',
-}
+import { skuRequestStatusLabel } from '@/lib/sku-request-labels'
 
 const STATUS_COLOR: Record<string, string> = {
   open: 'bg-amber-100 text-amber-800',
@@ -52,17 +45,18 @@ function SkuRequestsPageContent() {
 
   const defaultProjectId = searchParams.get('project_id') ?? undefined
   const defaultSupplierId = searchParams.get('supplier_id') ?? undefined
+  const statusFilter = searchParams.get('status') ?? undefined
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      setRequests(await skuRequestsApi.list())
+      setRequests(await skuRequestsApi.list(statusFilter ? { status: statusFilter } : undefined))
     } catch {
       toast.error('Erro ao carregar pedidos de SKU')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [statusFilter])
 
   useEffect(() => {
     if (isGestor) {
@@ -153,11 +147,11 @@ function SkuRequestsPageContent() {
               summary={[
                 req.project?.name,
                 req.supplier?.name,
-                STATUS_LABEL[req.status],
+                skuRequestStatusLabel(req.status, role),
               ].filter(Boolean).join(' · ')}
               headerExtra={
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[req.status] ?? 'bg-gray-100'}`}>
-                  {STATUS_LABEL[req.status]}
+                  {skuRequestStatusLabel(req.status, role)}
                 </span>
               }
             >
@@ -184,9 +178,9 @@ function SkuRequestsPageContent() {
               )}
 
               <div className="flex flex-wrap gap-2">
-                {role === 'fornecedor' && req.status === 'open' && (
+                {role === 'fornecedor' && (req.status === 'open' || req.status === 'rejected') && (
                   <Button onClick={() => setFillRequest(req)}>
-                    <Plus size={14} /> Cadastrar SKU
+                    <Plus size={14} /> {req.status === 'rejected' ? 'Reenviar SKU' : 'Cadastrar SKU'}
                   </Button>
                 )}
                 {isGestor && req.status === 'submitted' && (

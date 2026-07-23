@@ -21,8 +21,12 @@ export async function assertOpenSkuRequestForSupplier(skuRequestId: string, supp
 
   if (!data) throw new Error('Pedido de SKU não encontrado')
   if (data.supplier_id !== supplierId) throw new Error('Este pedido de SKU não é do seu fornecedor')
-  if (data.status !== 'open') throw new Error('Este pedido de SKU já foi respondido ou encerrado')
-  if (data.product_id) throw new Error('Este pedido de SKU já possui produto cadastrado')
+  if (!['open', 'rejected'].includes(data.status)) {
+    throw new Error('Este pedido de SKU já foi respondido ou encerrado')
+  }
+  if (data.status === 'open' && data.product_id) {
+    throw new Error('Este pedido de SKU já possui produto cadastrado')
+  }
 
   return data
 }

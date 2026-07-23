@@ -5,6 +5,7 @@ import { createSupabaseServer } from '@/lib/supabase/server'
 import { requireProfile, filterOrdersByRole } from '@/lib/auth/api-context'
 import { assertActiveSupplier, assertProductForSupplier } from '@/lib/gates'
 import { logActivity, logOrderStatus } from '@/lib/memory/events'
+import { enrichProjectAndClientNames } from '@/lib/enrich-related-names'
 
 const schema = z.object({
   project_id: z.string().uuid().optional().nullable().transform(v => v || null),
@@ -40,6 +41,10 @@ export async function GET(req: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let rows = data as any[]
     rows = filterOrdersByRole(rows, profile!.role, profile!)
+
+    if (profile!.role === 'fornecedor' || profile!.role === 'cliente') {
+      rows = await enrichProjectAndClientNames(rows)
+    }
 
     const filtered = search
       ? rows.filter(o =>

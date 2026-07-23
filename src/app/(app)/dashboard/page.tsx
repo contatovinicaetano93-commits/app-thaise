@@ -199,7 +199,7 @@ export default function DashboardPage() {
       {panelVisible('kpi-revenue', { isGestor, role, hasNextStep: Boolean(nextStep) }) && (
         <PanelCard
           panelId="kpi-revenue"
-          title="Receita no mês"
+          title={role === 'fornecedor' ? 'Seu faturamento no mês' : 'Receita no mês'}
           icon={ShoppingCart}
           iconClassName="text-violet-600"
           summary={`${fmt(c?.monthRevenue ?? 0)} · ${c?.monthOrders ?? 0} pedido(s)`}

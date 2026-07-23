@@ -101,7 +101,7 @@ function OrdersPageContent() {
   return (
     <div>
       <PageFeedHeader
-        title="Pedidos"
+        title="Meus pedidos"
         subtitle={
           role === 'cliente' ? (
             'Acompanhamento — somente leitura'
@@ -123,7 +123,11 @@ function OrdersPageContent() {
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <input
           type="text"
-          placeholder="Buscar por empreendimento, cliente, fornecedor ou produto..."
+          placeholder={
+            role === 'fornecedor'
+              ? 'Buscar por obra, cliente ou produto...'
+              : 'Buscar por empreendimento, fornecedor ou produto...'
+          }
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white"
@@ -148,7 +152,7 @@ function OrdersPageContent() {
             search
               ? 'Tente outro termo.'
               : role === 'fornecedor'
-                ? 'Quando o gestor aprovar pedidos, eles aparecerão aqui.'
+                ? 'Quando a Estlar aprovar pedidos, eles aparecerão aqui. Pedidos pendentes aguardam a gestora.'
                 : 'Seus pedidos aparecerão aqui quando forem criados pelo gestor.'
           }
         />
@@ -158,9 +162,15 @@ function OrdersPageContent() {
             <PanelCard
               key={order.id}
               panelId={`order-${order.id}`}
-              title={order.client?.name ?? 'Pedido'}
+              title={order.product?.name ?? order.client?.name ?? 'Pedido'}
               defaultOpen={false}
-              summary={`${order.supplier?.name ?? '—'} · ${(order.total_price ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} · ${ORDER_STATUS_LABEL[order.status as OrderStatus]}`}
+              summary={[
+                order.project?.name,
+                order.client?.name,
+                (order.total_price ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+                ORDER_STATUS_LABEL[order.status as OrderStatus],
+                order.status === 'pending' && role === 'fornecedor' ? 'aguardando Estlar' : null,
+              ].filter(Boolean).join(' · ')}
               headerExtra={
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[order.status]}`}>
                   {ORDER_STATUS_LABEL[order.status as OrderStatus]}
@@ -169,8 +179,13 @@ function OrdersPageContent() {
               menuItems={statusMenuItems(order)}
             >
               <div className="flex items-center gap-2 mb-1">
-                <p className="text-sm text-gray-600">{order.supplier?.name}</p>
+                <p className="text-sm text-gray-600">{order.client?.name ?? order.supplier?.name}</p>
               </div>
+              {order.status === 'pending' && role === 'fornecedor' && (
+                <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-2">
+                  Aguardando a Estlar aprovar o pedido antes de você separar/entregar.
+                </p>
+              )}
               <p className="text-sm text-gray-500">
                 {order.product?.name} · {order.quantity} {order.product?.unit}
               </p>

@@ -27,6 +27,10 @@ export async function GET(req: NextRequest) {
     const { profile, error: authErr } = await requireProfile()
     if (authErr) return authErr
 
+    if (profile!.role === 'fornecedor' && !profile!.supplier_id) {
+      return ok([])
+    }
+
     const db = await createSupabaseServer()
     const supplierId = req.nextUrl.searchParams.get('supplier_id')
       ?? (profile!.role === 'fornecedor' ? profile!.supplier_id : null)
@@ -81,7 +85,7 @@ export async function POST(req: NextRequest) {
       const sku = await assertOpenSkuRequestForSupplier(payload.sku_request_id, profile!.supplier_id)
       await assertActiveSupplier(profile!.supplier_id)
 
-      const insertPayload = {
+      const productFields = {
         supplier_id: profile!.supplier_id,
         name: payload.name,
         description: payload.description,
@@ -92,17 +96,29 @@ export async function POST(req: NextRequest) {
         lead_time_days: payload.lead_time_days,
         sku_request_id: payload.sku_request_id,
         project_id: sku.project_id,
-        catalog_status: 'pending',
+        catalog_status: 'pending' as const,
         active: false,
       }
 
-      const { data, error } = await db
-        .from('products')
-        .insert(insertPayload as never)
-        .select('*, supplier:suppliers(id,name), project:projects(id,name)')
-        .single()
-
-      if (error) return err(error.message, 500)
+      let data: unknown
+      if (sku.status === 'rejected' && sku.product_id) {
+        const updated = await db
+          .from('products')
+          .update(productFields as never)
+          .eq('id', sku.product_id)
+          .select('*, supplier:suppliers(id,name), project:projects(id,name)')
+          .single()
+        if (updated.error) return err(updated.error.message, 500)
+        data = updated.data
+      } else {
+        const inserted = await db
+          .from('products')
+          .insert(productFields as never)
+          .select('*, supplier:suppliers(id,name), project:projects(id,name)')
+          .single()
+        if (inserted.error) return err(inserted.error.message, 500)
+        data = inserted.data
+      }
 
       const product = data as { id: string; name: string }
       await db

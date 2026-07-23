@@ -75,10 +75,10 @@ export default function NotificationsPage() {
           title="Nenhuma notificação"
           icon={Bell}
           collapsible={false}
-          summary="Eventos de pedidos e empreendimentos aparecerão aqui"
+          summary="Eventos de pedidos e SKUs aparecerão aqui"
         >
           <p className="text-sm text-gray-400 text-center">
-            Eventos de pedidos e empreendimentos aparecerão aqui.
+            Eventos de pedidos e SKUs solicitados aparecerão aqui.
           </p>
         </PanelCard>
       ) : (

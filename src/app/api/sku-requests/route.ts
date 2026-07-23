@@ -6,6 +6,7 @@ import { requireProfile, requireGestor } from '@/lib/auth/api-context'
 import { assertActiveSupplier } from '@/lib/gates'
 import { auditAndInvalidate } from '@/lib/memory/audit'
 import { notifySupplierUsers } from '@/lib/notify/portal-notify'
+import { enrichProjectAndClientNames } from '@/lib/enrich-related-names'
 import type { SkuRequest } from '@/types/database'
 
 const createSchema = z.object({
@@ -46,7 +47,12 @@ export async function GET(req: NextRequest) {
 
     const { data, error } = await query
     if (error) return err(error.message, 500)
-    return ok(data ?? [])
+
+    const rows = (data ?? []) as SkuRequest[]
+    if (profile!.role === 'fornecedor') {
+      return ok(await enrichProjectAndClientNames(rows))
+    }
+    return ok(rows)
   } catch (e) {
     return handleError(e)
   }
