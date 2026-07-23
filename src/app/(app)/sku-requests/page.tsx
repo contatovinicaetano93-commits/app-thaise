@@ -88,6 +88,8 @@ function SkuRequestsPageContent() {
 
   const openCount = requests.filter(r => r.status === 'open').length
   const pendingCount = requests.filter(r => r.status === 'submitted').length
+  // Esta página é só do fornecedor (gestor é redirecionado) — nunca use copy de gestora.
+  const labelRole = 'fornecedor' as const
 
   return (
     <div>
@@ -147,11 +149,11 @@ function SkuRequestsPageContent() {
               summary={[
                 req.project?.name,
                 req.supplier?.name,
-                skuRequestStatusLabel(req.status, role),
+                skuRequestStatusLabel(req.status, labelRole),
               ].filter(Boolean).join(' · ')}
               headerExtra={
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[req.status] ?? 'bg-gray-100'}`}>
-                  {skuRequestStatusLabel(req.status, role)}
+                  {skuRequestStatusLabel(req.status, labelRole)}
                 </span>
               }
             >
