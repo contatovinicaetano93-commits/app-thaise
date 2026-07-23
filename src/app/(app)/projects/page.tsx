@@ -185,11 +185,13 @@ function ProjectsPageContent() {
         <EmptyState
           icon={Building2}
           iconClass="text-violet-600"
-          title={search || statusFilter ? 'Nenhum resultado' : 'Nenhuma obra ainda'}
+          title={search || statusFilter ? 'Nenhum resultado' : role === 'cliente' ? 'Nenhuma obra liberada ainda' : 'Nenhuma obra ainda'}
           description={
             search || statusFilter
               ? 'Ajuste os filtros ou tente outro termo.'
-              : 'Crie a primeira obra e peça SKUs ao fornecedor.'
+              : role === 'cliente'
+                ? 'A Estlar vai vincular sua obra aqui. Enquanto isso, acompanhe orçamentos e o Relatório 360.'
+                : 'Crie a primeira obra e peça SKUs ao fornecedor.'
           }
           actionLabel={isGestor && !search && !statusFilter ? 'Nova obra' : undefined}
           onAction={isGestor && !search && !statusFilter ? () => openNewProject() : undefined}
