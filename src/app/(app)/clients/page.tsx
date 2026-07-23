@@ -63,16 +63,27 @@ export default function ClientsPage() {
     (c.company ?? '').toLowerCase().includes(debouncedSearch.toLowerCase())
   )
 
+  function openNew() {
+    setEditing(undefined)
+    setModalOpen(true)
+  }
+
   return (
     <div>
       <PageFeedHeader
         title="Clientes"
         subtitle={`${clients.length} cadastrado${clients.length !== 1 ? 's' : ''}`}
         menuItems={[
-          { label: 'Novo cliente', onClick: () => { setEditing(undefined); setModalOpen(true) } },
+          { label: 'Novo cliente', onClick: openNew },
           { label: 'Convidar ao portal', href: '/users?role=cliente' },
         ]}
       />
+
+      <div className="mb-4">
+        <Button onClick={openNew}>
+          <Plus size={16} /> Novo cliente
+        </Button>
+      </div>
 
       <div className="relative mb-4">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -101,7 +112,7 @@ export default function ClientsPage() {
           title={search ? 'Nenhum resultado' : 'Nenhum cliente ainda'}
           description={search ? 'Tente outro termo.' : 'Adicione seu primeiro cliente.'}
           actionLabel={search ? undefined : 'Novo Cliente'}
-          onAction={search ? undefined : () => { setEditing(undefined); setModalOpen(true) }}
+          onAction={search ? undefined : openNew}
         />
       ) : (
         <div className="space-y-2">
